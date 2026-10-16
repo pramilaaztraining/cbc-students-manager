@@ -37,7 +37,7 @@ function App() {
   ];
 
   const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('cbc_students_address_update_data');
+    const saved = localStorage.getItem('cbc_students_complete_app_data');
     return saved ? JSON.parse(saved) : initialData;
   });
 
@@ -61,7 +61,7 @@ function App() {
       sampath: Object.fromEntries(Object.entries(row.sampath).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
     }));
     try {
-      localStorage.setItem('cbc_students_address_update_data', JSON.stringify(rowsToPersist));
+      localStorage.setItem('cbc_students_complete_app_data', JSON.stringify(rowsToPersist));
     } catch (e) {
       console.error('Storage quota reached');
     }
@@ -477,7 +477,7 @@ function App() {
         </div>
       </main>
 
-      {/* CHURCH FOOTER WITH UPDATED ADDRESS */}
+      {/* CHURCH FOOTER */}
       <footer className="church-footer">
         <div className="footer-container">
           <div className="footer-col footer-brand-col">
