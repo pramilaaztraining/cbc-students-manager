@@ -291,12 +291,12 @@ function App() {
 
   return (
     <div className="container">
-      <h2>6th & 7th Sisters CBC-BTC Manager</h2>
-      <p className="subtitle">Manage student records with each professor's subsections arranged in columns.</p>
+      <h2>CBC BTC Student Details</h2>
+      <p className="subtitle">Manage student details with each professor's by Subject and lectures.</p>
 
       {/* Form Card */}
       <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
-        <h3>{isEditing ? 'Edit Record (రికార్డును సవరించు)' : 'Add New Record (కొత్త రికార్డును జోడించు)'}</h3>
+        <h3>{isEditing ? 'Edit Record (రికార్డును సవరించు)' : 'Add new student details (కొత్త విద్యార్థి వివరాలను జోడించు)'}</h3>
         
         <div className="form-grid">
           <div className="input-group">
