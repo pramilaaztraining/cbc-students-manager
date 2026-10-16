@@ -37,7 +37,7 @@ function App() {
   ];
 
   const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('cbc_students_enhanced_wa_data');
+    const saved = localStorage.getItem('cbc_students_address_update_data');
     return saved ? JSON.parse(saved) : initialData;
   });
 
@@ -61,7 +61,7 @@ function App() {
       sampath: Object.fromEntries(Object.entries(row.sampath).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
     }));
     try {
-      localStorage.setItem('cbc_students_enhanced_wa_data', JSON.stringify(rowsToPersist));
+      localStorage.setItem('cbc_students_address_update_data', JSON.stringify(rowsToPersist));
     } catch (e) {
       console.error('Storage quota reached');
     }
@@ -477,7 +477,7 @@ function App() {
         </div>
       </main>
 
-      {/* CHURCH FOOTER WITH ENHANCED WHATSAPP BUTTON */}
+      {/* CHURCH FOOTER WITH UPDATED ADDRESS */}
       <footer className="church-footer">
         <div className="footer-container">
           <div className="footer-col footer-brand-col">
@@ -489,7 +489,7 @@ function App() {
               </div>
             </div>
             <p className="footer-desc">
-              We are a Bible-believing, Christ-exalting, local church congregation situated in Neeladri Nagar, Electronic City, Bengaluru. Seeking to make disciples of Jesus Christ who glorify God.
+              We are a Bible-believing, Christ-exalting, local church congregation situated in Gauribidanur, Karnataka. Seeking to make disciples of Jesus Christ who glorify God.
             </p>
             <p className="footer-copy">© 2026 CHRIST BIBLE CHURCH BENGALURU.</p>
           </div>
@@ -515,13 +515,13 @@ function App() {
               
               <p className="gathering-title mt-15">Service Location Chapel:</p>
               <p className="gathering-address">
-                5th floor, The Big Buffet, Neeladri Rd, above IDFC first building, Neeladri Nagar, Electronic City Phase I, Electronic City, Bengaluru, Doddathoguru, Karnataka 560100
+                #521, Alkapura Gate, Gauribidanur, Karnataka, India
               </p>
             </div>
           </div>
         </div>
 
-        {/* Enhanced Connect With Us Banner */}
+        {/* Connect With Us Banner */}
         <div className="footer-connect-banner">
           <div className="footer-connect-content">
             <div className="connect-badge">CONNECT WITH US</div>
