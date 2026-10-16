@@ -37,7 +37,7 @@ function App() {
   ];
 
   const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('cbc_students_three_rows_data');
+    const saved = localStorage.getItem('cbc_students_columns_layout_data');
     return saved ? JSON.parse(saved) : initialData;
   });
 
@@ -54,7 +54,7 @@ function App() {
   const [currentId, setCurrentId] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('cbc_students_three_rows_data', JSON.stringify(rows));
+    localStorage.setItem('cbc_students_columns_layout_data', JSON.stringify(rows));
   }, [rows]);
 
   const handleChange = (e) => {
@@ -238,21 +238,21 @@ function App() {
     doc.save('CBC_Students_Records.pdf');
   };
 
-  const renderSectionRows = (profKey, title, teluguTitle, items) => (
+  const renderSectionColumns = (profKey, title, teluguTitle, items, gridColsClass) => (
     <div className="checkbox-card nt-card full-width-card" key={profKey}>
       <span className="section-title">{title} <span className="telugu-label">({teluguTitle})</span></span>
-      <div className="rows-container">
+      <div className={`columns-container ${gridColsClass}`}>
         {items.map(cat => (
-          <div className="row-subbox" key={`${profKey}-${cat.key}`}>
+          <div className="column-subbox" key={`${profKey}-${cat.key}`}>
             <span className="sub-title">{cat.label}</span>
-            <div className="row-controls">
+            <div className="column-controls">
               <label className="checkbox-label">
                 <input 
                   type="checkbox" 
                   checked={formData[profKey][`${cat.key}Exam`]} 
                   onChange={(e) => handleProfChange(profKey, `${cat.key}Exam`, 'checkbox', null, e.target.checked)} 
                 />
-                Exam <span className="telugu-text">({cat.telugu} పరీక్ష)</span>
+                Exam Written <span className="telugu-text">({cat.telugu} పరీక్ష)</span>
               </label>
 
               <label className="checkbox-label">
@@ -261,7 +261,7 @@ function App() {
                   checked={formData[profKey][`${cat.key}Notes`]} 
                   onChange={(e) => handleProfChange(profKey, `${cat.key}Notes`, 'checkbox', null, e.target.checked)} 
                 />
-                Notes <span className="telugu-text">({cat.telugu} నోట్స్)</span>
+                Notes Completed <span className="telugu-text">({cat.telugu} నోట్స్)</span>
               </label>
 
               <label className="checkbox-label">
@@ -270,7 +270,7 @@ function App() {
                   checked={formData[profKey][`${cat.key}Classes`]} 
                   onChange={(e) => handleProfChange(profKey, `${cat.key}Classes`, 'checkbox', null, e.target.checked)} 
                 />
-                Classes <span className="telugu-text">(తరగతులు)</span>
+                All Classes Attended <span className="telugu-text">(తరగతులు)</span>
               </label>
 
               <div className="sub-input-group">
@@ -292,7 +292,7 @@ function App() {
   return (
     <div className="container">
       <h2>6th & 7th Sisters CBC-BTC Manager</h2>
-      <p className="subtitle">Manage student records with each professor in a separate, dedicated row.</p>
+      <p className="subtitle">Manage student records with each professor's subsections arranged in columns.</p>
 
       {/* Form Card */}
       <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
@@ -319,27 +319,27 @@ function App() {
             <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
           </div>
 
-          {/* Row 1: Suresh Sir */}
-          {renderSectionRows('suresh', 'Suresh Sir', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
+          {/* Suresh Sir: 3 Columns */}
+          {renderSectionColumns('suresh', 'Suresh Sir', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
             { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
             { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
             { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
-          ])}
+          ], 'cols-3')}
 
-          {/* Row 2: Raj Sir */}
-          {renderSectionRows('raj', 'Raj Sir', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
+          {/* Raj Sir: 4 Columns */}
+          {renderSectionColumns('raj', 'Raj Sir', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
             { key: 'law', label: 'Law', telugu: 'లా' },
             { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
             { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
             { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
-          ])}
+          ], 'cols-4')}
 
-          {/* Row 3: Prof Sampath Kumar */}
-          {renderSectionRows('sampath', 'Prof Sampath Kumar: +91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
+          {/* Prof Sampath Kumar: 3 Columns */}
+          {renderSectionColumns('sampath', 'Prof Sampath Kumar: +91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
             { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
             { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
             { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
-          ])}
+          ], 'cols-3')}
 
           <div className="input-group">
             <label>Video Submitted <span className="telugu-label">వీడియో సమర్పణ</span></label>
