@@ -12,6 +12,8 @@ function App() {
       obj[`${k}Notes`] = false;
       obj[`${k}Classes`] = false;
       obj[`${k}Permissions`] = '';
+      obj[`${k}VideoFile`] = null;
+      obj[`${k}VideoFileName`] = '';
     });
     return obj;
   };
@@ -31,13 +33,12 @@ function App() {
       stephen: createDetailedSubsections(stephenKeys),
       rajshekar: createDetailedSubsections(rajkeys),
       sampath: createDetailedSubsections(sampathKeys),
-      videoSubmitted: 'Yes',
       accommodation: '10-12 Jan'
     }
   ];
 
   const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('cbc_students_prof_phones_data');
+    const saved = localStorage.getItem('cbc_students_video_upload_data');
     return saved ? JSON.parse(saved) : initialData;
   });
 
@@ -47,14 +48,25 @@ function App() {
     stephen: createDetailedSubsections(stephenKeys),
     rajshekar: createDetailedSubsections(rajkeys),
     sampath: createDetailedSubsections(sampathKeys),
-    videoSubmitted: '', accommodation: ''
+    accommodation: ''
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('cbc_students_prof_phones_data', JSON.stringify(rows));
+    // Save row data excluding heavy object URLs to prevent storage quota issues
+    const rowsToPersist = rows.map(row => ({
+      ...row,
+      stephen: Object.fromEntries(Object.entries(row.stephen).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
+      rajshekar: Object.fromEntries(Object.entries(row.rajshekar).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
+      sampath: Object.fromEntries(Object.entries(row.sampath).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
+    }));
+    try {
+      localStorage.setItem('cbc_students_video_upload_data', JSON.stringify(rowsToPersist));
+    } catch (e) {
+      console.error('Storage quota reached');
+    }
   }, [rows]);
 
   const handleChange = (e) => {
@@ -70,6 +82,21 @@ function App() {
         [subKey]: type === 'checkbox' ? checked : value
       }
     }));
+  };
+
+  const handleVideoUpload = (prof, subKey, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const videoUrl = URL.createObjectURL(file);
+      setFormData(prev => ({
+        ...prev,
+        [prof]: {
+          ...prev[prof],
+          [`${subKey}VideoFile`]: videoUrl,
+          [`${subKey}VideoFileName`]: file.name
+        }
+      }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -106,7 +133,7 @@ function App() {
       stephen: createDetailedSubsections(stephenKeys),
       rajshekar: createDetailedSubsections(rajkeys),
       sampath: createDetailedSubsections(sampathKeys),
-      videoSubmitted: '', accommodation: ''
+      accommodation: ''
     });
   };
 
@@ -119,7 +146,7 @@ function App() {
       stephen: row.stephen || createDetailedSubsections(stephenKeys),
       rajshekar: row.rajshekar || createDetailedSubsections(rajkeys),
       sampath: row.sampath || createDetailedSubsections(sampathKeys),
-      videoSubmitted: row.videoSubmitted || '', accommodation: row.accommodation || ''
+      accommodation: row.accommodation || ''
     });
   };
 
@@ -133,7 +160,7 @@ function App() {
           stephen: createDetailedSubsections(stephenKeys),
           rajshekar: createDetailedSubsections(rajkeys),
           sampath: createDetailedSubsections(sampathKeys),
-          videoSubmitted: '', accommodation: ''
+          accommodation: ''
         });
       }
     }
@@ -146,11 +173,11 @@ function App() {
       'Prof Stephen Suresh Babu (+91 8074852725)', 
       'Prof Rajshekar Sir (+91-8885831588)', 
       'Prof Sampath Kumar (+91 9985236736)',
-      'Video Sub. / వీడియో', 'Accommodation / వసతి'
+      'Accommodation / వసతి'
     ];
 
     const formatDetailedCSV = (obj, keys) => {
-      return keys.map(k => `[${k}:Ex${obj[`${k}Exam`]?'Y':'N'} N${obj[`${k}Notes`]?'Y':'N'} Cl${obj[`${k}Classes`]?'Y':'N'} P:${obj[`${k}Permissions`]||0}]`).join(' ');
+      return keys.map(k => `[${k}:Ex${obj[`${k}Exam`]?'Y':'N'} N${obj[`${k}Notes`]?'Y':'N'} Cl${obj[`${k}Classes`]?'Y':'N'} P:${obj[`${k}Permissions`]||0} Vid:${obj[`${k}VideoFileName`]||'None'}]`).join(' ');
     };
 
     const dataRows = rows.map(row => [
@@ -158,7 +185,7 @@ function App() {
       formatDetailedCSV(row.stephen, stephenKeys),
       formatDetailedCSV(row.rajshekar, rajkeys),
       formatDetailedCSV(row.sampath, sampathKeys),
-      row.videoSubmitted, row.accommodation
+      row.accommodation
     ]);
 
     let csvContent = '\uFEFF' + [headers, ...dataRows].map(e => e.join(",")).join("\n");
@@ -184,15 +211,14 @@ function App() {
       'District\nజిల్లా',
       'Photo\nఫోటో',
       'Phone\nఫోన్',
-      'Prof Stephen Suresh Babu\n+91 8074852725\n(Subjects)',
-      'Prof Rajshekar Sir\n+91-8885831588\n(Subjects)',
-      'Prof Sampath Kumar\n+91 9985236736\n(Subjects)',
-      'Video\nవీడియో',
+      'Prof Stephen Suresh Babu\n+91 8074852725',
+      'Prof Rajshekar Sir\n+91-8885831588',
+      'Prof Sampath Kumar\n+91 9985236736',
       'Accom.\nవసతి'
     ];
     
     const formatDetailedPDF = (obj, keys) => {
-      return keys.map(k => `${k}: E${obj[`${k}Exam`]?'✓':'✗'} N${obj[`${k}Notes`]?'✓':'✗'} C${obj[`${k}Classes`]?'✓':'✗'} P${obj[`${k}Permissions`]||0}`).join('\n');
+      return keys.map(k => `${k}: E${obj[`${k}Exam`]?'✓':'✗'} N${obj[`${k}Notes`]?'✓':'✗'} C${obj[`${k}Classes`]?'✓':'✗'} P${obj[`${k}Permissions`]||0} V:${obj[`${k}VideoFileName`] ? 'Yes' : 'No'}`).join('\n');
     };
 
     const tableRows = rows.map(row => [
@@ -203,7 +229,6 @@ function App() {
       formatDetailedPDF(row.stephen, stephenKeys),
       formatDetailedPDF(row.rajshekar, rajkeys),
       formatDetailedPDF(row.sampath, sampathKeys),
-      row.videoSubmitted,
       row.accommodation
     ]);
 
@@ -212,7 +237,7 @@ function App() {
       body: tableRows,
       startY: 15,
       theme: 'grid',
-      styles: { fontSize: 5, cellPadding: 2, minCellHeight: 25, halign: 'center' },
+      styles: { fontSize: 4, cellPadding: 2, minCellHeight: 32, halign: 'center' },
       headStyles: { fillColor: [40, 116, 166], textColor: 255, fontStyle: 'bold' },
       didDrawCell: (data) => {
         if (data.section === 'body' && data.column.index === 2) {
@@ -246,7 +271,7 @@ function App() {
         <span className="section-lecturer">Lecturer: <strong>{lecturerName}</strong> <span className="prof-phone">({phoneNum})</span></span>
         <span className="telugu-label">({teluguTitle})</span>
       </div>
-      <div className="subjects-heading">Subjects:</div>
+      <div className="subjects-heading">Subjects & Subsections:</div>
       <div className={`columns-container ${colsClass}`}>
         {items.map(cat => (
           <div className="column-subbox" key={`${profKey}-${cat.key}`}>
@@ -288,6 +313,18 @@ function App() {
                   onChange={(e) => handleProfChange(profKey, `${cat.key}Permissions`, 'text', e.target.value, null)} 
                 />
               </div>
+
+              <div className="sub-file-group">
+                <label>Upload Video:</label>
+                <input 
+                  type="file" 
+                  accept="video/*" 
+                  onChange={(e) => handleVideoUpload(profKey, cat.key, e)} 
+                />
+                {formData[profKey][`${cat.key}VideoFileName`] && (
+                  <span className="file-name-preview">📁 {formData[profKey][`${cat.key}VideoFileName`]}</span>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -311,7 +348,7 @@ function App() {
       <main className="container">
         <div className="section-intro">
           <h2>Dashboard & Management Panel</h2>
-          <p className="subtitle">Easily manage student details, lecturer subjects, exams, notes, and attendance permissions below.</p>
+          <p className="subtitle">Easily manage student details, lecturer subjects, exams, notes, attendance permissions, and direct video uploads below.</p>
         </div>
 
         {/* Form Card */}
@@ -362,11 +399,6 @@ function App() {
             ], 'cols-3')}
 
             <div className="input-group">
-              <label>Video Submitted <span className="telugu-label">వీడియో సమర్పణ</span></label>
-              <input type="text" name="videoSubmitted" placeholder="Yes/No" value={formData.videoSubmitted} onChange={handleChange} />
-            </div>
-
-            <div className="input-group">
               <label>Accomodation Dates <span className="telugu-label">వసతి తేదీలు</span></label>
               <input type="text" name="accommodation" placeholder="Enter dates..." value={formData.accommodation} onChange={handleChange} />
             </div>
@@ -387,7 +419,7 @@ function App() {
                     stephen: createDetailedSubsections(stephenKeys),
                     rajshekar: createDetailedSubsections(rajkeys),
                     sampath: createDetailedSubsections(sampathKeys),
-                    videoSubmitted: '', accommodation: ''
+                    accommodation: ''
                   });
                 }}
               >
@@ -415,10 +447,9 @@ function App() {
                 <th>District <br/><span className="telugu-text">జిల్లా</span></th>
                 <th>Photo <br/><span className="telugu-text">ఫోటో</span></th>
                 <th>Phone <br/><span className="telugu-text">ఫోన్</span></th>
-                <th>Prof Stephen Suresh Babu<br/>+91 8074852725 <br/><span className="telugu-text">(Subjects)</span></th>
-                <th>Prof Rajshekar Sir<br/>+91-8885831588 <br/><span className="telugu-text">(Subjects)</span></th>
-                <th>Prof Sampath Kumar<br/>+91 9985236736 <br/><span className="telugu-text">(Subjects)</span></th>
-                <th>Video Sub. <br/><span className="telugu-text">వీడియో</span></th>
+                <th>Prof Stephen Suresh Babu<br/>+91 8074852725 <br/><span className="telugu-text">(Subjects & Videos)</span></th>
+                <th>Prof Rajshekar Sir<br/>+91-8885831588 <br/><span className="telugu-text">(Subjects & Videos)</span></th>
+                <th>Prof Sampath Kumar<br/>+91 9985236736 <br/><span className="telugu-text">(Subjects & Videos)</span></th>
                 <th>Accomodation <br/><span className="telugu-text">వసతి</span></th>
                 <th>Actions <br/><span className="telugu-text">చర్యలు</span></th>
               </tr>
@@ -432,7 +463,14 @@ function App() {
                       <div className="prof-cell">
                         {keys.map(k => (
                           <div key={k}>
-                            <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0}
+                            <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0} 
+                            {obj[`${k}VideoFile`] ? (
+                              <a href={obj[`${k}VideoFile`]} target="_blank" rel="noopener noreferrer"> 🎥 Play</a>
+                            ) : obj[`${k}VideoFileName`] ? (
+                              <span> 📁 {obj[`${k}VideoFileName`]}</span>
+                            ) : (
+                              <span> ❌ No Vid</span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -456,7 +494,6 @@ function App() {
                       <td>{formatTableCell(row.stephen, stephenKeys)}</td>
                       <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
                       <td>{formatTableCell(row.sampath, sampathKeys)}</td>
-                      <td>{row.videoSubmitted}</td>
                       <td>{row.accommodation}</td>
                       <td>
                         <div className="action-buttons">
@@ -469,7 +506,7 @@ function App() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="10" className="no-data">No records available. Add one above!</td>
+                  <td colSpan="9" className="no-data">No records available. Add one above!</td>
                 </tr>
               )}
             </tbody>
