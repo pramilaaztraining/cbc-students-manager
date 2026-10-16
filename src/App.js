@@ -23,7 +23,7 @@ function App() {
   ];
 
   const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('sisters_bilingual_inputs_data');
+    const saved = localStorage.getItem('cbc_students_full_data');
     return saved ? JSON.parse(saved) : initialData;
   });
 
@@ -45,7 +45,7 @@ function App() {
   const [currentId, setCurrentId] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('sisters_bilingual_inputs_data', JSON.stringify(rows));
+    localStorage.setItem('cbc_students_full_data', JSON.stringify(rows));
   }, [rows]);
 
   const handleChange = (e) => {
@@ -146,38 +146,36 @@ function App() {
       'District / జిల్లా': row.district,
       'Phone Number / ఫోన్ నంబర్': row.phone,
       'Video Submitted / వీడియో సమర్పించారా': row.videoSubmitted,
-      'Accomodation Dates / వసతి తేదీలు': row.accommodation,
-      'Permissions Taken / అనుమతులు': row.permissions,
-      'All Classes / అన్ని తరగతులు': row.classes,
-      'All Exams / అన్ని పరీక్షలు': row.exams,
-      'All Notes / అన్ని నోట్స్': row.notes,
+      'Accomodation In CBC - Dates / వసతి తేదీలు': row.accommodation,
+      'No of permissions taken / అనుమతులు': row.permissions,
+      'Did you attend all classes / అన్ని తరగతులు': row.classes,
+      'Did you write all exams / అన్ని పరీక్షలు': row.exams,
+      'Did you submit all notes / అన్ని నోట్స్': row.notes,
       'Photo / ఫోటో': row.photoLink || 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sisters Records');
-    XLSX.writeFile(workbook, 'Sisters_CBC_BTC_Records.xlsx');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'CBC Students Records');
+    XLSX.writeFile(workbook, 'CBC_Students_Records.xlsx');
   };
 
   // PDF EXPORT
-  const exportToPDF = () => {
+ const exportToPDF = () => {
     const doc = new jsPDF('landscape');
-    
-    doc.setFontSize(15);
-    doc.text('6th & 7th Sisters CBC-BTC Records (సహోదరీల వివరాలు)', 14, 14);
+
+    // Paste your Base64 encoded font string here:
+    // const teluguFontBase64 = "YOUR_BASE64_STRING_HERE";
+    // doc.addFileToVFS('TeluguFont.ttf', teluguFontBase64);
+    // doc.addFont('TeluguFont.ttf', 'TeluguFont', 'normal');
+    // doc.setFont('TeluguFont');
+
+    doc.setFontSize(14);
+    doc.text('6th & 7th Sisters CBC-BTC Records', 14, 14);
 
     const tableColumns = [
-      'Name\nపేరు',
-      'District\nజిల్లా',
-      'Phone\nఫోన్',
-      'Video Sub.\nవీడియో',
-      'Accomodation\nవసతి తేదీలు',
-      'Permissions\nఅనుమతులు',
-      'All Classes\nతరగతులు',
-      'All Exams\nపరీక్షలు',
-      'All Notes\nనోట్స్',
-      'Photo\nఫోటో'
+      'Name', 'District', 'Phone', 'Video Sub.', 
+      'Accomodation', 'Permissions', 'Classes', 'Exams', 'Notes', 'Photo'
     ];
     
     const tableRows = rows.map(row => [
@@ -223,136 +221,67 @@ function App() {
       }
     });
 
-    doc.save('Sisters_CBC_BTC_Records.pdf');
+    doc.save('CBC_Students_Records.pdf');
   };
 
   return (
     <div className="container">
       <h2>6th & 7th Sisters CBC-BTC Manager</h2>
-      <p className="subtitle">Manage records with dual-language input fields (English & Telugu), image uploads, and exports.</p>
+      <p className="subtitle">Manage student data with bilingual form fields, photo attachments, and report exports.</p>
 
       {/* Form Card */}
       <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
         <h3>{isEditing ? 'Edit Record (రికార్డును సవరించు)' : 'Add New Record (కొత్త రికార్డును జోడించు)'}</h3>
         
         <div className="form-grid">
-          {/* Name Field */}
           <div className="input-group">
             <label>Name <span className="telugu-label">పేరు</span></label>
-            <input
-              type="text"
-              name="name"
-              placeholder="Enter name..."
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
+            <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
           </div>
 
-          {/* District Field */}
           <div className="input-group">
             <label>District <span className="telugu-label">జిల్లా</span></label>
-            <input
-              type="text"
-              name="district"
-              placeholder="Enter district..."
-              value={formData.district}
-              onChange={handleChange}
-            />
+            <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
           </div>
 
-          {/* Phone Field */}
           <div className="input-group">
             <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
-            <input
-              type="text"
-              name="phone"
-              placeholder="Enter phone number..."
-              value={formData.phone}
-              onChange={handleChange}
-            />
+            <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
           </div>
 
-          {/* Video Submitted Field */}
           <div className="input-group">
-            <label>Video Submitted <span className="telugu-label">వీడియో సమర్పించారా</span></label>
-            <input
-              type="text"
-              name="videoSubmitted"
-              placeholder="Yes / No"
-              value={formData.videoSubmitted}
-              onChange={handleChange}
-            />
+            <label>Video Submitted <span className="telugu-label">వీడియో సమర్పణ</span></label>
+            <input type="text" name="videoSubmitted" placeholder="Yes/No" value={formData.videoSubmitted} onChange={handleChange} />
           </div>
 
-          {/* Accommodation Field */}
           <div className="input-group">
             <label>Accomodation Dates <span className="telugu-label">వసతి తేదీలు</span></label>
-            <input
-              type="text"
-              name="accommodation"
-              placeholder="Enter dates..."
-              value={formData.accommodation}
-              onChange={handleChange}
-            />
+            <input type="text" name="accommodation" placeholder="Enter dates..." value={formData.accommodation} onChange={handleChange} />
           </div>
 
-          {/* Permissions Field */}
           <div className="input-group">
             <label>Permissions Taken <span className="telugu-label">అనుమతుల సంఖ్య</span></label>
-            <input
-              type="text"
-              name="permissions"
-              placeholder="Enter count..."
-              value={formData.permissions}
-              onChange={handleChange}
-            />
+            <input type="text" name="permissions" placeholder="Count..." value={formData.permissions} onChange={handleChange} />
           </div>
 
-          {/* Classes Field */}
           <div className="input-group">
-            <label>All Classes <span className="telugu-label">అన్ని తరగతులు</span></label>
-            <input
-              type="text"
-              name="classes"
-              placeholder="Yes / No"
-              value={formData.classes}
-              onChange={handleChange}
-            />
+            <label>Attend All Classes <span className="telugu-label">అన్ని తరగతులు</span></label>
+            <input type="text" name="classes" placeholder="Yes/No" value={formData.classes} onChange={handleChange} />
           </div>
 
-          {/* Exams Field */}
           <div className="input-group">
-            <label>All Exams <span className="telugu-label">అన్ని పరీక్షలు</span></label>
-            <input
-              type="text"
-              name="exams"
-              placeholder="Yes / No"
-              value={formData.exams}
-              onChange={handleChange}
-            />
+            <label>Write All Exams <span className="telugu-label">అన్ని పరీక్షలు</span></label>
+            <input type="text" name="exams" placeholder="Yes/No" value={formData.exams} onChange={handleChange} />
           </div>
 
-          {/* Notes Field */}
           <div className="input-group">
-            <label>All Notes <span className="telugu-label">అన్ని నోట్స్</span></label>
-            <input
-              type="text"
-              name="notes"
-              placeholder="Yes / No"
-              value={formData.notes}
-              onChange={handleChange}
-            />
+            <label>Submit All Notes <span className="telugu-label">అన్ని నోట్స్</span></label>
+            <input type="text" name="notes" placeholder="Yes/No" value={formData.notes} onChange={handleChange} />
           </div>
 
-          {/* Photo Upload Field */}
           <div className="input-group file-input-group">
             <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-            />
+            <input type="file" accept="image/*" onChange={handleFileChange} />
           </div>
         </div>
 
@@ -367,17 +296,9 @@ function App() {
               onClick={() => {
                 setIsEditing(false);
                 setFormData({
-                  name: '',
-                  district: '',
-                  phone: '',
-                  videoSubmitted: '',
-                  accommodation: '',
-                  permissions: '',
-                  classes: '',
-                  exams: '',
-                  notes: '',
-                  photoLink: '',
-                  photoUrl: ''
+                  name: '', district: '', phone: '', videoSubmitted: '',
+                  accommodation: '', permissions: '', classes: '', exams: '',
+                  notes: '', photoLink: '', photoUrl: ''
                 });
               }}
             >

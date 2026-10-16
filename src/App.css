@@ -6,7 +6,7 @@ body {
 }
 
 .container {
-  max-width: 1500px;
+  max-width: 1550px;
   margin: 0 auto;
   background: #ffffff;
   padding: 25px;
@@ -40,7 +40,7 @@ h2 {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 15px;
   margin-bottom: 20px;
 }
