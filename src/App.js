@@ -16,8 +16,8 @@ function App() {
     return obj;
   };
 
-  const sureshKeys = ['synoptic', 'actsEpistles', 'homiletics'];
-  const rajKeys = ['law', 'history', 'poetic', 'prophetic'];
+  const stephenKeys = ['synoptic', 'actsEpistles', 'homiletics'];
+  const rajkeys = ['law', 'history', 'poetic', 'prophetic'];
   const sampathKeys = ['loc', 'locChronological', 'evangelism'];
 
   const initialData = [
@@ -28,8 +28,8 @@ function App() {
       photoLink: 'A.Sadhana.jpg',
       photoUrl: '',
       phone: '9876543210',
-      suresh: createDetailedSubsections(sureshKeys),
-      raj: createDetailedSubsections(rajKeys),
+      stephen: createDetailedSubsections(stephenKeys),
+      rajshekar: createDetailedSubsections(rajkeys),
       sampath: createDetailedSubsections(sampathKeys),
       videoSubmitted: 'Yes',
       accommodation: '10-12 Jan'
@@ -37,15 +37,15 @@ function App() {
   ];
 
   const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('cbc_students_columns_layout_data');
+    const saved = localStorage.getItem('cbc_students_prof_phones_data');
     return saved ? JSON.parse(saved) : initialData;
   });
 
   const [formData, setFormData] = useState({
     name: '', district: '', phone: '',
     photoLink: '', photoUrl: '',
-    suresh: createDetailedSubsections(sureshKeys),
-    raj: createDetailedSubsections(rajKeys),
+    stephen: createDetailedSubsections(stephenKeys),
+    rajshekar: createDetailedSubsections(rajkeys),
     sampath: createDetailedSubsections(sampathKeys),
     videoSubmitted: '', accommodation: ''
   });
@@ -54,7 +54,7 @@ function App() {
   const [currentId, setCurrentId] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('cbc_students_columns_layout_data', JSON.stringify(rows));
+    localStorage.setItem('cbc_students_prof_phones_data', JSON.stringify(rows));
   }, [rows]);
 
   const handleChange = (e) => {
@@ -103,8 +103,8 @@ function App() {
     setFormData({
       name: '', district: '', phone: '',
       photoLink: '', photoUrl: '',
-      suresh: createDetailedSubsections(sureshKeys),
-      raj: createDetailedSubsections(rajKeys),
+      stephen: createDetailedSubsections(stephenKeys),
+      rajshekar: createDetailedSubsections(rajkeys),
       sampath: createDetailedSubsections(sampathKeys),
       videoSubmitted: '', accommodation: ''
     });
@@ -116,8 +116,8 @@ function App() {
     setFormData({
       name: row.name, district: row.district || '', phone: row.phone || '',
       photoLink: row.photoLink || '', photoUrl: row.photoUrl || '',
-      suresh: row.suresh || createDetailedSubsections(sureshKeys),
-      raj: row.raj || createDetailedSubsections(rajKeys),
+      stephen: row.stephen || createDetailedSubsections(stephenKeys),
+      rajshekar: row.rajshekar || createDetailedSubsections(rajkeys),
       sampath: row.sampath || createDetailedSubsections(sampathKeys),
       videoSubmitted: row.videoSubmitted || '', accommodation: row.accommodation || ''
     });
@@ -130,8 +130,8 @@ function App() {
         setIsEditing(false);
         setFormData({
           name: '', district: '', phone: '', photoLink: '', photoUrl: '',
-          suresh: createDetailedSubsections(sureshKeys),
-          raj: createDetailedSubsections(rajKeys),
+          stephen: createDetailedSubsections(stephenKeys),
+          rajshekar: createDetailedSubsections(rajkeys),
           sampath: createDetailedSubsections(sampathKeys),
           videoSubmitted: '', accommodation: ''
         });
@@ -143,7 +143,9 @@ function App() {
   const exportToExcel = () => {
     const headers = [
       'Name / పేరు', 'District / జిల్లా', 'Photo / ఫోటో', 'Phone / ఫోన్',
-      'Suresh Sir Details', 'Raj Sir Details', 'Prof Sampath Kumar Details',
+      'Prof Stephen Suresh Babu (+91 8074852725)', 
+      'Prof Rajshekar Sir (+91-8885831588)', 
+      'Prof Sampath Kumar (+91 9985236736)',
       'Video Sub. / వీడియో', 'Accommodation / వసతి'
     ];
 
@@ -153,8 +155,8 @@ function App() {
 
     const dataRows = rows.map(row => [
       row.name, row.district, row.photoLink || 'N/A', row.phone,
-      formatDetailedCSV(row.suresh, sureshKeys),
-      formatDetailedCSV(row.raj, rajKeys),
+      formatDetailedCSV(row.stephen, stephenKeys),
+      formatDetailedCSV(row.rajshekar, rajkeys),
       formatDetailedCSV(row.sampath, sampathKeys),
       row.videoSubmitted, row.accommodation
     ]);
@@ -164,7 +166,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'CBC_Students_Records.csv');
+    link.setAttribute('download', 'CBC_BTC_Records.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -175,16 +177,16 @@ function App() {
     const doc = new jsPDF('landscape');
     
     doc.setFontSize(11);
-    doc.text('6th & 7th Sisters CBC-BTC Records (సహోదరీల రికార్డులు)', 14, 10);
+    doc.text('CBC-BTC Records (రికార్డులు)', 14, 10);
 
     const tableColumns = [
       'Name\nపేరు',
       'District\nజిల్లా',
       'Photo\nఫోటో',
       'Phone\nఫోన్',
-      'Suresh Sir\n(Synoptic, Acts, Homiletics)',
-      'Raj Sir\n(Law, Hist, Poet, Prop)',
-      'Prof Sampath Kumar (+91 9985236736)\n(LoC, Chron, Evan)',
+      'Prof Stephen Suresh Babu\n+91 8074852725\n(Subjects)',
+      'Prof Rajshekar Sir\n+91-8885831588\n(Subjects)',
+      'Prof Sampath Kumar\n+91 9985236736\n(Subjects)',
       'Video\nవీడియో',
       'Accom.\nవసతి'
     ];
@@ -198,8 +200,8 @@ function App() {
       row.district,
       row.photoUrl ? '' : 'No Photo',
       row.phone,
-      formatDetailedPDF(row.suresh, sureshKeys),
-      formatDetailedPDF(row.raj, rajKeys),
+      formatDetailedPDF(row.stephen, stephenKeys),
+      formatDetailedPDF(row.rajshekar, rajkeys),
       formatDetailedPDF(row.sampath, sampathKeys),
       row.videoSubmitted,
       row.accommodation
@@ -235,13 +237,17 @@ function App() {
       }
     });
 
-    doc.save('CBC_Students_Records.pdf');
+    doc.save('CBC_BTC_Records.pdf');
   };
 
-  const renderSectionColumns = (profKey, title, teluguTitle, items, gridColsClass) => (
+  const renderSectionColumns = (profKey, lecturerName, phoneNum, teluguTitle, items, colsClass) => (
     <div className="checkbox-card nt-card full-width-card" key={profKey}>
-      <span className="section-title">{title} <span className="telugu-label">({teluguTitle})</span></span>
-      <div className={`columns-container ${gridColsClass}`}>
+      <div className="card-header-row">
+        <span className="section-lecturer">Lecturer: <strong>{lecturerName}</strong> <span className="prof-phone">({phoneNum})</span></span>
+        <span className="telugu-label">({teluguTitle})</span>
+      </div>
+      <div className="subjects-heading">Subjects:</div>
+      <div className={`columns-container ${colsClass}`}>
         {items.map(cat => (
           <div className="column-subbox" key={`${profKey}-${cat.key}`}>
             <span className="sub-title">{cat.label}</span>
@@ -290,171 +296,194 @@ function App() {
   );
 
   return (
-    <div className="container">
-      <h2>CBC BTC Student Details</h2>
-      <p className="subtitle">Manage student details with each professor's by Subject and lectures.</p>
+    <div className="app-layout">
+      {/* HEADER SECTION */}
+      <header className="app-header">
+        <div className="header-content">
+          <h1>CBC-BTC Manager</h1>
+          <p className="header-subtitle">
+            Student Academic Records & Attendance Tracker <span className="telugu-text">(రికార్డు నిర్వహణ వ్యవస్థ)</span>
+          </p>
+        </div>
+      </header>
 
-      {/* Form Card */}
-      <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
-        <h3>{isEditing ? 'Edit Record (రికార్డును సవరించు)' : 'Add new student details (కొత్త విద్యార్థి వివరాలను జోడించు)'}</h3>
-        
-        <div className="form-grid">
-          <div className="input-group">
-            <label>Name <span className="telugu-label">పేరు</span></label>
-            <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
-          </div>
-
-          <div className="input-group">
-            <label>District <span className="telugu-label">జిల్లా</span></label>
-            <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
-          </div>
-
-          <div className="input-group file-input-group">
-            <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
-            <input type="file" accept="image/*" onChange={handleFileChange} />
-          </div>
-
-          <div className="input-group">
-            <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
-            <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
-          </div>
-
-          {/* Suresh Sir: 3 Columns */}
-          {renderSectionColumns('suresh', 'Suresh Sir', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
-            { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
-            { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
-            { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
-          ], 'cols-3')}
-
-          {/* Raj Sir: 4 Columns */}
-          {renderSectionColumns('raj', 'Raj Sir', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
-            { key: 'law', label: 'Law', telugu: 'లా' },
-            { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
-            { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
-            { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
-          ], 'cols-4')}
-
-          {/* Prof Sampath Kumar: 3 Columns */}
-          {renderSectionColumns('sampath', 'Prof Sampath Kumar: +91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
-            { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
-            { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
-            { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
-          ], 'cols-3')}
-
-          <div className="input-group">
-            <label>Video Submitted <span className="telugu-label">వీడియో సమర్పణ</span></label>
-            <input type="text" name="videoSubmitted" placeholder="Yes/No" value={formData.videoSubmitted} onChange={handleChange} />
-          </div>
-
-          <div className="input-group">
-            <label>Accomodation Dates <span className="telugu-label">వసతి తేదీలు</span></label>
-            <input type="text" name="accommodation" placeholder="Enter dates..." value={formData.accommodation} onChange={handleChange} />
-          </div>
+      {/* MAIN CONTAINER */}
+      <main className="container">
+        <div className="section-intro">
+          <h2>Dashboard & Management Panel</h2>
+          <p className="subtitle">Easily manage student details, lecturer subjects, exams, notes, and attendance permissions below.</p>
         </div>
 
-        <div className="form-actions">
-          <button type="submit" className={isEditing ? "btn-update" : "btn-add"}>
-            {isEditing ? 'Update Record' : 'Add Record'}
-          </button>
-          {isEditing && (
-            <button 
-              type="button" 
-              className="btn-cancel" 
-              onClick={() => {
-                setIsEditing(false);
-                setFormData({
-                  name: '', district: '', phone: '', photoLink: '', photoUrl: '',
-                  suresh: createDetailedSubsections(sureshKeys),
-                  raj: createDetailedSubsections(rajKeys),
-                  sampath: createDetailedSubsections(sampathKeys),
-                  videoSubmitted: '', accommodation: ''
-                });
-              }}
-            >
-              Cancel
+        {/* Form Card */}
+        <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
+          <h3>{isEditing ? 'Edit student detail (విద్యార్థి వివరాలను సవరించు)' : 'Add student detail'}</h3>
+          
+          <div className="form-grid">
+            <div className="input-group">
+              <label>Name <span className="telugu-label">పేరు</span></label>
+              <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
+            </div>
+
+            <div className="input-group">
+              <label>District <span className="telugu-label">జిల్లా</span></label>
+              <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
+            </div>
+
+            <div className="input-group file-input-group">
+              <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
+              <input type="file" accept="image/*" onChange={handleFileChange} />
+            </div>
+
+            <div className="input-group">
+              <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
+              <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
+            </div>
+
+            {/* Prof Stephen Suresh Babu Section */}
+            {renderSectionColumns('stephen', 'Prof Stephen Suresh Babu, M.Th; M.Tech, Director of CBC', '+91 8074852725', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
+              { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
+              { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
+              { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
+            ], 'cols-3')}
+
+            {/* Prof Rajshekar Sir Section */}
+            {renderSectionColumns('rajshekar', 'Prof Rajshekar Sir', '+91-8885831588', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
+              { key: 'law', label: 'Law', telugu: 'లా' },
+              { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
+              { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
+              { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
+            ], 'cols-4')}
+
+            {/* Prof Sampath Kumar Section */}
+            {renderSectionColumns('sampath', 'Prof Sampath Kumar', '+91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
+              { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
+              { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
+              { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
+            ], 'cols-3')}
+
+            <div className="input-group">
+              <label>Video Submitted <span className="telugu-label">వీడియో సమర్పణ</span></label>
+              <input type="text" name="videoSubmitted" placeholder="Yes/No" value={formData.videoSubmitted} onChange={handleChange} />
+            </div>
+
+            <div className="input-group">
+              <label>Accomodation Dates <span className="telugu-label">వసతి తేదీలు</span></label>
+              <input type="text" name="accommodation" placeholder="Enter dates..." value={formData.accommodation} onChange={handleChange} />
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="submit" className={isEditing ? "btn-update" : "btn-add"}>
+              {isEditing ? 'Update student detail' : 'Add student detail'}
             </button>
-          )}
-        </div>
-      </form>
-
-      {/* Export Bar */}
-      <div className="export-controls">
-        <h3>Records Table (రికార్డుల పట్టిక)</h3>
-        <div className="export-buttons">
-          <button onClick={exportToExcel} className="btn-excel">Download Excel (CSV)</button>
-          <button onClick={exportToPDF} className="btn-pdf">Download PDF (Landscape)</button>
-        </div>
-      </div>
-
-      {/* Table Display */}
-      <div className="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Name <br/><span className="telugu-text">పేరు</span></th>
-              <th>District <br/><span className="telugu-text">జిల్లా</span></th>
-              <th>Photo <br/><span className="telugu-text">ఫోటో</span></th>
-              <th>Phone <br/><span className="telugu-text">ఫోన్</span></th>
-              <th>Suresh Sir <br/><span className="telugu-text">సురేష్ సర్</span></th>
-              <th>Raj Sir <br/><span className="telugu-text">రాజ్ సర్</span></th>
-              <th>Prof Sampath Kumar: +91 9985236736 <br/><span className="telugu-text">సంపత్ సర్</span></th>
-              <th>Video Sub. <br/><span className="telugu-text">వీడియో</span></th>
-              <th>Accomodation <br/><span className="telugu-text">వసతి</span></th>
-              <th>Actions <br/><span className="telugu-text">చర్యలు</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 ? (
-              rows.map((row) => {
-                const formatTableCell = (obj, keys) => {
-                  if (!obj) return 'N/A';
-                  return (
-                    <div className="prof-cell">
-                      {keys.map(k => (
-                        <div key={k}>
-                          <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0}
-                        </div>
-                      ))}
-                    </div>
-                  );
-                };
-
-                return (
-                  <tr key={row.id}>
-                    <td><strong>{row.name}</strong></td>
-                    <td>{row.district}</td>
-                    <td>
-                      {row.photoUrl ? (
-                        <div className="photo-cell">
-                          <img src={row.photoUrl} alt="Preview" className="thumbnail" />
-                        </div>
-                      ) : (
-                        <span>{row.photoLink || 'No Photo'}</span>
-                      )}
-                    </td>
-                    <td>{row.phone}</td>
-                    <td>{formatTableCell(row.suresh, sureshKeys)}</td>
-                    <td>{formatTableCell(row.raj, rajKeys)}</td>
-                    <td>{formatTableCell(row.sampath, sampathKeys)}</td>
-                    <td>{row.videoSubmitted}</td>
-                    <td>{row.accommodation}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <button onClick={() => handleEdit(row)} className="btn-edit">Edit</button>
-                        <button onClick={() => handleDelete(row.id)} className="btn-delete">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan="10" className="no-data">No records available. Add one above!</td>
-              </tr>
+            {isEditing && (
+              <button 
+                type="button" 
+                className="btn-cancel" 
+                onClick={() => {
+                  setIsEditing(false);
+                  setFormData({
+                    name: '', district: '', phone: '', photoLink: '', photoUrl: '',
+                    stephen: createDetailedSubsections(stephenKeys),
+                    rajshekar: createDetailedSubsections(rajkeys),
+                    sampath: createDetailedSubsections(sampathKeys),
+                    videoSubmitted: '', accommodation: ''
+                  });
+                }}
+              >
+                Cancel
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </form>
+
+        {/* Export Bar */}
+        <div className="export-controls">
+          <h3>Records Table (రికార్డుల పట్టిక)</h3>
+          <div className="export-buttons">
+            <button onClick={exportToExcel} className="btn-excel">Download Excel (CSV)</button>
+            <button onClick={exportToPDF} className="btn-pdf">Download PDF (Landscape)</button>
+          </div>
+        </div>
+
+        {/* Table Display */}
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name <br/><span className="telugu-text">పేరు</span></th>
+                <th>District <br/><span className="telugu-text">జిల్లా</span></th>
+                <th>Photo <br/><span className="telugu-text">ఫోటో</span></th>
+                <th>Phone <br/><span className="telugu-text">ఫోన్</span></th>
+                <th>Prof Stephen Suresh Babu<br/>+91 8074852725 <br/><span className="telugu-text">(Subjects)</span></th>
+                <th>Prof Rajshekar Sir<br/>+91-8885831588 <br/><span className="telugu-text">(Subjects)</span></th>
+                <th>Prof Sampath Kumar<br/>+91 9985236736 <br/><span className="telugu-text">(Subjects)</span></th>
+                <th>Video Sub. <br/><span className="telugu-text">వీడియో</span></th>
+                <th>Accomodation <br/><span className="telugu-text">వసతి</span></th>
+                <th>Actions <br/><span className="telugu-text">చర్యలు</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length > 0 ? (
+                rows.map((row) => {
+                  const formatTableCell = (obj, keys) => {
+                    if (!obj) return 'N/A';
+                    return (
+                      <div className="prof-cell">
+                        {keys.map(k => (
+                          <div key={k}>
+                            <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <tr key={row.id}>
+                      <td><strong>{row.name}</strong></td>
+                      <td>{row.district}</td>
+                      <td>
+                        {row.photoUrl ? (
+                          <div className="photo-cell">
+                            <img src={row.photoUrl} alt="Preview" className="thumbnail" />
+                          </div>
+                        ) : (
+                          <span>{row.photoLink || 'No Photo'}</span>
+                        )}
+                      </td>
+                      <td>{row.phone}</td>
+                      <td>{formatTableCell(row.stephen, stephenKeys)}</td>
+                      <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
+                      <td>{formatTableCell(row.sampath, sampathKeys)}</td>
+                      <td>{row.videoSubmitted}</td>
+                      <td>{row.accommodation}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button onClick={() => handleEdit(row)} className="btn-edit">Edit</button>
+                          <button onClick={() => handleDelete(row.id)} className="btn-delete">Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="10" className="no-data">No records available. Add one above!</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+      {/* FOOTER SECTION */}
+      <footer className="app-footer">
+        <div className="footer-content">
+          <p>© 2026 CBC-BTC. All Rights Reserved.</p>
+          <p className="footer-subtext">Designed for secure academic tracking and report generation.</p>
+        </div>
+      </footer>
     </div>
   );
 }
