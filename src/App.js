@@ -37,7 +37,7 @@ function App() {
   ];
 
   const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('cbc_students_video_upload_data');
+    const saved = localStorage.getItem('cbc_students_enhanced_wa_data');
     return saved ? JSON.parse(saved) : initialData;
   });
 
@@ -61,7 +61,7 @@ function App() {
       sampath: Object.fromEntries(Object.entries(row.sampath).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
     }));
     try {
-      localStorage.setItem('cbc_students_video_upload_data', JSON.stringify(rowsToPersist));
+      localStorage.setItem('cbc_students_enhanced_wa_data', JSON.stringify(rowsToPersist));
     } catch (e) {
       console.error('Storage quota reached');
     }
@@ -146,6 +146,7 @@ function App() {
       sampath: row.sampath || createDetailedSubsections(sampathKeys),
       accommodation: row.accommodation || ''
     });
+    window.scrollTo({ top: 400, behavior: 'smooth' });
   };
 
   const handleDelete = (id) => {
@@ -248,7 +249,7 @@ function App() {
                   checked={formData[profKey][`${cat.key}Exam`]} 
                   onChange={(e) => handleProfChange(profKey, `${cat.key}Exam`, 'checkbox', null, e.target.checked)} 
                 />
-                Exam Written <span className="telugu-text">({cat.telugu} పరీక్ష)</span>
+                Exam Completed <span className="telugu-text">({cat.telugu} పరీక్ష)</span>
               </label>
 
               <label className="checkbox-label">
@@ -306,6 +307,12 @@ function App() {
           <p className="header-subtitle">
             Student Academic Records & Attendance Tracker <span className="telugu-text">(రికార్డు నిర్వహణ వ్యవస్థ)</span>
           </p>
+          
+          <nav className="app-nav-menu">
+            <a href="#form-section" className="nav-link">➕ Add Student</a>
+            <a href="#table-section" className="nav-link">📊 Records Table</a>
+            <button onClick={exportToPDF} className="nav-btn-pdf">📥 Download PDF</button>
+          </nav>
         </div>
       </header>
 
@@ -317,7 +324,7 @@ function App() {
         </div>
 
         {/* Form Card */}
-        <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
+        <form id="form-section" onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
           <h3>{isEditing ? 'Edit student detail (విద్యార్థి వివరాలను సవరించు)' : 'Add student detail'}</h3>
           
           <div className="form-grid">
@@ -341,14 +348,12 @@ function App() {
               <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
             </div>
 
-            {/* Prof Stephen Suresh Babu Section */}
             {renderSectionColumns('stephen', 'Prof Stephen Suresh Babu, M.Th; M.Tech, Director of CBC', '+91 8074852725', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
               { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
               { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
               { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
             ], 'cols-3')}
 
-            {/* Prof Rajshekar Sir Section */}
             {renderSectionColumns('rajshekar', 'Prof Rajshekar Sir', '+91-8885831588', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
               { key: 'law', label: 'Law', telugu: 'లా' },
               { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
@@ -356,7 +361,6 @@ function App() {
               { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
             ], 'cols-4')}
 
-            {/* Prof Sampath Kumar Section */}
             {renderSectionColumns('sampath', 'Prof Sampath Kumar', '+91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
               { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
               { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
@@ -394,15 +398,10 @@ function App() {
           </div>
         </form>
 
-        {/* Export Bar */}
-        <div className="export-controls">
+        <div id="table-section" className="export-controls">
           <h3>Records Table (రికార్డుల పట్టిక)</h3>
-          <div className="export-buttons">
-            <button onClick={exportToPDF} className="btn-pdf">Download PDF (Landscape)</button>
-          </div>
         </div>
 
-        {/* Table Display */}
         <div className="table-wrapper">
           <table>
             <thead>
@@ -478,11 +477,75 @@ function App() {
         </div>
       </main>
 
-      {/* FOOTER SECTION */}
-      <footer className="app-footer">
-        <div className="footer-content">
-          <p>© 2026 CBC-BTC. All Rights Reserved.</p>
-          <p className="footer-subtext">Designed for secure academic tracking and report generation.</p>
+      {/* CHURCH FOOTER WITH ENHANCED WHATSAPP BUTTON */}
+      <footer className="church-footer">
+        <div className="footer-container">
+          <div className="footer-col footer-brand-col">
+            <div className="footer-logo-row">
+              <div className="footer-crest">✝</div>
+              <div className="footer-brand-title">
+                <span className="brand-christ">CHRIST</span>
+                <span className="brand-church">BIBLE CHURCH</span>
+              </div>
+            </div>
+            <p className="footer-desc">
+              We are a Bible-believing, Christ-exalting, local church congregation situated in Neeladri Nagar, Electronic City, Bengaluru. Seeking to make disciples of Jesus Christ who glorify God.
+            </p>
+            <p className="footer-copy">© 2026 CHRIST BIBLE CHURCH BENGALURU.</p>
+          </div>
+
+          <div className="footer-col">
+            <h4 className="footer-heading">QUICK LINKS</h4>
+            <ul className="footer-links">
+              <li><a href="#form-section">Sunday Service</a></li>
+              <li><a href="#form-section">About Our Church</a></li>
+              <li><a href="#form-section">What We Believe</a></li>
+              <li><a href="#form-section">Our Leadership</a></li>
+              <li><a href="#form-section">Sermon Archives</a></li>
+              <li><a href="#form-section">Ministries & Events</a></li>
+              <li><a href="#form-section">Plan a Visit</a></li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <h4 className="footer-heading">GATHERING TIMES</h4>
+            <div className="footer-gathering-info">
+              <p className="gathering-title">Sunday Worship Gathering:</p>
+              <p className="gathering-time">10:00 AM</p>
+              
+              <p className="gathering-title mt-15">Service Location Chapel:</p>
+              <p className="gathering-address">
+                5th floor, The Big Buffet, Neeladri Rd, above IDFC first building, Neeladri Nagar, Electronic City Phase I, Electronic City, Bengaluru, Doddathoguru, Karnataka 560100
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Connect With Us Banner */}
+        <div className="footer-connect-banner">
+          <div className="footer-connect-content">
+            <div className="connect-badge">CONNECT WITH US</div>
+            <p className="connect-text">
+              Follow Christ Bible Church on social media for Sunday sermon clips, spiritual reflections, and congregation announcements.
+            </p>
+          </div>
+          <div className="footer-social-buttons">
+            <a href="https://whatsapp.com/channel/0029Vb7pNhd7j6g24RqJ2M1c" target="_blank" rel="noreferrer" className="social-btn wa-btn-enhanced">
+              <span className="wa-icon-wrapper">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+              </span>
+              <span>Join WhatsApp Channel</span>
+            </a>
+            <a href="https://www.facebook.com/battle.for.truth.2025/" target="_blank" rel="noreferrer" className="social-btn fb-btn">
+              <span>f</span> Facebook
+            </a>
+            <a href="https://www.instagram.com/battlefortruth3?igsh=NThsbDd0eHNzcXI1" target="_blank" rel="noreferrer" className="social-btn ig-btn">
+              <span>📷</span> Instagram
+            </a>
+            <a href="https://www.youtube.com/@Battle_For_Truth" target="_blank" rel="noreferrer" className="social-btn yt-btn">
+              <span>▶</span> YouTube
+            </a>
+          </div>
         </div>
       </footer>
     </div>
