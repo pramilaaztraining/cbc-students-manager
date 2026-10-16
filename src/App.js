@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './App.css';
@@ -55,7 +54,6 @@ function App() {
   const [currentId, setCurrentId] = useState(null);
 
   useEffect(() => {
-    // Save row data excluding heavy object URLs to prevent storage quota issues
     const rowsToPersist = rows.map(row => ({
       ...row,
       stephen: Object.fromEntries(Object.entries(row.stephen).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
@@ -164,39 +162,6 @@ function App() {
         });
       }
     }
-  };
-
-  // EXCEL EXPORT (CSV format with clean UTF-8 BOM)
-  const exportToExcel = () => {
-    const headers = [
-      'Name / పేరు', 'District / జిల్లా', 'Photo / ఫోటో', 'Phone / ఫోన్',
-      'Prof Stephen Suresh Babu (+91 8074852725)', 
-      'Prof Rajshekar Sir (+91-8885831588)', 
-      'Prof Sampath Kumar (+91 9985236736)',
-      'Accommodation / వసతి'
-    ];
-
-    const formatDetailedCSV = (obj, keys) => {
-      return keys.map(k => `[${k}:Ex${obj[`${k}Exam`]?'Y':'N'} N${obj[`${k}Notes`]?'Y':'N'} Cl${obj[`${k}Classes`]?'Y':'N'} P:${obj[`${k}Permissions`]||0} Vid:${obj[`${k}VideoFileName`]||'None'}]`).join(' ');
-    };
-
-    const dataRows = rows.map(row => [
-      row.name, row.district, row.photoLink || 'N/A', row.phone,
-      formatDetailedCSV(row.stephen, stephenKeys),
-      formatDetailedCSV(row.rajshekar, rajkeys),
-      formatDetailedCSV(row.sampath, sampathKeys),
-      row.accommodation
-    ]);
-
-    let csvContent = '\uFEFF' + [headers, ...dataRows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'CBC_BTC_Records.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // PDF EXPORT
@@ -433,7 +398,6 @@ function App() {
         <div className="export-controls">
           <h3>Records Table (రికార్డుల పట్టిక)</h3>
           <div className="export-buttons">
-            <button onClick={exportToExcel} className="btn-excel">Download Excel (CSV)</button>
             <button onClick={exportToPDF} className="btn-pdf">Download PDF (Landscape)</button>
           </div>
         </div>
