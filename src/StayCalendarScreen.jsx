@@ -1,6 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function StayCalendarScreen({ formData, handleChange, handleSubmit, calendarFilterDate, setCalendarFilterDate, filteredCalendarRows }) {
+  const [dateError, setDateError] = useState('');
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (formData.stayStartDateTime && formData.stayEndDateTime) {
+      const start = new Date(formData.stayStartDateTime);
+      const end = new Date(formData.stayEndDateTime);
+
+      if (start >= end) {
+        setDateError('ప్రారంభ తేదీ మరియు సమయం ముగింపు తేదీ కంటే తక్కువగా ఉండాలి (From Date & Time must be earlier than To Date & Time).');
+        return;
+      }
+    }
+    setDateError('');
+    handleSubmit(e);
+  };
+
   return (
     <div className="screen-section">
       <div className="section-intro">
@@ -8,9 +25,11 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
         <p className="subtitle">Manage precise arrival/departure schedules and filter campus stay dates.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="form-card" style={{ marginBottom: '30px' }}>
+      <form onSubmit={handleFormSubmit} className="form-card" style={{ marginBottom: '30px' }}>
         <h3>Configure Post-Graduation Stay Window for Student</h3>
         
+        {dateError && <div className="error-banner" style={{ background: '#fee2e2', border: '1px solid #f87171', color: '#b91c1c', padding: '10px 14px', borderRadius: '6px', marginBottom: '16px' }}>{dateError}</div>}
+
         <div className="input-group" style={{ marginBottom: '20px' }}>
           <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
           <input type="text" name="name" placeholder="Enter student name..." value={formData.name} onChange={handleChange} required />
@@ -27,7 +46,7 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
               <input 
                 type="datetime-local" 
                 name="stayStartDateTime" 
-                value={formData.stayStartDateTime} 
+                value={formData.stayStartDateTime || ''} 
                 onChange={handleChange} 
               />
             </div>
@@ -37,7 +56,7 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
               <input 
                 type="datetime-local" 
                 name="stayEndDateTime" 
-                value={formData.stayEndDateTime} 
+                value={formData.stayEndDateTime || ''} 
                 onChange={handleChange} 
               />
             </div>
@@ -48,7 +67,7 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
                 type="text" 
                 name="postGradStay" 
                 placeholder="e.g., Arriving night before, staying until morning worship session" 
-                value={formData.postGradStay} 
+                value={formData.postGradStay || ''} 
                 onChange={handleChange} 
               />
             </div>
@@ -63,7 +82,6 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
         </div>
       </form>
 
-      {/* Calendar Control Widget & Filter */}
       <div className="form-card calendar-widget-card" style={{ background: '#f8fafc', border: '1px solid #cbd5e1' }}>
         <h3>📅 Campus Stay Calendar Control <span className="telugu-text">(గ్రాడ్యుయేషన్ వసతి క్యాలెండర్ తనిఖీ)</span></h3>
         <p className="subtitle">Select any date to instantly view who is staying on campus during that period.</p>
@@ -75,7 +93,7 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
               type="date" 
               value={calendarFilterDate} 
               onChange={(e) => setCalendarFilterDate(e.target.value)} 
-              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #94a3b8' }}
+              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #94a3b8', width: '100%', boxSizing: 'border-box' }}
             />
           </div>
           {calendarFilterDate && (

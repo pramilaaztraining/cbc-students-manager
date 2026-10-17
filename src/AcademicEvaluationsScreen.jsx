@@ -3,7 +3,7 @@ import './AcademicEvaluationsScreen.css';
 
 export default function AcademicEvaluationsScreen({ 
   formData, 
-  handleChange, 
+  setFormData, 
   handleSubmit, 
   rows, 
   handleEdit, 
@@ -13,7 +13,6 @@ export default function AcademicEvaluationsScreen({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State to manage collapsible panels (false = open, true = collapsed)
   const [collapsedSections, setCollapsedSections] = useState({
     stephen: false,
     rajshekar: true,
@@ -24,22 +23,50 @@ export default function AcademicEvaluationsScreen({
     setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  const handleChange = (e, lecturerKey, fieldKey, type) => {
+    if (!lecturerKey) {
+      const { name, value } = e.target;
+      if (typeof setFormData === 'function') {
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
+    } else {
+      let value;
+      if (type === 'checkbox') {
+        value = e.target.checked;
+      } else if (type === 'file') {
+        // Store only the file name string or handle accordingly to prevent object rendering crash
+        const file = e.target.files[0];
+        value = file ? file.name : '';
+      } else {
+        value = e.target.value;
+      }
+
+      if (typeof setFormData === 'function') {
+        setFormData(prev => ({
+          ...prev,
+          [lecturerKey]: {
+            ...(prev[lecturerKey] || {}),
+            [fieldKey]: value
+          }
+        }));
+      }
+    }
+  };
+
   const filteredRows = rows.filter(row => 
     row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Helper function to render subject cards identically to your screenshot layout
   const renderSubjectCards = (lecturerKey, subjectsList) => {
     return (
       <div className="subjects-grid">
         {subjectsList.map((sub) => {
-          // Construct form keys based on your state naming convention (e.g., formData.stephen.synopticExam)
           const examField = `${sub.key}Exam`;
           const notesField = `${sub.key}Notes`;
           const classesField = `${sub.key}Classes`;
           const permissionsField = `${sub.key}Permissions`;
-          const videoField = `${sub.key}Video`;
+          const videoField = `${sub.key}VideoFileName`; // Using string name to prevent object render error
 
           const lecturerData = formData[lecturerKey] || {};
 
@@ -50,7 +77,6 @@ export default function AcademicEvaluationsScreen({
                 {sub.telugu && <span className="subject-telugu">({sub.telugu})</span>}
               </div>
 
-              {/* Checkboxes */}
               <div className="checkbox-group">
                 <label className="checkbox-label">
                   <input 
@@ -80,7 +106,6 @@ export default function AcademicEvaluationsScreen({
                 </label>
               </div>
 
-              {/* Permissions Input */}
               <div className="permissions-row">
                 <span className="permissions-label">Permissions:</span>
                 <input 
@@ -93,19 +118,19 @@ export default function AcademicEvaluationsScreen({
 
               <hr className="card-divider" />
 
-              {/* Upload Video Field */}
               <div className="upload-section">
                 <span className="upload-label">Upload Video:</span>
                 <div className="file-input-wrapper">
                   <input 
                     type="file" 
                     id={`file-${lecturerKey}-${sub.key}`}
+                    accept="video/*"
                     onChange={(e) => handleChange(e, lecturerKey, videoField, 'file')} 
                     style={{ display: 'none' }}
                   />
                   <label htmlFor={`file-${lecturerKey}-${sub.key}`} className="choose-file-btn">Choose File</label>
                   <span className="file-name-display">
-                    {lecturerData[videoField]?.name || 'No file chosen'}
+                    {lecturerData[videoField] || 'No file chosen'}
                   </span>
                 </div>
               </div>
@@ -123,7 +148,6 @@ export default function AcademicEvaluationsScreen({
         <p className="subtitle">Search for a student to edit/update their academic evaluations, exams, and notes.</p>
       </div>
 
-      {/* SEARCH BAR */}
       <div className="form-card search-card">
         <h4>🔍 Quick Search Student to Edit Academics <span className="telugu-text">(విద్యార్థిని వెతకండి)</span></h4>
         <input 
@@ -140,12 +164,17 @@ export default function AcademicEvaluationsScreen({
         
         <div className="input-group">
           <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
-          <input type="text" name="name" placeholder="Enter student name..." value={formData.name} onChange={handleChange} required />
+          <input 
+            type="text" 
+            name="name" 
+            placeholder="Enter student name..." 
+            value={formData.name || ''} 
+            onChange={(e) => handleChange(e, null, null, null)} 
+            required 
+          />
         </div>
 
         <div className="professors-section-wrapper">
-          
-          {/* PROF STEPHEN SECTION */}
           <div className="collapsible-panel">
             <div className="panel-header" onClick={() => toggleSection('stephen')}>
               <div className="panel-header-text">
@@ -168,7 +197,6 @@ export default function AcademicEvaluationsScreen({
             )}
           </div>
 
-          {/* PROF RAJSHEKAR SECTION */}
           <div className="collapsible-panel">
             <div className="panel-header" onClick={() => toggleSection('rajshekar')}>
               <div className="panel-header-text">
@@ -192,7 +220,6 @@ export default function AcademicEvaluationsScreen({
             )}
           </div>
 
-          {/* PROF SAMPATH SECTION */}
           <div className="collapsible-panel">
             <div className="panel-header" onClick={() => toggleSection('sampath')}>
               <div className="panel-header-text">
@@ -214,7 +241,6 @@ export default function AcademicEvaluationsScreen({
               </div>
             )}
           </div>
-
         </div>
 
         <div className="form-actions">
@@ -224,7 +250,6 @@ export default function AcademicEvaluationsScreen({
         </div>
       </form>
 
-      {/* SUMMARY TABLE SECTION */}
       <div className="summary-section">
         <h3>Academic Records Summary (Click 'Edit Academics' to load record)</h3>
         <div className="table-wrapper">
@@ -263,7 +288,7 @@ export default function AcademicEvaluationsScreen({
                       <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
                       <td>{formatTableCell(row.sampath, sampathKeys)}</td>
                       <td>
-                        <button onClick={() => handleEdit(row)} className="edit-btn">
+                        <button type="button" onClick={() => handleEdit(row)} className="edit-btn">
                           Edit Academics
                         </button>
                       </td>

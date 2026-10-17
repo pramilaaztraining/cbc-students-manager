@@ -17,8 +17,7 @@ function App() {
       obj[`${k}Notes`] = false;
       obj[`${k}Classes`] = false;
       obj[`${k}Permissions`] = '';
-      obj[`${k}VideoFile`] = null;
-      obj[`${k}VideoFileName`] = '';
+      obj[`${k}VideoFileName`] = ''; // Safe string container
     });
     return obj;
   };
@@ -84,31 +83,6 @@ function App() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-  };
-
-  const handleProfChange = (prof, subKey, type, value, checked) => {
-    setFormData(prev => ({
-      ...prev,
-      [prof]: {
-        ...prev[prof],
-        [subKey]: type === 'checkbox' ? checked : value
-      }
-    }));
-  };
-
-  const handleVideoUpload = (prof, subKey, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const videoUrl = URL.createObjectURL(file);
-      setFormData(prev => ({
-        ...prev,
-        [prof]: {
-          ...prev[prof],
-          [`${subKey}VideoFile`]: videoUrl,
-          [`${subKey}VideoFileName`]: file.name
-        }
-      }));
-    }
   };
 
   const handleFileChange = (e) => {
@@ -203,54 +177,6 @@ function App() {
     doc.save('CBC_BTC_Complete_Records.pdf');
   };
 
-  const renderSectionColumns = (profKey, lecturerName, phoneNum, teluguTitle, items, colsClass, defaultOpen = false) => (
-    <details className="accordion-card" key={profKey} open={defaultOpen}>
-      <summary className="accordion-summary">
-        <div className="accordion-title-area">
-          <span className="section-lecturer">Lecturer: <strong>{lecturerName}</strong> <span className="prof-phone">({phoneNum})</span></span>
-          <span className="telugu-label">({teluguTitle})</span>
-        </div>
-        <span className="accordion-icon">▼</span>
-      </summary>
-      
-      <div className="accordion-content">
-        <div className="subjects-heading">Subjects & Subsections:</div>
-        <div className={`columns-container ${colsClass}`}>
-          {items.map(cat => (
-            <div className="column-subbox" key={`${profKey}-${cat.key}`}>
-              <span className="sub-title">{cat.label}</span>
-              <div className="column-controls">
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={formData[profKey][`${cat.key}Exam`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Exam`, 'checkbox', null, e.target.checked)} />
-                  Exam Completed
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={formData[profKey][`${cat.key}Notes`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Notes`, 'checkbox', null, e.target.checked)} />
-                  Notes Completed
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={formData[profKey][`${cat.key}Classes`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Classes`, 'checkbox', null, e.target.checked)} />
-                  All Classes Attended
-                </label>
-                <div className="sub-input-group">
-                  <label>Permissions:</label>
-                  <input type="text" placeholder="0" value={formData[profKey][`${cat.key}Permissions`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Permissions`, 'text', e.target.value, null)} />
-                </div>
-                <div className="sub-file-group">
-                  <label>Upload Video:</label>
-                  <input type="file" accept="video/*" onChange={(e) => handleVideoUpload(profKey, cat.key, e)} />
-                  {formData[profKey][`${cat.key}VideoFileName`] && (
-                    <span className="file-name-preview">📁 {formData[profKey][`${cat.key}VideoFileName`]}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </details>
-  );
-
   const filteredCalendarRows = rows.filter(row => {
     if (!calendarFilterDate) return true;
     if (!row.stayStartDateTime || !row.stayEndDateTime) return false;
@@ -291,9 +217,8 @@ function App() {
         {activeScreen === 'academics' && (
           <AcademicEvaluationsScreen 
             formData={formData} 
-            handleChange={handleChange} 
+            setFormData={setFormData}
             handleSubmit={handleSubmit} 
-            renderSectionColumns={renderSectionColumns} 
             rows={rows} 
             handleEdit={handleEdit}
             stephenKeys={stephenKeys} 
