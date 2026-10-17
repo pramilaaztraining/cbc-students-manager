@@ -1,0 +1,211 @@
+/* ==========================================
+   1. GLOBAL & BASE STYLES
+   ========================================== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333333;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4 {
+    color: #1a365d;
+}
+
+/* ==========================================
+   2. NAVIGATION / HEADER SECTION
+   ========================================== */
+header, .navbar {
+    background-color: #ffffff;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #2b6cb0;
+    margin-left: 1.5rem;
+    font-weight: 600;
+}
+
+.nav-links a:hover {
+    color: #1a365d;
+    text-decoration: underline;
+}
+
+/* ==========================================
+   3. STAY CALENDAR & FILTER SECTION
+   ========================================== */
+.calendar-section {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.filter-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-box input[type="text"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* ==========================================
+   4. ADD STUDENT / FORM SECTION
+   ========================================== */
+.form-section {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+}
+
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-group input:focus, 
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+/* ==========================================
+   5. LECTURER & SUBJECT EVALUATIONS SECTION
+   ========================================== */
+.evaluations-container {
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.lecturer-block {
+    background: #ffffff;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.subject-checkboxes {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0.5rem 0 1rem 0;
+    font-size: 0.95rem;
+}
+
+/* ==========================================
+   6. RECORDS TABLE SECTION
+   ========================================== */
+.table-section {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 1.5rem auto;
+    max-width: 1200px;
+    overflow-x: auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    text-align: left;
+}
+
+th, td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+th {
+    background-color: #edf2f7;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: #f8fafc;
+}
+
+/* ==========================================
+   7. FOOTER SECTION
+   ========================================== */
+footer {
+    background-color: #1a202c;
+    color: #a0aec0;
+    padding: 3rem 2rem 1.5rem 2rem;
+    margin-top: 3rem;
+}
+
+footer h4 {
+    color: #ffffff;
+    margin-bottom: 1rem;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-bottom: 1px solid #2d3748;
+    padding-bottom: 2rem;
+}
+
+footer a {
+    color: #cbd5e0;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+footer a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 1.5rem;
+    font-size: 0.875rem;
+}

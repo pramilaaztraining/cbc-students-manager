@@ -1,12 +1,120 @@
 import React, { useState } from 'react';
+import './AcademicEvaluationsScreen.css';
 
-export default function AcademicEvaluationsScreen({ formData, handleChange, handleSubmit, renderSectionColumns, rows, handleEdit, stephenKeys, rajkeys, sampathKeys }) {
+export default function AcademicEvaluationsScreen({ 
+  formData, 
+  handleChange, 
+  handleSubmit, 
+  rows, 
+  handleEdit, 
+  stephenKeys, 
+  rajkeys, 
+  sampathKeys 
+}) {
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // State to manage collapsible panels (false = open, true = collapsed)
+  const [collapsedSections, setCollapsedSections] = useState({
+    stephen: false,
+    rajshekar: true,
+    sampath: true
+  });
+
+  const toggleSection = (section) => {
+    setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const filteredRows = rows.filter(row => 
     row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Helper function to render subject cards identically to your screenshot layout
+  const renderSubjectCards = (lecturerKey, subjectsList) => {
+    return (
+      <div className="subjects-grid">
+        {subjectsList.map((sub) => {
+          // Construct form keys based on your state naming convention (e.g., formData.stephen.synopticExam)
+          const examField = `${sub.key}Exam`;
+          const notesField = `${sub.key}Notes`;
+          const classesField = `${sub.key}Classes`;
+          const permissionsField = `${sub.key}Permissions`;
+          const videoField = `${sub.key}Video`;
+
+          const lecturerData = formData[lecturerKey] || {};
+
+          return (
+            <div key={sub.key} className="subject-card">
+              <div className="subject-title-wrapper">
+                <h4 className="subject-title">{sub.label}</h4>
+                {sub.telugu && <span className="subject-telugu">({sub.telugu})</span>}
+              </div>
+
+              {/* Checkboxes */}
+              <div className="checkbox-group">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={!!lecturerData[examField]} 
+                    onChange={(e) => handleChange(e, lecturerKey, examField, 'checkbox')} 
+                  />
+                  Exam Completed
+                </label>
+
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={!!lecturerData[notesField]} 
+                    onChange={(e) => handleChange(e, lecturerKey, notesField, 'checkbox')} 
+                  />
+                  Notes Completed
+                </label>
+
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={!!lecturerData[classesField]} 
+                    onChange={(e) => handleChange(e, lecturerKey, classesField, 'checkbox')} 
+                  />
+                  All Classes Attended
+                </label>
+              </div>
+
+              {/* Permissions Input */}
+              <div className="permissions-row">
+                <span className="permissions-label">Permissions:</span>
+                <input 
+                  type="number" 
+                  className="permissions-input"
+                  value={lecturerData[permissionsField] || 0} 
+                  onChange={(e) => handleChange(e, lecturerKey, permissionsField, 'number')} 
+                />
+              </div>
+
+              <hr className="card-divider" />
+
+              {/* Upload Video Field */}
+              <div className="upload-section">
+                <span className="upload-label">Upload Video:</span>
+                <div className="file-input-wrapper">
+                  <input 
+                    type="file" 
+                    id={`file-${lecturerKey}-${sub.key}`}
+                    onChange={(e) => handleChange(e, lecturerKey, videoField, 'file')} 
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor={`file-${lecturerKey}-${sub.key}`} className="choose-file-btn">Choose File</label>
+                  <span className="file-name-display">
+                    {lecturerData[videoField]?.name || 'No file chosen'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="screen-section">
@@ -15,57 +123,109 @@ export default function AcademicEvaluationsScreen({ formData, handleChange, hand
         <p className="subtitle">Search for a student to edit/update their academic evaluations, exams, and notes.</p>
       </div>
 
-      {/* SEARCH BAR TO LOAD STUDENT INTO FORM */}
-      <div className="form-card" style={{ background: '#f8fafc', border: '1px solid #cbd5e1', marginBottom: '25px' }}>
-        <h4 style={{ margin: '0 0 10px 0' }}>🔍 Quick Search Student to Edit Academics <span className="telugu-text">(విద్యార్థిని వెతకండి)</span></h4>
+      {/* SEARCH BAR */}
+      <div className="form-card search-card">
+        <h4>🔍 Quick Search Student to Edit Academics <span className="telugu-text">(విద్యార్థిని వెతకండి)</span></h4>
         <input 
           type="text" 
           placeholder="Type student name to filter list below..." 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
-          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', boxSizing: 'border-box' }}
+          className="search-input"
         />
       </div>
 
       <form onSubmit={handleSubmit} className="form-card">
-        <h3>Update Academic Evaluations for: <span style={{ color: '#2563eb' }}>{formData.name || 'Select a student below'}</span></h3>
+        <h3>Update Academic Evaluations for: <span className="selected-student">{formData.name || 'Select a student below'}</span></h3>
         
-        <div className="input-group" style={{ marginBottom: '20px' }}>
+        <div className="input-group">
           <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
           <input type="text" name="name" placeholder="Enter student name..." value={formData.name} onChange={handleChange} required />
         </div>
 
         <div className="professors-section-wrapper">
-          <h4 className="prof-section-title">Lecturer & Subject Evaluations <span className="telugu-text">(ఉపాధ్యాయుల వివరాలు మరియు సబ్జెక్టులు)</span></h4>
           
-          {renderSectionColumns('stephen', 'Prof Stephen Suresh Babu, M.Th; M.Tech, Director of CBC', '+91 8074852725', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
-            { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
-            { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
-            { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
-          ], 'cols-3', true)}
+          {/* PROF STEPHEN SECTION */}
+          <div className="collapsible-panel">
+            <div className="panel-header" onClick={() => toggleSection('stephen')}>
+              <div className="panel-header-text">
+                <span className="panel-title">
+                  Lecturer: <strong>Prof Stephen Suresh Babu</strong> <span className="phone-num">(+91 8074852725)</span>
+                </span>
+                <span className="panel-subtitle">(సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్)</span>
+              </div>
+              <span className="toggle-icon">{collapsedSections.stephen ? '▼' : '▲'}</span>
+            </div>
+            {!collapsedSections.stephen && (
+              <div className="panel-body">
+                <div className="subjects-heading">SUBJECTS & SUBSECTIONS:</div>
+                {renderSubjectCards('stephen', [
+                  { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
+                  { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
+                  { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
+                ])}
+              </div>
+            )}
+          </div>
 
-          {renderSectionColumns('rajshekar', 'Prof Rajshekar Sir', '+91-8885831588', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
-            { key: 'law', label: 'Law', telugu: 'లా' },
-            { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
-            { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
-            { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
-          ], 'cols-4', false)}
+          {/* PROF RAJSHEKAR SECTION */}
+          <div className="collapsible-panel">
+            <div className="panel-header" onClick={() => toggleSection('rajshekar')}>
+              <div className="panel-header-text">
+                <span className="panel-title">
+                  Lecturer: <strong>Prof Rajshekar Sir</strong> <span className="phone-num">(+91-8885831588)</span>
+                </span>
+                <span className="panel-subtitle">(లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్)</span>
+              </div>
+              <span className="toggle-icon">{collapsedSections.rajshekar ? '▼' : '▲'}</span>
+            </div>
+            {!collapsedSections.rajshekar && (
+              <div className="panel-body">
+                <div className="subjects-heading">SUBJECTS & SUBSECTIONS:</div>
+                {renderSubjectCards('rajshekar', [
+                  { key: 'law', label: 'Law', telugu: 'లా' },
+                  { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
+                  { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
+                  { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
+                ])}
+              </div>
+            )}
+          </div>
 
-          {renderSectionColumns('sampath', 'Prof Sampath Kumar', '+91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
-            { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
-            { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
-            { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
-          ], 'cols-3', false)}
+          {/* PROF SAMPATH SECTION */}
+          <div className="collapsible-panel">
+            <div className="panel-header" onClick={() => toggleSection('sampath')}>
+              <div className="panel-header-text">
+                <span className="panel-title">
+                  Lecturer: <strong>Prof Sampath Kumar</strong> <span className="phone-num">(+91 9985236736)</span>
+                </span>
+                <span className="panel-subtitle">(లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం)</span>
+              </div>
+              <span className="toggle-icon">{collapsedSections.sampath ? '▼' : '▲'}</span>
+            </div>
+            {!collapsedSections.sampath && (
+              <div className="panel-body">
+                <div className="subjects-heading">SUBJECTS & SUBSECTIONS:</div>
+                {renderSubjectCards('sampath', [
+                  { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
+                  { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
+                  { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
+                ])}
+              </div>
+            )}
+          </div>
+
         </div>
 
-        <div className="form-actions" style={{ marginTop: '20px' }}>
-          <button type="submit" style={{ padding: '12px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+        <div className="form-actions">
+          <button type="submit" className="save-btn">
             Save Academic Records
           </button>
         </div>
       </form>
 
-      <div style={{ marginTop: '40px' }}>
+      {/* SUMMARY TABLE SECTION */}
+      <div className="summary-section">
         <h3>Academic Records Summary (Click 'Edit Academics' to load record)</h3>
         <div className="table-wrapper">
           <table>
@@ -85,7 +245,7 @@ export default function AcademicEvaluationsScreen({ formData, handleChange, hand
                   const formatTableCell = (obj, keys) => {
                     if (!obj) return 'N/A';
                     return (
-                      <div className="prof-cell" style={{ fontSize: '0.8rem' }}>
+                      <div className="prof-cell">
                         {keys.map(k => (
                           <div key={k}>
                             <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0} 
@@ -103,10 +263,7 @@ export default function AcademicEvaluationsScreen({ formData, handleChange, hand
                       <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
                       <td>{formatTableCell(row.sampath, sampathKeys)}</td>
                       <td>
-                        <button 
-                          onClick={() => handleEdit(row)} 
-                          style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                        >
+                        <button onClick={() => handleEdit(row)} className="edit-btn">
                           Edit Academics
                         </button>
                       </td>

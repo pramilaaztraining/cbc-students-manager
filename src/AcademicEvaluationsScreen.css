@@ -1,0 +1,349 @@
+.screen-section {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: inherit;
+}
+
+.section-intro h2 {
+  margin-bottom: 5px;
+  color: #1e293b;
+}
+
+.subtitle {
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.form-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 25px;
+}
+
+.search-card {
+  background: #f8fafc !important;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #2563eb;
+}
+
+.selected-student {
+  color: #2563eb;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #334155;
+}
+
+.input-group input[type="text"] {
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.telugu-text, .telugu-label {
+  font-size: 0.85em;
+  color: #64748b;
+  font-weight: normal;
+}
+
+.professors-section-wrapper {
+  margin-top: 20px;
+}
+
+/* Collapsible Panel Container */
+.collapsible-panel {
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.panel-header {
+  background: #f1f5f9;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid #cbd5e1;
+  transition: background 0.2s ease;
+}
+
+.panel-header:hover {
+  background: #e2e8f0;
+}
+
+.panel-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.panel-title {
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.phone-num {
+  font-weight: normal;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.panel-subtitle {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.toggle-icon {
+  font-size: 0.85rem;
+  color: #334155;
+  font-weight: bold;
+}
+
+.panel-body {
+  padding: 20px;
+  background: #ffffff;
+}
+
+.subjects-heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+/* Grid layout for subject cards inside the panel */
+.subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Individual Subject Card Box */
+.subject-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.subject-title-wrapper {
+  margin-bottom: 14px;
+}
+
+.subject-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.subject-telugu {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Checkbox alignment */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+/* Permissions input row */
+.permissions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.permissions-label {
+  font-size: 0.9rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.permissions-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  text-align: center;
+  outline: none;
+}
+
+.permissions-input:focus {
+  border-color: #2563eb;
+}
+
+.card-divider {
+  border: none;
+  border-top: 1px dashed #cbd5e1;
+  margin: 12px 0;
+}
+
+/* Upload Video section */
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #16a34a; /* Green label matching screenshot */
+}
+
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.choose-file-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.choose-file-btn:hover {
+  background: #e2e8f0;
+}
+
+.file-name-display {
+  font-size: 0.85rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Form Actions & Summary Table Buttons */
+.form-actions {
+  margin-top: 20px;
+}
+
+.save-btn {
+  padding: 12px 24px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.save-btn:hover {
+  background: #1d4ed8;
+}
+
+.edit-btn {
+  padding: 6px 12px;
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.summary-section {
+  margin-top: 40px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  background: #fff;
+}
+
+th, td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+}
+
+tr:hover {
+  background: #f8fafc;
+}
+
+.prof-cell {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.no-data {
+  text-align: center;
+  color: #64748b;
+  padding: 20px;
+}
