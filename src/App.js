@@ -32,7 +32,10 @@ function App() {
       stephen: createDetailedSubsections(stephenKeys),
       rajshekar: createDetailedSubsections(rajkeys),
       sampath: createDetailedSubsections(sampathKeys),
-      accommodation: '10-12 Jan'
+      accommodation: '10-12 Jan',
+      postGradStay: 'Staying after graduation for worship and campus assistance',
+      stayStartDateTime: '2026-11-13T08:00',
+      stayEndDateTime: '2026-11-15T20:00'
     }
   ];
 
@@ -47,11 +50,15 @@ function App() {
     stephen: createDetailedSubsections(stephenKeys),
     rajshekar: createDetailedSubsections(rajkeys),
     sampath: createDetailedSubsections(sampathKeys),
-    accommodation: ''
+    accommodation: '',
+    postGradStay: '',
+    stayStartDateTime: '',
+    stayEndDateTime: ''
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
   useEffect(() => {
     const rowsToPersist = rows.map(row => ({
@@ -131,7 +138,10 @@ function App() {
       stephen: createDetailedSubsections(stephenKeys),
       rajshekar: createDetailedSubsections(rajkeys),
       sampath: createDetailedSubsections(sampathKeys),
-      accommodation: ''
+      accommodation: '',
+      postGradStay: '',
+      stayStartDateTime: '',
+      stayEndDateTime: ''
     });
   };
 
@@ -144,7 +154,10 @@ function App() {
       stephen: row.stephen || createDetailedSubsections(stephenKeys),
       rajshekar: row.rajshekar || createDetailedSubsections(rajkeys),
       sampath: row.sampath || createDetailedSubsections(sampathKeys),
-      accommodation: row.accommodation || ''
+      accommodation: row.accommodation || '',
+      postGradStay: row.postGradStay || '',
+      stayStartDateTime: row.stayStartDateTime || '',
+      stayEndDateTime: row.stayEndDateTime || ''
     });
     window.scrollTo({ top: 400, behavior: 'smooth' });
   };
@@ -159,67 +172,66 @@ function App() {
           stephen: createDetailedSubsections(stephenKeys),
           rajshekar: createDetailedSubsections(rajkeys),
           sampath: createDetailedSubsections(sampathKeys),
-          accommodation: ''
+          accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
         });
       }
     }
   };
 
-  // PDF EXPORT
+  // PDF EXPORT 
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    doc.setFontSize(11);
-    doc.text('CBC-BTC Records (రికార్డులు)', 14, 10);
+    doc.setFontSize(14);
+    doc.text('CBC-BTC Manager - Records & Post-Graduation Campus Stay Table', 14, 12);
 
     const tableColumns = [
       'Name\nపేరు',
       'District\nజిల్లా',
       'Photo\nఫోటో',
       'Phone\nఫోన్',
-      'Prof Stephen Suresh Babu\n+91 8074852725',
-      'Prof Rajshekar Sir\n+91-8885831588',
-      'Prof Sampath Kumar\n+91 9985236736',
-      'Accom.\nవసతి'
+      'Prof Stephen',
+      'Prof Rajshekar',
+      'Prof Sampath',
+      'Post-Grad Stay Window\nగ్రాడ్యుయేషన్ వసతి సమయం'
     ];
     
     const formatDetailedPDF = (obj, keys) => {
-      return keys.map(k => `${k}: E${obj[`${k}Exam`]?'✓':'✗'} N${obj[`${k}Notes`]?'✓':'✗'} C${obj[`${k}Classes`]?'✓':'✗'} P${obj[`${k}Permissions`]||0} V:${obj[`${k}VideoFileName`] ? 'Yes' : 'No'}`).join('\n');
+      if (!obj) return 'N/A';
+      return keys.map(k => {
+        const ex = obj[`${k}Exam`] ? '[✓]' : '[✗]';
+        const nt = obj[`${k}Notes`] ? '[✓]' : '[✗]';
+        const cl = obj[`${k}Classes`] ? '[✓]' : '[✗]';
+        const perm = obj[`${k}Permissions`] || 0;
+        return `${k}: Ex:${ex} N:${nt} Cl:${cl} P:${perm}`;
+      }).join('\n');
     };
 
     const tableRows = rows.map(row => [
       row.name,
-      row.district,
-      row.photoUrl ? '' : 'No Photo',
-      row.phone,
+      row.district || '',
+      row.photoUrl ? '' : (row.photoLink || 'No Photo'),
+      row.phone || '',
       formatDetailedPDF(row.stephen, stephenKeys),
       formatDetailedPDF(row.rajshekar, rajkeys),
       formatDetailedPDF(row.sampath, sampathKeys),
-      row.accommodation
+      `From: ${row.stayStartDateTime ? new Date(row.stayStartDateTime).toLocaleString() : 'N/A'}\nTo: ${row.stayEndDateTime ? new Date(row.stayEndDateTime).toLocaleString() : 'N/A'}\nNotes: ${row.postGradStay || 'None'}`
     ]);
 
     autoTable(doc, {
       head: [tableColumns],
       body: tableRows,
-      startY: 15,
+      startY: 18,
       theme: 'grid',
-      styles: { fontSize: 4, cellPadding: 2, minCellHeight: 32, halign: 'center' },
-      headStyles: { fillColor: [40, 116, 166], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 5, cellPadding: 3, minCellHeight: 35, valign: 'middle', halign: 'left' },
+      headStyles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: 'bold', halign: 'center', fontSize: 5.5 },
       didDrawCell: (data) => {
         if (data.section === 'body' && data.column.index === 2) {
           const rowIndex = data.row.index;
           const currentRecord = rows[rowIndex];
-          
           if (currentRecord && currentRecord.photoUrl) {
             try {
-              doc.addImage(
-                currentRecord.photoUrl,
-                'JPEG',
-                data.cell.x + 2,
-                data.cell.y + 1,
-                10,
-                10
-              );
+              doc.addImage(currentRecord.photoUrl, 'JPEG', data.cell.x + 3, data.cell.y + 3, 12, 12);
             } catch (error) {
               console.error('Error drawing image in PDF:', error);
             }
@@ -228,75 +240,66 @@ function App() {
       }
     });
 
-    doc.save('CBC_BTC_Records.pdf');
+    doc.save('CBC_BTC_Campus_Stay_Records.pdf');
   };
 
-  const renderSectionColumns = (profKey, lecturerName, phoneNum, teluguTitle, items, colsClass) => (
-    <div className="checkbox-card nt-card full-width-card" key={profKey}>
-      <div className="card-header-row">
-        <span className="section-lecturer">Lecturer: <strong>{lecturerName}</strong> <span className="prof-phone">({phoneNum})</span></span>
-        <span className="telugu-label">({teluguTitle})</span>
-      </div>
-      <div className="subjects-heading">Subjects & Subsections:</div>
-      <div className={`columns-container ${colsClass}`}>
-        {items.map(cat => (
-          <div className="column-subbox" key={`${profKey}-${cat.key}`}>
-            <span className="sub-title">{cat.label}</span>
-            <div className="column-controls">
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={formData[profKey][`${cat.key}Exam`]} 
-                  onChange={(e) => handleProfChange(profKey, `${cat.key}Exam`, 'checkbox', null, e.target.checked)} 
-                />
-                Exam Completed <span className="telugu-text">({cat.telugu} పరీక్ష)</span>
-              </label>
-
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={formData[profKey][`${cat.key}Notes`]} 
-                  onChange={(e) => handleProfChange(profKey, `${cat.key}Notes`, 'checkbox', null, e.target.checked)} 
-                />
-                Notes Completed <span className="telugu-text">({cat.telugu} నోట్స్)</span>
-              </label>
-
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={formData[profKey][`${cat.key}Classes`]} 
-                  onChange={(e) => handleProfChange(profKey, `${cat.key}Classes`, 'checkbox', null, e.target.checked)} 
-                />
-                All Classes Attended <span className="telugu-text">(తరగతులు)</span>
-              </label>
-
-              <div className="sub-input-group">
-                <label>Permissions:</label>
-                <input 
-                  type="text" 
-                  placeholder="0" 
-                  value={formData[profKey][`${cat.key}Permissions`]} 
-                  onChange={(e) => handleProfChange(profKey, `${cat.key}Permissions`, 'text', e.target.value, null)} 
-                />
-              </div>
-
-              <div className="sub-file-group">
-                <label>Upload Video:</label>
-                <input 
-                  type="file" 
-                  accept="video/*" 
-                  onChange={(e) => handleVideoUpload(profKey, cat.key, e)} 
-                />
-                {formData[profKey][`${cat.key}VideoFileName`] && (
-                  <span className="file-name-preview">📁 {formData[profKey][`${cat.key}VideoFileName`]}</span>
-                )}
+  const renderSectionColumns = (profKey, lecturerName, phoneNum, teluguTitle, items, colsClass, defaultOpen = false) => (
+    <details className="accordion-card" key={profKey} open={defaultOpen}>
+      <summary className="accordion-summary">
+        <div className="accordion-title-area">
+          <span className="section-lecturer">Lecturer: <strong>{lecturerName}</strong> <span className="prof-phone">({phoneNum})</span></span>
+          <span className="telugu-label">({teluguTitle})</span>
+        </div>
+        <span className="accordion-icon">▼</span>
+      </summary>
+      
+      <div className="accordion-content">
+        <div className="subjects-heading">Subjects & Subsections:</div>
+        <div className={`columns-container ${colsClass}`}>
+          {items.map(cat => (
+            <div className="column-subbox" key={`${profKey}-${cat.key}`}>
+              <span className="sub-title">{cat.label}</span>
+              <div className="column-controls">
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={formData[profKey][`${cat.key}Exam`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Exam`, 'checkbox', null, e.target.checked)} />
+                  Exam Completed
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={formData[profKey][`${cat.key}Notes`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Notes`, 'checkbox', null, e.target.checked)} />
+                  Notes Completed
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={formData[profKey][`${cat.key}Classes`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Classes`, 'checkbox', null, e.target.checked)} />
+                  All Classes Attended
+                </label>
+                <div className="sub-input-group">
+                  <label>Permissions:</label>
+                  <input type="text" placeholder="0" value={formData[profKey][`${cat.key}Permissions`]} onChange={(e) => handleProfChange(profKey, `${cat.key}Permissions`, 'text', e.target.value, null)} />
+                </div>
+                <div className="sub-file-group">
+                  <label>Upload Video:</label>
+                  <input type="file" accept="video/*" onChange={(e) => handleVideoUpload(profKey, cat.key, e)} />
+                  {formData[profKey][`${cat.key}VideoFileName`] && (
+                    <span className="file-name-preview">📁 {formData[profKey][`${cat.key}VideoFileName`]}</span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+    </details>
   );
+
+  // Filter rows for calendar view based on date match
+  const filteredCalendarRows = rows.filter(row => {
+    if (!calendarFilterDate) return true;
+    if (!row.stayStartDateTime || !row.stayEndDateTime) return false;
+    const filterDateOnly = calendarFilterDate;
+    const startDateOnly = row.stayStartDateTime.split('T')[0];
+    const endDateOnly = row.stayEndDateTime.split('T')[0];
+    return filterDateOnly >= startDateOnly && filterDateOnly <= endDateOnly;
+  });
 
   return (
     <div className="app-layout">
@@ -305,11 +308,11 @@ function App() {
         <div className="header-content">
           <h1>CBC-BTC Manager</h1>
           <p className="header-subtitle">
-            Student Academic Records & Attendance Tracker <span className="telugu-text">(రికార్డు నిర్వహణ వ్యవస్థ)</span>
+            Student Academic Records & Post-Graduation Stay Calendar <span className="telugu-text">(గ్రాడ్యుయేషన్ తర్వాత వసతి క్యాలెండర్)</span>
           </p>
-          
           <nav className="app-nav-menu">
             <a href="#form-section" className="nav-link">➕ Add Student</a>
+            <a href="#calendar-section" className="nav-link">📅 Stay Calendar</a>
             <a href="#table-section" className="nav-link">📊 Records Table</a>
             <button onClick={exportToPDF} className="nav-btn-pdf">📥 Download PDF</button>
           </nav>
@@ -318,57 +321,167 @@ function App() {
 
       {/* MAIN CONTAINER */}
       <main className="container">
-        <div className="section-intro">
-          <h2>Dashboard & Management Panel</h2>
-          <p className="subtitle">Easily manage student details, lecturer subjects, exams, notes, attendance permissions, and direct video uploads below.</p>
+        
+        {/* POST-GRADUATION STAY CALENDAR WIDGET */}
+        <div id="calendar-section" className="form-card calendar-widget-card" style={{ marginBottom: '30px' }}>
+          <h3>📅 Post-Graduation Campus Stay Calendar & Time Control <span className="telugu-text">(గ్రాడ్యుయేషన్ తర్వాత క్యాంపస్ వసతి షెడ్యూల్)</span></h3>
+          <p className="subtitle">Select a specific date below to check who is staying on campus during that time window.</p>
+          
+          <div className="calendar-filter-row" style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <div className="input-group" style={{ flex: '1', minWidth: '220px' }}>
+              <label>Filter by Date <span className="telugu-label">తేదీ ద్వారా తనిఖీ చేయండి</span></label>
+              <input 
+                type="date" 
+                value={calendarFilterDate} 
+                onChange={(e) => setCalendarFilterDate(e.target.value)} 
+              />
+            </div>
+            {calendarFilterDate && (
+              <button 
+                type="button" 
+                className="btn-cancel" 
+                onClick={() => setCalendarFilterDate('')}
+                style={{ alignSelf: 'flex-end', height: '42px' }}
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+
+          <div className="table-wrapper">
+            <table className="calendar-table">
+              <thead>
+                <tr>
+                  <th>Student Name <span className="telugu-text">(పేరు)</span></th>
+                  <th>District <span className="telugu-text">(జిల్లా)</span></th>
+                  <th>Phone <span className="telugu-text">(ఫోన్)</span></th>
+                  <th>Stay Window (From - To) <span className="telugu-text">(సమయ వ్యవధి)</span></th>
+                  <th>Stay Notes <span className="telugu-text">(గమనికలు)</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCalendarRows.length > 0 ? (
+                  filteredCalendarRows.map(row => (
+                    <tr key={`cal-${row.id}`}>
+                      <td><strong>{row.name}</strong></td>
+                      <td>{row.district || 'N/A'}</td>
+                      <td>{row.phone || 'N/A'}</td>
+                      <td>
+                        {row.stayStartDateTime && row.stayEndDateTime ? (
+                          <div style={{ fontSize: '0.85rem' }}>
+                            <div><strong>From:</strong> {new Date(row.stayStartDateTime).toLocaleString()}</div>
+                            <div><strong>To:</strong> {new Date(row.stayEndDateTime).toLocaleString()}</div>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#d97706' }}>Window not set</span>
+                        )}
+                      </td>
+                      <td>{row.postGradStay || 'No notes provided'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="no-data">No students scheduled for campus stay on this date.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Form Card */}
         <form id="form-section" onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
-          <h3>{isEditing ? 'Edit student detail (విద్యార్థి వివరాలను సవరించు)' : 'Add student detail'}</h3>
+          <h3>{isEditing ? 'Edit student detail & stay schedule' : 'Add student detail & stay schedule'}</h3>
           
           <div className="form-grid">
-            <div className="input-group">
-              <label>Name <span className="telugu-label">పేరు</span></label>
-              <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
+            <div className="form-row-basic">
+              <div className="input-group">
+                <label>Name <span className="telugu-label">పేరు</span></label>
+                <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
+              </div>
+
+              <div className="input-group">
+                <label>District <span className="telugu-label">జిల్లా</span></label>
+                <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
+              </div>
+
+              <div className="input-group file-input-group">
+                <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
+                <input type="file" accept="image/*" onChange={handleFileChange} />
+              </div>
+
+              <div className="input-group">
+                <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
+                <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
+              </div>
             </div>
 
-            <div className="input-group">
-              <label>District <span className="telugu-label">జిల్లా</span></label>
-              <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
+            {/* POST-GRADUATION STAY DATE & TIME CONTROLS */}
+            <div className="post-grad-stay-section" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '15px' }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#1e293b' }}>
+                Post-Graduation Campus Stay & Time Window <span className="telugu-text">(గ్రాడ్యుయేషన్ వసతి & సమయ నియంత్రణ)</span>
+              </h4>
+              <div className="form-row-basic" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
+                
+                <div className="input-group">
+                  <label>From Date & Time <span className="telugu-label">ప్రారంభ తేదీ మరియు సమయం</span></label>
+                  <input 
+                    type="datetime-local" 
+                    name="stayStartDateTime" 
+                    value={formData.stayStartDateTime} 
+                    onChange={handleChange} 
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>To Date & Time <span className="telugu-label">ముగింపు తేదీ మరియు సమయం</span></label>
+                  <input 
+                    type="datetime-local" 
+                    name="stayEndDateTime" 
+                    value={formData.stayEndDateTime} 
+                    onChange={handleChange} 
+                  />
+                </div>
+
+                <div className="input-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>Stay Notes / Instructions <span className="telugu-label">వసతి గమనికలు</span></label>
+                  <input 
+                    type="text" 
+                    name="postGradStay" 
+                    placeholder="e.g., Arriving night before, staying until morning worship session" 
+                    value={formData.postGradStay} 
+                    onChange={handleChange} 
+                  />
+                </div>
+
+              </div>
             </div>
 
-            <div className="input-group file-input-group">
-              <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
-              <input type="file" accept="image/*" onChange={handleFileChange} />
+            <div className="professors-section-wrapper" style={{ marginTop: '20px' }}>
+              <h4 className="prof-section-title">Lecturer & Subject Evaluations <span className="telugu-text">(ఉపాధ్యాయుల వివరాలు మరియు సబ్జెక్టులు)</span></h4>
+              
+              {renderSectionColumns('stephen', 'Prof Stephen Suresh Babu, M.Th; M.Tech, Director of CBC', '+91 8074852725', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
+                { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
+                { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
+                { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
+              ], 'cols-3', true)}
+
+              {renderSectionColumns('rajshekar', 'Prof Rajshekar Sir', '+91-8885831588', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
+                { key: 'law', label: 'Law', telugu: 'లా' },
+                { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
+                { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
+                { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
+              ], 'cols-4', false)}
+
+              {renderSectionColumns('sampath', 'Prof Sampath Kumar', '+91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
+                { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
+                { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
+                { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
+              ], 'cols-3', false)}
             </div>
 
-            <div className="input-group">
-              <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
-              <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
-            </div>
-
-            {renderSectionColumns('stephen', 'Prof Stephen Suresh Babu, M.Th; M.Tech, Director of CBC', '+91 8074852725', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
-              { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
-              { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
-              { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
-            ], 'cols-3')}
-
-            {renderSectionColumns('rajshekar', 'Prof Rajshekar Sir', '+91-8885831588', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
-              { key: 'law', label: 'Law', telugu: 'లా' },
-              { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
-              { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
-              { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
-            ], 'cols-4')}
-
-            {renderSectionColumns('sampath', 'Prof Sampath Kumar', '+91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
-              { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
-              { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
-              { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
-            ], 'cols-3')}
-
-            <div className="input-group">
-              <label>Accomodation Dates <span className="telugu-label">వసతి తేదీలు</span></label>
+            <div className="input-group accommodation-group" style={{ marginTop: '15px' }}>
+              <label>General Accomodation Dates <span className="telugu-label">సాధారణ వసతి తేదీలు</span></label>
               <input type="text" name="accommodation" placeholder="Enter dates..." value={formData.accommodation} onChange={handleChange} />
             </div>
           </div>
@@ -388,7 +501,7 @@ function App() {
                     stephen: createDetailedSubsections(stephenKeys),
                     rajshekar: createDetailedSubsections(rajkeys),
                     sampath: createDetailedSubsections(sampathKeys),
-                    accommodation: ''
+                    accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
                   });
                 }}
               >
@@ -398,8 +511,8 @@ function App() {
           </div>
         </form>
 
-        <div id="table-section" className="export-controls">
-          <h3>Records Table (రికార్డుల పట్టిక)</h3>
+        <div id="table-section" className="export-controls" style={{ marginTop: '40px' }}>
+          <h3>Records Table & Campus Stay Summary (రికార్డుల పట్టిక)</h3>
         </div>
 
         <div className="table-wrapper">
@@ -410,10 +523,10 @@ function App() {
                 <th>District <br/><span className="telugu-text">జిల్లా</span></th>
                 <th>Photo <br/><span className="telugu-text">ఫోటో</span></th>
                 <th>Phone <br/><span className="telugu-text">ఫోన్</span></th>
-                <th>Prof Stephen Suresh Babu<br/>+91 8074852725 <br/><span className="telugu-text">(Subjects & Videos)</span></th>
-                <th>Prof Rajshekar Sir<br/>+91-8885831588 <br/><span className="telugu-text">(Subjects & Videos)</span></th>
-                <th>Prof Sampath Kumar<br/>+91 9985236736 <br/><span className="telugu-text">(Subjects & Videos)</span></th>
-                <th>Accomodation <br/><span className="telugu-text">వసతి</span></th>
+                <th>Prof Stephen Suresh Babu</th>
+                <th>Prof Rajshekar Sir</th>
+                <th>Prof Sampath Kumar</th>
+                <th>Post-Grad Stay Window <br/><span className="telugu-text">వసతి సమయం</span></th>
                 <th>Actions <br/><span className="telugu-text">చర్యలు</span></th>
               </tr>
             </thead>
@@ -457,7 +570,19 @@ function App() {
                       <td>{formatTableCell(row.stephen, stephenKeys)}</td>
                       <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
                       <td>{formatTableCell(row.sampath, sampathKeys)}</td>
-                      <td>{row.accommodation}</td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>
+                          {row.stayStartDateTime && row.stayEndDateTime ? (
+                            <>
+                              <div><strong>From:</strong> {new Date(row.stayStartDateTime).toLocaleString()}</div>
+                              <div><strong>To:</strong> {new Date(row.stayEndDateTime).toLocaleString()}</div>
+                            </>
+                          ) : (
+                            <span style={{ color: '#64748b' }}>Time not specified</span>
+                          )}
+                          <div style={{ color: '#475569', marginTop: '4px' }}>{row.postGradStay}</div>
+                        </div>
+                      </td>
                       <td>
                         <div className="action-buttons">
                           <button onClick={() => handleEdit(row)} className="btn-edit">Edit</button>
@@ -491,7 +616,7 @@ function App() {
             <p className="footer-desc">
               We are a Bible-believing, Christ-exalting, local church congregation situated in Gauribidanur, Karnataka. Seeking to make disciples of Jesus Christ who glorify God.
             </p>
-            <p className="footer-copy">© 2026 CHRIST BIBLE CHURCH BENGALURU.</p>
+            <p className="footer-copy">© 2026 CHRIST BIBLE COLLEGE (CBC) BENGALURU.</p>
           </div>
 
           <div className="footer-col">
@@ -501,9 +626,6 @@ function App() {
               <li><a href="#form-section">About Our Church</a></li>
               <li><a href="#form-section">What We Believe</a></li>
               <li><a href="#form-section">Our Leadership</a></li>
-              <li><a href="#form-section">Sermon Archives</a></li>
-              <li><a href="#form-section">Ministries & Events</a></li>
-              <li><a href="#form-section">Plan a Visit</a></li>
             </ul>
           </div>
 
@@ -512,7 +634,6 @@ function App() {
             <div className="footer-gathering-info">
               <p className="gathering-title">Sunday Worship Gathering:</p>
               <p className="gathering-time">10:00 AM</p>
-              
               <p className="gathering-title mt-15">Service Location Chapel:</p>
               <p className="gathering-address">
                 #521, Alkapura Gate, Gauribidanur, Karnataka, India
@@ -521,30 +642,20 @@ function App() {
           </div>
         </div>
 
-        {/* Connect With Us Banner */}
         <div className="footer-connect-banner">
           <div className="footer-connect-content">
             <div className="connect-badge">CONNECT WITH US</div>
             <p className="connect-text">
-              Follow Christ Bible Church on social media for Sunday sermon clips, spiritual reflections, and congregation announcements.
+              Follow Christ Bible College (CBC) Bangaluru on social media for Sunday sermon clips, spiritual reflections, and congregation announcements.
             </p>
           </div>
           <div className="footer-social-buttons">
             <a href="https://whatsapp.com/channel/0029Vb7pNhd7j6g24RqJ2M1c" target="_blank" rel="noreferrer" className="social-btn wa-btn-enhanced">
-              <span className="wa-icon-wrapper">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-              </span>
               <span>Join WhatsApp Channel</span>
             </a>
-            <a href="https://www.facebook.com/battle.for.truth.2025/" target="_blank" rel="noreferrer" className="social-btn fb-btn">
-              <span>f</span> Facebook
-            </a>
-            <a href="https://www.instagram.com/battlefortruth3?igsh=NThsbDd0eHNzcXI1" target="_blank" rel="noreferrer" className="social-btn ig-btn">
-              <span>📷</span> Instagram
-            </a>
-            <a href="https://www.youtube.com/@Battle_For_Truth" target="_blank" rel="noreferrer" className="social-btn yt-btn">
-              <span>▶</span> YouTube
-            </a>
+            <a href="https://www.facebook.com/battle.for.truth.2025/" target="_blank" rel="noreferrer" className="social-btn fb-btn">Facebook</a>
+            <a href="https://www.instagram.com/battlefortruth3?igsh=NThsbDd0eHNzcXI1" target="_blank" rel="noreferrer" className="social-btn ig-btn">Instagram</a>
+            <a href="https://www.youtube.com/@Battle_For_Truth" target="_blank" rel="noreferrer" className="social-btn yt-btn">YouTube</a>
           </div>
         </div>
       </footer>
