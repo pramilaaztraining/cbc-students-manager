@@ -58,6 +58,9 @@ function App() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  
+  // Navigation State for 3 Distinct Screens: 'creation', 'academics', 'stayCalendar'
+  const [activeScreen, setActiveScreen] = useState('creation');
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
   useEffect(() => {
@@ -159,7 +162,8 @@ function App() {
       stayStartDateTime: row.stayStartDateTime || '',
       stayEndDateTime: row.stayEndDateTime || ''
     });
-    window.scrollTo({ top: 400, behavior: 'smooth' });
+    setActiveScreen('creation');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = (id) => {
@@ -178,12 +182,11 @@ function App() {
     }
   };
 
-  // PDF EXPORT 
+  // PDF EXPORT
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
-    
     doc.setFontSize(14);
-    doc.text('CBC-BTC Manager - Records & Post-Graduation Campus Stay Table', 14, 12);
+    doc.text('CBC-BTC Manager - Complete Records & Stay Schedule', 14, 12);
 
     const tableColumns = [
       'Name\nపేరు',
@@ -193,7 +196,7 @@ function App() {
       'Prof Stephen',
       'Prof Rajshekar',
       'Prof Sampath',
-      'Post-Grad Stay Window\nగ్రాడ్యుయేషన్ వసతి సమయం'
+      'Post-Grad Stay Window\nవసతి సమయం'
     ];
     
     const formatDetailedPDF = (obj, keys) => {
@@ -240,7 +243,7 @@ function App() {
       }
     });
 
-    doc.save('CBC_BTC_Campus_Stay_Records.pdf');
+    doc.save('CBC_BTC_Complete_Records.pdf');
   };
 
   const renderSectionColumns = (profKey, lecturerName, phoneNum, teluguTitle, items, colsClass, defaultOpen = false) => (
@@ -291,7 +294,6 @@ function App() {
     </details>
   );
 
-  // Filter rows for calendar view based on date match
   const filteredCalendarRows = rows.filter(row => {
     if (!calendarFilterDate) return true;
     if (!row.stayStartDateTime || !row.stayEndDateTime) return false;
@@ -308,354 +310,400 @@ function App() {
         <div className="header-content">
           <h1>CBC-BTC Manager</h1>
           <p className="header-subtitle">
-            Student Academic Records & Post-Graduation Stay Calendar <span className="telugu-text">(గ్రాడ్యుయేషన్ తర్వాత వసతి క్యాలెండర్)</span>
+            Student Academic Records & Campus Stay Management <span className="telugu-text">(విద్యార్థుల రికార్డుల నిర్వహణ)</span>
           </p>
-          <nav className="app-nav-menu">
-            <a href="#form-section" className="nav-link">➕ Add Student</a>
-            <a href="#calendar-section" className="nav-link">📅 Stay Calendar</a>
-            <a href="#table-section" className="nav-link">📊 Records Table</a>
-            <button onClick={exportToPDF} className="nav-btn-pdf">📥 Download PDF</button>
+          
+          {/* 3-SECTION NAVIGATION TABS */}
+          <nav className="app-nav-menu" style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '15px', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => setActiveScreen('creation')} 
+              className={`nav-link ${activeScreen === 'creation' ? 'active-tab' : ''}`}
+              style={{ background: activeScreen === 'creation' ? '#2563eb' : '#1e293b', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              1. Student Details Creation <span className="telugu-text">(సృష్టి)</span>
+            </button>
+            <button 
+              onClick={() => setActiveScreen('academics')} 
+              className={`nav-link ${activeScreen === 'academics' ? 'active-tab' : ''}`}
+              style={{ background: activeScreen === 'academics' ? '#2563eb' : '#1e293b', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              2. Academic Evaluations <span className="telugu-text">(అకాడమిక్స్)</span>
+            </button>
+            <button 
+              onClick={() => setActiveScreen('stayCalendar')} 
+              className={`nav-link ${activeScreen === 'stayCalendar' ? 'active-tab' : ''}`}
+              style={{ background: activeScreen === 'stayCalendar' ? '#2563eb' : '#1e293b', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              3. Post-Grad Stay & Calendar <span className="telugu-text">(వసతి & క్యాలెండర్)</span>
+            </button>
+            <button onClick={exportToPDF} className="nav-btn-pdf" style={{ background: '#059669', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              📥 Download PDF
+            </button>
           </nav>
         </div>
       </header>
 
       {/* MAIN CONTAINER */}
       <main className="container">
-        
-        {/* POST-GRADUATION STAY CALENDAR WIDGET */}
-        <div id="calendar-section" className="form-card calendar-widget-card" style={{ marginBottom: '30px' }}>
-          <h3>📅 Post-Graduation Campus Stay Calendar & Time Control <span className="telugu-text">(గ్రాడ్యుయేషన్ తర్వాత క్యాంపస్ వసతి షెడ్యూల్)</span></h3>
-          <p className="subtitle">Select a specific date below to check who is staying on campus during that time window.</p>
-          
-          <div className="calendar-filter-row" style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <div className="input-group" style={{ flex: '1', minWidth: '220px' }}>
-              <label>Filter by Date <span className="telugu-label">తేదీ ద్వారా తనిఖీ చేయండి</span></label>
-              <input 
-                type="date" 
-                value={calendarFilterDate} 
-                onChange={(e) => setCalendarFilterDate(e.target.value)} 
-              />
-            </div>
-            {calendarFilterDate && (
-              <button 
-                type="button" 
-                className="btn-cancel" 
-                onClick={() => setCalendarFilterDate('')}
-                style={{ alignSelf: 'flex-end', height: '42px' }}
-              >
-                Clear Filter
-              </button>
-            )}
-          </div>
 
-          <div className="table-wrapper">
-            <table className="calendar-table">
-              <thead>
-                <tr>
-                  <th>Student Name <span className="telugu-text">(పేరు)</span></th>
-                  <th>District <span className="telugu-text">(జిల్లా)</span></th>
-                  <th>Phone <span className="telugu-text">(ఫోన్)</span></th>
-                  <th>Stay Window (From - To) <span className="telugu-text">(సమయ వ్యవధి)</span></th>
-                  <th>Stay Notes <span className="telugu-text">(గమనికలు)</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCalendarRows.length > 0 ? (
-                  filteredCalendarRows.map(row => (
-                    <tr key={`cal-${row.id}`}>
-                      <td><strong>{row.name}</strong></td>
-                      <td>{row.district || 'N/A'}</td>
-                      <td>{row.phone || 'N/A'}</td>
-                      <td>
-                        {row.stayStartDateTime && row.stayEndDateTime ? (
-                          <div style={{ fontSize: '0.85rem' }}>
-                            <div><strong>From:</strong> {new Date(row.stayStartDateTime).toLocaleString()}</div>
-                            <div><strong>To:</strong> {new Date(row.stayEndDateTime).toLocaleString()}</div>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#d97706' }}>Window not set</span>
-                        )}
-                      </td>
-                      <td>{row.postGradStay || 'No notes provided'}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="no-data">No students scheduled for campus stay on this date.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Form Card */}
-        <form id="form-section" onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
-          <h3>{isEditing ? 'Edit student detail & stay schedule' : 'Add student detail & stay schedule'}</h3>
-          
-          <div className="form-grid">
-            <div className="form-row-basic">
-              <div className="input-group">
-                <label>Name <span className="telugu-label">పేరు</span></label>
-                <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
-              </div>
-
-              <div className="input-group">
-                <label>District <span className="telugu-label">జిల్లా</span></label>
-                <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
-              </div>
-
-              <div className="input-group file-input-group">
-                <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
-                <input type="file" accept="image/*" onChange={handleFileChange} />
-              </div>
-
-              <div className="input-group">
-                <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
-                <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
-              </div>
+        {/* ========================================================= */}
+        {/* SECTION 1: INITIAL STUDENT DETAIL CREATION & MANAGEMENT */}
+        {/* ========================================================= */}
+        {activeScreen === 'creation' && (
+          <div className="screen-section">
+            <div className="section-intro">
+              <h2>Section 1: Initial Student Detail Creation</h2>
+              <p className="subtitle">Add or edit core student demographics, phone numbers, and profile photos.</p>
             </div>
 
-            {/* POST-GRADUATION STAY DATE & TIME CONTROLS */}
-            <div className="post-grad-stay-section" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '15px' }}>
-              <h4 style={{ margin: '0 0 10px 0', color: '#1e293b' }}>
-                Post-Graduation Campus Stay & Time Window <span className="telugu-text">(గ్రాడ్యుయేషన్ వసతి & సమయ నియంత్రణ)</span>
-              </h4>
-              <div className="form-row-basic" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
-                
-                <div className="input-group">
-                  <label>From Date & Time <span className="telugu-label">ప్రారంభ తేదీ మరియు సమయం</span></label>
-                  <input 
-                    type="datetime-local" 
-                    name="stayStartDateTime" 
-                    value={formData.stayStartDateTime} 
-                    onChange={handleChange} 
-                  />
-                </div>
-
-                <div className="input-group">
-                  <label>To Date & Time <span className="telugu-label">ముగింపు తేదీ మరియు సమయం</span></label>
-                  <input 
-                    type="datetime-local" 
-                    name="stayEndDateTime" 
-                    value={formData.stayEndDateTime} 
-                    onChange={handleChange} 
-                  />
-                </div>
-
-                <div className="input-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Stay Notes / Instructions <span className="telugu-label">వసతి గమనికలు</span></label>
-                  <input 
-                    type="text" 
-                    name="postGradStay" 
-                    placeholder="e.g., Arriving night before, staying until morning worship session" 
-                    value={formData.postGradStay} 
-                    onChange={handleChange} 
-                  />
-                </div>
-
-              </div>
-            </div>
-
-            <div className="professors-section-wrapper" style={{ marginTop: '20px' }}>
-              <h4 className="prof-section-title">Lecturer & Subject Evaluations <span className="telugu-text">(ఉపాధ్యాయుల వివరాలు మరియు సబ్జెక్టులు)</span></h4>
+            <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
+              <h3>{isEditing ? 'Edit Student Profile (విద్యార్థి వివరాలను సవరించు)' : 'Create New Student Profile (కొత్త విద్యార్థి వివరాలు)'}</h3>
               
-              {renderSectionColumns('stephen', 'Prof Stephen Suresh Babu, M.Th; M.Tech, Director of CBC', '+91 8074852725', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
-                { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
-                { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
-                { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
-              ], 'cols-3', true)}
+              <div className="form-grid">
+                <div className="form-row-basic" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
+                  <div className="input-group">
+                    <label>Name <span className="telugu-label">పేరు</span></label>
+                    <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
+                  </div>
 
-              {renderSectionColumns('rajshekar', 'Prof Rajshekar Sir', '+91-8885831588', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
-                { key: 'law', label: 'Law', telugu: 'లా' },
-                { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
-                { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
-                { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
-              ], 'cols-4', false)}
+                  <div className="input-group">
+                    <label>District <span className="telugu-label">జిల్లా</span></label>
+                    <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
+                  </div>
 
-              {renderSectionColumns('sampath', 'Prof Sampath Kumar', '+91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం', [
-                { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
-                { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
-                { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
-              ], 'cols-3', false)}
-            </div>
+                  <div className="input-group file-input-group">
+                    <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
+                    <input type="file" accept="image/*" onChange={handleFileChange} />
+                  </div>
 
-            <div className="input-group accommodation-group" style={{ marginTop: '15px' }}>
-              <label>General Accomodation Dates <span className="telugu-label">సాధారణ వసతి తేదీలు</span></label>
-              <input type="text" name="accommodation" placeholder="Enter dates..." value={formData.accommodation} onChange={handleChange} />
-            </div>
-          </div>
+                  <div className="input-group">
+                    <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
+                    <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
+                  </div>
+                </div>
+              </div>
 
-          <div className="form-actions">
-            <button type="submit" className={isEditing ? "btn-update" : "btn-add"}>
-              {isEditing ? 'Update student detail' : 'Add student detail'}
-            </button>
-            {isEditing && (
-              <button 
-                type="button" 
-                className="btn-cancel" 
-                onClick={() => {
-                  setIsEditing(false);
-                  setFormData({
-                    name: '', district: '', phone: '', photoLink: '', photoUrl: '',
-                    stephen: createDetailedSubsections(stephenKeys),
-                    rajshekar: createDetailedSubsections(rajkeys),
-                    sampath: createDetailedSubsections(sampathKeys),
-                    accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
-                  });
-                }}
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
+              <div className="form-actions" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                <button type="submit" style={{ padding: '12px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  {isEditing ? 'Update Student Details' : 'Save Student Details'}
+                </button>
+                {isEditing && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsEditing(false);
+                      setFormData({
+                        name: '', district: '', phone: '', photoLink: '', photoUrl: '',
+                        stephen: createDetailedSubsections(stephenKeys),
+                        rajshekar: createDetailedSubsections(rajkeys),
+                        sampath: createDetailedSubsections(sampathKeys),
+                        accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
+                      });
+                    }}
+                    style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
 
-        <div id="table-section" className="export-controls" style={{ marginTop: '40px' }}>
-          <h3>Records Table & Campus Stay Summary (రికార్డుల పట్టిక)</h3>
-        </div>
-
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name <br/><span className="telugu-text">పేరు</span></th>
-                <th>District <br/><span className="telugu-text">జిల్లా</span></th>
-                <th>Photo <br/><span className="telugu-text">ఫోటో</span></th>
-                <th>Phone <br/><span className="telugu-text">ఫోన్</span></th>
-                <th>Prof Stephen Suresh Babu</th>
-                <th>Prof Rajshekar Sir</th>
-                <th>Prof Sampath Kumar</th>
-                <th>Post-Grad Stay Window <br/><span className="telugu-text">వసతి సమయం</span></th>
-                <th>Actions <br/><span className="telugu-text">చర్యలు</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length > 0 ? (
-                rows.map((row) => {
-                  const formatTableCell = (obj, keys) => {
-                    if (!obj) return 'N/A';
-                    return (
-                      <div className="prof-cell">
-                        {keys.map(k => (
-                          <div key={k}>
-                            <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0} 
-                            {obj[`${k}VideoFile`] ? (
-                              <a href={obj[`${k}VideoFile`]} target="_blank" rel="noopener noreferrer"> 🎥 Play</a>
-                            ) : obj[`${k}VideoFileName`] ? (
-                              <span> 📁 {obj[`${k}VideoFileName`]}</span>
-                            ) : (
-                              <span> ❌ No Vid</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  };
-
-                  return (
-                    <tr key={row.id}>
-                      <td><strong>{row.name}</strong></td>
-                      <td>{row.district}</td>
-                      <td>
-                        {row.photoUrl ? (
-                          <div className="photo-cell">
-                            <img src={row.photoUrl} alt="Preview" className="thumbnail" />
-                          </div>
-                        ) : (
-                          <span>{row.photoLink || 'No Photo'}</span>
-                        )}
-                      </td>
-                      <td>{row.phone}</td>
-                      <td>{formatTableCell(row.stephen, stephenKeys)}</td>
-                      <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
-                      <td>{formatTableCell(row.sampath, sampathKeys)}</td>
-                      <td>
-                        <div style={{ fontSize: '0.85rem' }}>
-                          {row.stayStartDateTime && row.stayEndDateTime ? (
-                            <>
-                              <div><strong>From:</strong> {new Date(row.stayStartDateTime).toLocaleString()}</div>
-                              <div><strong>To:</strong> {new Date(row.stayEndDateTime).toLocaleString()}</div>
-                            </>
-                          ) : (
-                            <span style={{ color: '#64748b' }}>Time not specified</span>
-                          )}
-                          <div style={{ color: '#475569', marginTop: '4px' }}>{row.postGradStay}</div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="action-buttons">
-                          <button onClick={() => handleEdit(row)} className="btn-edit">Edit</button>
-                          <button onClick={() => handleDelete(row.id)} className="btn-delete">Delete</button>
-                        </div>
-                      </td>
+            <div style={{ marginTop: '40px' }}>
+              <h3>Registered Students Directory ({rows.length})</h3>
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name <span className="telugu-text">(పేరు)</span></th>
+                      <th>District <span className="telugu-text">(జిల్లా)</span></th>
+                      <th>Photo <span className="telugu-text">(ఫోటో)</span></th>
+                      <th>Phone <span className="telugu-text">(ఫోన్)</span></th>
+                      <th>Actions <span className="telugu-text">(చర్యలు)</span></th>
                     </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="9" className="no-data">No records available. Add one above!</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={row.id}>
+                        <td><strong>{row.name}</strong></td>
+                        <td>{row.district}</td>
+                        <td>
+                          {row.photoUrl ? (
+                            <img src={row.photoUrl} alt="Preview" style={{ width: '35px', height: '35px', borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <span>{row.photoLink || 'No Photo'}</span>
+                          )}
+                        </td>
+                        <td>{row.phone}</td>
+                        <td>
+                          <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => handleEdit(row)} style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
+                            <button onClick={() => handleDelete(row.id)} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* SECTION 2: ACADEMIC DETAILS & EVALUATIONS */}
+        {/* ========================================================= */}
+        {activeScreen === 'academics' && (
+          <div className="screen-section">
+            <div className="section-intro">
+              <h2>Section 2: Academic Evaluations</h2>
+              <p className="subtitle">Evaluate student subjects, exams, attendance notes, and video submissions for all professors.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="form-card">
+              <h3>Update Academic Evaluations for Student</h3>
+              
+              <div className="input-group" style={{ marginBottom: '20px' }}>
+                <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
+                <input type="text" name="name" placeholder="Enter student name..." value={formData.name} onChange={handleChange} required />
+              </div>
+
+              <div className="professors-section-wrapper">
+                <h4 className="prof-section-title">Lecturer & Subject Evaluations <span className="telugu-text">(ఉపాధ్యాయుల వివరాలు మరియు సబ్జెక్టులు)</span></h4>
+                
+                {renderSectionColumns('stephen', 'Prof Stephen Suresh Babu, M.Th; M.Tech, Director of CBC', '+91 8074852725', 'సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్', [
+                  { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
+                  { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
+                  { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
+                ], 'cols-3', true)}
+
+                {renderSectionColumns('rajshekar', 'Prof Rajshekar Sir', '+91-8885831588', 'లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్', [
+                  { key: 'law', label: 'Law', telugu: 'లా' },
+                  { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
+                  { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
+                  { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
+                ], 'cols-4', false)}
+
+                {renderSectionColumns('sampath', 'Prof Sampath Kumar', '+91 9985236736', 'లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజም', [
+                  { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
+                  { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
+                  { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
+                ], 'cols-3', false)}
+              </div>
+
+              <div className="form-actions" style={{ marginTop: '20px' }}>
+                <button type="submit" style={{ padding: '12px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  Save Academic Records
+                </button>
+              </div>
+            </form>
+
+            <div style={{ marginTop: '40px' }}>
+              <h3>Academic Records Summary</h3>
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name <span className="telugu-text">(పేరు)</span></th>
+                      <th>District <span className="telugu-text">(జిల్లా)</span></th>
+                      <th>Prof Stephen</th>
+                      <th>Prof Rajshekar</th>
+                      <th>Prof Sampath</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => {
+                      const formatTableCell = (obj, keys) => {
+                        if (!obj) return 'N/A';
+                        return (
+                          <div className="prof-cell" style={{ fontSize: '0.8rem' }}>
+                            {keys.map(k => (
+                              <div key={k}>
+                                <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0} 
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      };
+
+                      return (
+                        <tr key={row.id}>
+                          <td><strong>{row.name}</strong></td>
+                          <td>{row.district}</td>
+                          <td>{formatTableCell(row.stephen, stephenKeys)}</td>
+                          <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
+                          <td>{formatTableCell(row.sampath, sampathKeys)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* SECTION 3: POST-GRADUATION CAMPUS STAY & TIME WINDOW (CALENDAR CONTROL) */}
+        {/* ========================================================================= */}
+        {activeScreen === 'stayCalendar' && (
+          <div className="screen-section">
+            <div className="section-intro">
+              <h2>Section 3: Post-Graduation Campus Stay & Time Window</h2>
+              <p className="subtitle">Manage precise arrival/departure schedules and filter campus stay dates.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="form-card" style={{ marginBottom: '30px' }}>
+              <h3>Configure Post-Graduation Stay Window for Student</h3>
+              
+              <div className="input-group" style={{ marginBottom: '20px' }}>
+                <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
+                <input type="text" name="name" placeholder="Enter student name..." value={formData.name} onChange={handleChange} required />
+              </div>
+
+              <div className="post-grad-stay-section" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#1e293b' }}>
+                  Post-Graduation Campus Stay & Time Window <span className="telugu-text">(గ్రాడ్యుయేషన్ వసతి & సమయ నియంత్రణ)</span>
+                </h4>
+                <div className="form-row-basic" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
+                  
+                  <div className="input-group">
+                    <label>From Date & Time <span className="telugu-label">ప్రారంభ తేదీ మరియు సమయం</span></label>
+                    <input 
+                      type="datetime-local" 
+                      name="stayStartDateTime" 
+                      value={formData.stayStartDateTime} 
+                      onChange={handleChange} 
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label>To Date & Time <span className="telugu-label">ముగింపు తేదీ మరియు సమయం</span></label>
+                    <input 
+                      type="datetime-local" 
+                      name="stayEndDateTime" 
+                      value={formData.stayEndDateTime} 
+                      onChange={handleChange} 
+                    />
+                  </div>
+
+                  <div className="input-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>Stay Notes / Instructions <span className="telugu-label">వసతి గమనికలు</span></label>
+                    <input 
+                      type="text" 
+                      name="postGradStay" 
+                      placeholder="e.g., Arriving night before, staying until morning worship session" 
+                      value={formData.postGradStay} 
+                      onChange={handleChange} 
+                    />
+                  </div>
+
+                </div>
+              </div>
+
+              <div className="form-actions" style={{ marginTop: '20px' }}>
+                <button type="submit" style={{ padding: '12px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  Save Stay Schedule
+                </button>
+              </div>
+            </form>
+
+            {/* Calendar Control Widget & Filter */}
+            <div className="form-card calendar-widget-card" style={{ background: '#f8fafc', border: '1px solid #cbd5e1' }}>
+              <h3>📅 Campus Stay Calendar Control <span className="telugu-text">(గ్రాడ్యుయేషన్ వసతి క్యాలెండర్ తనిఖీ)</span></h3>
+              <p className="subtitle">Select any date to instantly view who is staying on campus during that period.</p>
+              
+              <div className="calendar-filter-row" style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <div className="input-group" style={{ flex: '1', minWidth: '220px' }}>
+                  <label>Filter by Date <span className="telugu-label">తేదీ ద్వారా వసతిని తనిఖీ చేయండి</span></label>
+                  <input 
+                    type="date" 
+                    value={calendarFilterDate} 
+                    onChange={(e) => setCalendarFilterDate(e.target.value)} 
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #94a3b8' }}
+                  />
+                </div>
+                {calendarFilterDate && (
+                  <button 
+                    type="button" 
+                    onClick={() => setCalendarFilterDate('')}
+                    style={{ alignSelf: 'flex-end', height: '38px', padding: '0 15px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+
+              <div className="table-wrapper">
+                <table className="calendar-table">
+                  <thead>
+                    <tr>
+                      <th>Student Name <span className="telugu-text">(పేరు)</span></th>
+                      <th>District <span className="telugu-text">(జిల్లా)</span></th>
+                      <th>Phone <span className="telugu-text">(ఫోన్)</span></th>
+                      <th>Stay Window <span className="telugu-text">(సమయ వ్యవధి)</span></th>
+                      <th>Stay Notes <span className="telugu-text">(గమనికలు)</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCalendarRows.length > 0 ? (
+                      filteredCalendarRows.map(row => (
+                        <tr key={`cal-${row.id}`}>
+                          <td><strong>{row.name}</strong></td>
+                          <td>{row.district || 'N/A'}</td>
+                          <td>{row.phone || 'N/A'}</td>
+                          <td>
+                            {row.stayStartDateTime && row.stayEndDateTime ? (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <div><strong>From:</strong> {new Date(row.stayStartDateTime).toLocaleString()}</div>
+                                <div><strong>To:</strong> {new Date(row.stayEndDateTime).toLocaleString()}</div>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#d97706' }}>Window not set</span>
+                            )}
+                          </td>
+                          <td>{row.postGradStay || 'No notes provided'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="no-data">No students scheduled for campus stay on this date.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       {/* CHURCH FOOTER */}
-      <footer className="church-footer">
-        <div className="footer-container">
-          <div className="footer-col footer-brand-col">
-            <div className="footer-logo-row">
-              <div className="footer-crest">✝</div>
+      <footer className="church-footer" style={{ marginTop: '50px', background: '#0f172a', color: '#cbd5e1', padding: '40px 20px' }}>
+        <div className="footer-container" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '30px', maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="footer-col footer-brand-col" style={{ flex: '1', minWidth: '280px' }}>
+            <div className="footer-logo-row" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <div className="footer-crest" style={{ color: '#38bdf8', fontSize: '1.5rem' }}>✝</div>
               <div className="footer-brand-title">
-                <span className="brand-christ">CHRIST</span>
-                <span className="brand-church">BIBLE CHURCH</span>
+                <span className="brand-christ" style={{ fontWeight: 'bold', color: '#fff' }}>CHRIST</span> <span className="brand-church" style={{ color: '#38bdf8' }}>BIBLE CHURCH</span>
               </div>
             </div>
-            <p className="footer-desc">
+            <p className="footer-desc" style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
               We are a Bible-believing, Christ-exalting, local church congregation situated in Gauribidanur, Karnataka. Seeking to make disciples of Jesus Christ who glorify God.
             </p>
-            <p className="footer-copy">© 2026 CHRIST BIBLE COLLEGE (CBC) BENGALURU.</p>
+            <p className="footer-copy" style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '10px' }}>© 2026 CHRIST BIBLE COLLEGE (CBC) BENGALURU.</p>
           </div>
 
-          <div className="footer-col">
-            <h4 className="footer-heading">QUICK LINKS</h4>
-            <ul className="footer-links">
-              <li><a href="#form-section">Sunday Service</a></li>
-              <li><a href="#form-section">About Our Church</a></li>
-              <li><a href="#form-section">What We Believe</a></li>
-              <li><a href="#form-section">Our Leadership</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-col">
-            <h4 className="footer-heading">GATHERING TIMES</h4>
-            <div className="footer-gathering-info">
-              <p className="gathering-title">Sunday Worship Gathering:</p>
+          <div className="footer-col" style={{ flex: '1', minWidth: '220px' }}>
+            <h4 className="footer-heading" style={{ color: '#fff', marginBottom: '15px' }}>GATHERING TIMES</h4>
+            <div className="footer-gathering-info" style={{ fontSize: '0.9rem' }}>
+              <p className="gathering-title" style={{ color: '#38bdf8', fontWeight: 'bold' }}>Sunday Worship Gathering:</p>
               <p className="gathering-time">10:00 AM</p>
-              <p className="gathering-title mt-15">Service Location Chapel:</p>
+              <p className="gathering-title mt-15" style={{ color: '#38bdf8', fontWeight: 'bold', marginTop: '10px' }}>Service Location Chapel:</p>
               <p className="gathering-address">
                 #521, Alkapura Gate, Gauribidanur, Karnataka, India
               </p>
             </div>
-          </div>
-        </div>
-
-        <div className="footer-connect-banner">
-          <div className="footer-connect-content">
-            <div className="connect-badge">CONNECT WITH US</div>
-            <p className="connect-text">
-              Follow Christ Bible College (CBC) Bangaluru on social media for Sunday sermon clips, spiritual reflections, and congregation announcements.
-            </p>
-          </div>
-          <div className="footer-social-buttons">
-            <a href="https://whatsapp.com/channel/0029Vb7pNhd7j6g24RqJ2M1c" target="_blank" rel="noreferrer" className="social-btn wa-btn-enhanced">
-              <span>Join WhatsApp Channel</span>
-            </a>
-            <a href="https://www.facebook.com/battle.for.truth.2025/" target="_blank" rel="noreferrer" className="social-btn fb-btn">Facebook</a>
-            <a href="https://www.instagram.com/battlefortruth3?igsh=NThsbDd0eHNzcXI1" target="_blank" rel="noreferrer" className="social-btn ig-btn">Instagram</a>
-            <a href="https://www.youtube.com/@Battle_For_Truth" target="_blank" rel="noreferrer" className="social-btn yt-btn">YouTube</a>
           </div>
         </div>
       </footer>
