@@ -295,6 +295,7 @@ function App() {
             handleSubmit={handleSubmit} 
             renderSectionColumns={renderSectionColumns} 
             rows={rows} 
+            handleEdit={handleEdit}
             stephenKeys={stephenKeys} 
             rajkeys={rajkeys} 
             sampathKeys={sampathKeys} 

@@ -1,6 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function StudentFormScreen({ formData, setFormData, isEditing, handleSubmit, handleFileChange, handleChange, rows, handleEdit, handleDelete, setIsEditing, createDetailedSubsections, stephenKeys, rajkeys, sampathKeys }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter rows based on name or district search input
+  const filteredRows = rows.filter(row => 
+    row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div className="screen-section">
       <div className="section-intro">
@@ -60,8 +68,21 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
         </div>
       </form>
 
+      {/* SEARCH BAR & DIRECTORY */}
       <div style={{ marginTop: '40px' }}>
-        <h3>Registered Students Directory ({rows.length})</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ margin: 0 }}>Registered Students Directory ({filteredRows.length})</h3>
+          <div style={{ minWidth: '260px', flex: '0.4' }}>
+            <input 
+              type="text" 
+              placeholder="🔍 Search student by name or district..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
+
         <div className="table-wrapper">
           <table>
             <thead>
@@ -74,26 +95,32 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td><strong>{row.name}</strong></td>
-                  <td>{row.district}</td>
-                  <td>
-                    {row.photoUrl ? (
-                      <img src={row.photoUrl} alt="Preview" style={{ width: '35px', height: '35px', borderRadius: '50%', objectFit: 'cover' }} />
-                    ) : (
-                      <span>{row.photoLink || 'No Photo'}</span>
-                    )}
-                  </td>
-                  <td>{row.phone}</td>
-                  <td>
-                    <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleEdit(row)} style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
-                      <button onClick={() => handleDelete(row.id)} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
-                    </div>
-                  </td>
+              {filteredRows.length > 0 ? (
+                filteredRows.map((row) => (
+                  <tr key={row.id}>
+                    <td><strong>{row.name}</strong></td>
+                    <td>{row.district}</td>
+                    <td>
+                      {row.photoUrl ? (
+                        <img src={row.photoUrl} alt="Preview" style={{ width: '35px', height: '35px', borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <span>{row.photoLink || 'No Photo'}</span>
+                      )}
+                    </td>
+                    <td>{row.phone}</td>
+                    <td>
+                      <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleEdit(row)} style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
+                        <button onClick={() => handleDelete(row.id)} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="no-data">No students matched your search criteria.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
