@@ -13,7 +13,7 @@ export default function AcademicEvaluationsScreen({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
-
+  
   // Keep the dropdown synchronized with active formData ID
   useEffect(() => {
     if (formData && formData.id) {
@@ -46,6 +46,10 @@ export default function AcademicEvaluationsScreen({
       } else if (type === 'file') {
         const file = e.target.files[0];
         value = file ? file.name : '';
+      } else if (type === 'number' && fieldKey.includes('Permissions')) {
+        // Strictly prevent permissions from dropping below 0
+        const num = Number(e.target.value);
+        value = isNaN(num) ? 0 : Math.max(0, num);
       } else {
         value = e.target.value;
       }
@@ -120,6 +124,7 @@ export default function AcademicEvaluationsScreen({
                 <span className="permissions-label">Permissions:</span>
                 <input 
                   type="number" 
+                  min="0"
                   className="permissions-input"
                   value={lecturerData[permissionsField] || 0} 
                   onChange={(e) => handleChange(e, lecturerKey, permissionsField, 'number')} 
