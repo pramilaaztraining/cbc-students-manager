@@ -1,10 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function StayCalendarScreen({ formData, setFormData, handleChange, handleSubmit, rows, handleEdit, calendarFilterDate, setCalendarFilterDate, filteredCalendarRows }) {
+export default function StayCalendarScreen({ 
+  formData, 
+  setFormData, 
+  handleChange, 
+  handleSubmit, 
+  rows, 
+  handleEdit, 
+  calendarFilterDate, 
+  setCalendarFilterDate, 
+  filteredCalendarRows 
+}) {
   const [dateError, setDateError] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+
+  useEffect(() => {
+    if (formData && formData.id) {
+      setSelectedStudentId(String(formData.id));
+    } else {
+      setSelectedStudentId('');
+    }
+  }, [formData?.id]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+    if (!formData.id) {
+      alert('Please select a valid student from the dropdown directory first.');
+      return;
+    }
+
     if (formData.stayStartDateTime && formData.stayEndDateTime) {
       const start = new Date(formData.stayStartDateTime);
       const end = new Date(formData.stayEndDateTime);
@@ -33,9 +57,42 @@ export default function StayCalendarScreen({ formData, setFormData, handleChange
         
         {dateError && <div className="error-banner" style={{ background: '#fee2e2', border: '1px solid #f87171', color: '#b91c1c', padding: '10px 14px', borderRadius: '6px', marginBottom: '16px' }}>{dateError}</div>}
 
-        <div className="input-group" style={{ marginBottom: '20px' }}>
-          <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
-          <input type="text" name="name" placeholder="Enter student name..." value={formData.name || ''} onChange={handleChange} required />
+        {/* FULLY SCROLLABLE NATIVE DROPDOWN SELECTOR */}
+        <div className="input-group" style={{ marginBottom: '20px', position: 'relative' }}>
+          <label>Select Student from Directory <span className="telugu-label">జాబితా నుండి విద్యార్థిని ఎంచుకోండి</span></label>
+          <select 
+            value={selectedStudentId} 
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedStudentId(val);
+
+              if (!val) {
+                setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
+                return;
+              }
+
+              const found = rows.find(r => String(r.id) === val);
+              if (found) {
+                setFormData({
+                  ...found,
+                  stayStartDateTime: found.stayStartDateTime || '',
+                  stayEndDateTime: found.stayEndDateTime || '',
+                  postGradStay: found.postGradStay || ''
+                });
+              }
+            }}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#fff' }}
+          >
+            <option value="">-- Choose student from directory --</option>
+            {rows.map(row => (
+              <option key={row.id} value={row.id}>
+                ID: {row.id} - {row.name} {row.district ? `(${row.district})` : ''}
+              </option>
+            ))}
+          </select>
+          <small style={{ color: '#64748b', marginTop: '4px' }}>
+            💡 Target Student: <strong>{formData.id ? `ID #${formData.id} - ${formData.name}` : 'None selected'}</strong>
+          </small>
         </div>
 
         <div className="post-grad-stay-section" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
@@ -85,7 +142,10 @@ export default function StayCalendarScreen({ formData, setFormData, handleChange
           {formData.id && (
             <button 
               type="button" 
-              onClick={() => setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' })}
+              onClick={() => {
+                setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
+                setSelectedStudentId('');
+              }}
               style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
             >
               Clear Selection
@@ -154,7 +214,10 @@ export default function StayCalendarScreen({ formData, setFormData, handleChange
                     <td>
                       <button 
                         type="button" 
-                        onClick={() => handleEdit(row, 'stayCalendar')} 
+                        onClick={() => {
+                          handleEdit(row, 'stayCalendar');
+                          setSelectedStudentId(String(row.id));
+                        }} 
                         className="edit-btn"
                       >
                         {formData.id === row.id ? 'Configuring ID: ' + row.id : 'Configure Stay'}

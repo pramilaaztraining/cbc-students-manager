@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AcademicEvaluationsScreen.css';
 
 export default function AcademicEvaluationsScreen({ 
@@ -12,7 +12,17 @@ export default function AcademicEvaluationsScreen({
   sampathKeys 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+
+  // Keep the dropdown synchronized with active formData ID
+  useEffect(() => {
+    if (formData && formData.id) {
+      setSelectedStudentId(String(formData.id));
+    } else {
+      setSelectedStudentId('');
+    }
+  }, [formData?.id]);
+
   const [collapsedSections, setCollapsedSections] = useState({
     stephen: false,
     rajshekar: true,
@@ -52,7 +62,7 @@ export default function AcademicEvaluationsScreen({
     }
   };
 
-  const filteredRows = rows.filter(row => 
+  const filteredSummaryRows = rows.filter(row => 
     row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
     String(row.id).includes(searchTerm)
@@ -149,10 +159,10 @@ export default function AcademicEvaluationsScreen({
       </div>
 
       <div className="form-card search-card">
-        <h4>🔍 Quick Search Student by ID or Name <span className="telugu-text">(ID లేదా పేరుతో వెతకండి)</span></h4>
+        <h4>🔍 Quick Search Table <span className="telugu-text">(పట్టికను వెతకండి)</span></h4>
         <input 
           type="text" 
-          placeholder="Type student name or ID..." 
+          placeholder="Type name or ID to filter table..." 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
           className="search-input"
@@ -166,6 +176,39 @@ export default function AcademicEvaluationsScreen({
         </h3>
         
         {formData.id && <input type="hidden" name="id" value={formData.id} />}
+
+        {/* FULLY SCROLLABLE NATIVE DROPDOWN SELECTOR */}
+        <div className="input-group" style={{ position: 'relative' }}>
+          <label>Select Student from Directory <span className="telugu-label">జాబితా నుండి విద్యార్థిని ఎంచుకోండి</span></label>
+          <select 
+            value={selectedStudentId} 
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedStudentId(val);
+              
+              if (!val) {
+                setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
+                return;
+              }
+
+              const found = rows.find(r => String(r.id) === val);
+              if (found) {
+                setFormData({ ...found });
+              }
+            }} 
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#fff' }}
+          >
+            <option value="">-- Choose student from directory --</option>
+            {rows.map(row => (
+              <option key={row.id} value={row.id}>
+                ID: {row.id} - {row.name} {row.district ? `(${row.district})` : ''}
+              </option>
+            ))}
+          </select>
+          <small style={{ color: '#64748b', marginTop: '4px' }}>
+            💡 Active Record: <strong>{formData.id ? `ID #${formData.id} - ${formData.name}` : 'None selected'}</strong>
+          </small>
+        </div>
 
         <div className="input-group">
           <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
@@ -255,7 +298,10 @@ export default function AcademicEvaluationsScreen({
           {formData.id && (
             <button 
               type="button" 
-              onClick={() => setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' })}
+              onClick={() => {
+                setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
+                setSelectedStudentId('');
+              }}
               style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
             >
               Clear Selection
@@ -280,8 +326,8 @@ export default function AcademicEvaluationsScreen({
               </tr>
             </thead>
             <tbody>
-              {filteredRows.length > 0 ? (
-                filteredRows.map((row) => {
+              {filteredSummaryRows.length > 0 ? (
+                filteredSummaryRows.map((row) => {
                   const formatTableCell = (obj, keys) => {
                     if (!obj) return 'N/A';
                     return (
@@ -306,7 +352,10 @@ export default function AcademicEvaluationsScreen({
                       <td>
                         <button 
                           type="button" 
-                          onClick={() => handleEdit(row, 'academics')} 
+                          onClick={() => {
+                            handleEdit(row, 'academics');
+                            setSelectedStudentId(String(row.id));
+                          }} 
                           className="edit-btn"
                         >
                           {formData.id === row.id ? 'Editing ID: ' + row.id : 'Edit Academics'}

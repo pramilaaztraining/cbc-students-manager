@@ -98,11 +98,15 @@ function App() {
     e.preventDefault();
     if (!formData.name) return;
 
-    if (formData.id) {
+    if (formData.id && Number(formData.id) > 0) {
+      // Update existing record by ID
       setRows(rows.map(row => (row.id === Number(formData.id) ? { ...formData } : row)));
       setIsEditing(false);
     } else {
-      const nextId = rows.length > 0 ? Math.max(...rows.map(r => Number(r.id) || 0)) + 1 : 1;
+      // Generate next sequential positive ID starting from 1 (strictly excluding 0 or negative values)
+      const validIds = rows.map(r => Number(r.id)).filter(id => !isNaN(id) && id > 0);
+      const nextId = validIds.length > 0 ? Math.max(...validIds) + 1 : 1;
+      
       const newEntry = { ...formData, id: nextId };
       setRows([...rows, newEntry]);
     }
@@ -124,7 +128,7 @@ function App() {
   const handleEdit = (row, targetScreen = 'creation') => {
     setIsEditing(true);
     setFormData({ ...row });
-    setActiveScreen(targetScreen); // Stays on the specified tab without resetting to creation
+    setActiveScreen(targetScreen);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

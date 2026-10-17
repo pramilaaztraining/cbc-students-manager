@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
 
-export default function StudentFormScreen({ formData, setFormData, isEditing, handleSubmit, handleFileChange, handleChange, rows, handleEdit, handleDelete, setIsEditing, createDetailedSubsections, stephenKeys, rajkeys, sampathKeys }) {
+export default function StudentFormScreen({ 
+  formData, 
+  setFormData, 
+  isEditing, 
+  handleSubmit, 
+  handleFileChange, 
+  handleChange, 
+  rows, 
+  handleEdit, 
+  handleDelete, 
+  setIsEditing, 
+  createDetailedSubsections, 
+  stephenKeys, 
+  rajkeys, 
+  sampathKeys 
+}) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredRows = rows.filter(row => 
