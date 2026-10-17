@@ -99,16 +99,14 @@ function App() {
     if (!formData.name) return;
 
     if (formData.id) {
-      // Strictly update the row that matches formData.id
       setRows(rows.map(row => (row.id === Number(formData.id) ? { ...formData } : row)));
+      setIsEditing(false);
     } else {
-      // Create a new entry with the next sequential ID
       const nextId = rows.length > 0 ? Math.max(...rows.map(r => Number(r.id) || 0)) + 1 : 1;
       const newEntry = { ...formData, id: nextId };
       setRows([...rows, newEntry]);
     }
 
-    // Reset form data after submit
     setFormData({
       id: null,
       name: '', district: '', phone: '',
@@ -123,17 +121,17 @@ function App() {
     });
   };
 
-const handleEdit = (row, targetScreen = 'creation') => {
+  const handleEdit = (row, targetScreen = 'creation') => {
     setIsEditing(true);
     setFormData({ ...row });
-    setActiveScreen(targetScreen); // Allows routing dynamically to 'academics' or 'creation'
+    setActiveScreen(targetScreen); // Stays on the specified tab without resetting to creation
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = (id) => {
     if (window.confirm(`Are you sure you want to delete student ID: ${id}?`)) {
       setRows(rows.filter(row => row.id !== id));
-      if (isEditing && formData.id === id) {
+      if (formData.id === id) {
         setIsEditing(false);
         setFormData({
           id: null,
@@ -192,7 +190,7 @@ const handleEdit = (row, targetScreen = 'creation') => {
             handleFileChange={handleFileChange} 
             handleChange={handleChange} 
             rows={rows} 
-            handleEdit={handleEdit} 
+            handleEdit={(row) => handleEdit(row, 'creation')} 
             handleDelete={handleDelete} 
             setIsEditing={setIsEditing} 
             createDetailedSubsections={createDetailedSubsections} 
@@ -208,7 +206,7 @@ const handleEdit = (row, targetScreen = 'creation') => {
             setFormData={setFormData}
             handleSubmit={handleSubmit} 
             rows={rows} 
-            handleEdit={handleEdit}
+            handleEdit={(row) => handleEdit(row, 'academics')}
             stephenKeys={stephenKeys} 
             rajkeys={rajkeys} 
             sampathKeys={sampathKeys} 
@@ -222,7 +220,7 @@ const handleEdit = (row, targetScreen = 'creation') => {
             handleChange={handleChange} 
             handleSubmit={handleSubmit} 
             rows={rows}
-            handleEdit={handleEdit}
+            handleEdit={(row) => handleEdit(row, 'stayCalendar')}
             calendarFilterDate={calendarFilterDate} 
             setCalendarFilterDate={setCalendarFilterDate} 
             filteredCalendarRows={filteredCalendarRows} 

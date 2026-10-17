@@ -28,7 +28,7 @@ export default function StayCalendarScreen({ formData, setFormData, handleChange
       <form onSubmit={handleFormSubmit} className="form-card" style={{ marginBottom: '30px' }}>
         <h3>
           Configure Post-Graduation Stay Window
-          {formData.id && <span style={{ fontSize: '0.85rem', color: '#64748b', marginLeft: '10px' }}>[Target ID: {formData.id}]</span>}
+          {formData.id && <span style={{ fontSize: '0.85rem', color: '#2563eb', marginLeft: '10px', fontWeight: 'bold' }}>[Target ID: {formData.id}]</span>}
         </h3>
         
         {dateError && <div className="error-banner" style={{ background: '#fee2e2', border: '1px solid #f87171', color: '#b91c1c', padding: '10px 14px', borderRadius: '6px', marginBottom: '16px' }}>{dateError}</div>}
@@ -135,7 +135,7 @@ export default function StayCalendarScreen({ formData, setFormData, handleChange
             <tbody>
               {filteredCalendarRows.length > 0 ? (
                 filteredCalendarRows.map(row => (
-                  <tr key={`cal-${row.id}`}>
+                  <tr key={`cal-${row.id}`} style={{ background: formData.id === row.id ? '#eff6ff' : 'transparent' }}>
                     <td><code>{row.id}</code></td>
                     <td><strong>{row.name}</strong></td>
                     <td>{row.district || 'N/A'}</td>
@@ -152,8 +152,12 @@ export default function StayCalendarScreen({ formData, setFormData, handleChange
                     </td>
                     <td>{row.postGradStay || 'No notes provided'}</td>
                     <td>
-                      <button type="button" onClick={() => handleEdit(row)} className="edit-btn">
-                        Configure Stay
+                      <button 
+                        type="button" 
+                        onClick={() => handleEdit(row, 'stayCalendar')} 
+                        className="edit-btn"
+                      >
+                        {formData.id === row.id ? 'Configuring ID: ' + row.id : 'Configure Stay'}
                       </button>
                     </td>
                   </tr>
