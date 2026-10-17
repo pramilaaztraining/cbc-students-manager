@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function StayCalendarScreen({ formData, handleChange, handleSubmit, calendarFilterDate, setCalendarFilterDate, filteredCalendarRows }) {
+export default function StayCalendarScreen({ formData, setFormData, handleChange, handleSubmit, rows, handleEdit, calendarFilterDate, setCalendarFilterDate, filteredCalendarRows }) {
   const [dateError, setDateError] = useState('');
 
   const handleFormSubmit = (e) => {
@@ -26,13 +26,16 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
       </div>
 
       <form onSubmit={handleFormSubmit} className="form-card" style={{ marginBottom: '30px' }}>
-        <h3>Configure Post-Graduation Stay Window for Student</h3>
+        <h3>
+          Configure Post-Graduation Stay Window
+          {formData.id && <span style={{ fontSize: '0.85rem', color: '#64748b', marginLeft: '10px' }}>[Target ID: {formData.id}]</span>}
+        </h3>
         
         {dateError && <div className="error-banner" style={{ background: '#fee2e2', border: '1px solid #f87171', color: '#b91c1c', padding: '10px 14px', borderRadius: '6px', marginBottom: '16px' }}>{dateError}</div>}
 
         <div className="input-group" style={{ marginBottom: '20px' }}>
           <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
-          <input type="text" name="name" placeholder="Enter student name..." value={formData.name} onChange={handleChange} required />
+          <input type="text" name="name" placeholder="Enter student name..." value={formData.name || ''} onChange={handleChange} required />
         </div>
 
         <div className="post-grad-stay-section" style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
@@ -75,10 +78,19 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
           </div>
         </div>
 
-        <div className="form-actions" style={{ marginTop: '20px' }}>
+        <div className="form-actions" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
           <button type="submit" style={{ padding: '12px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-            Save Stay Schedule
+            {formData.id ? `Save Stay Schedule [ID: ${formData.id}]` : 'Save Stay Schedule'}
           </button>
+          {formData.id && (
+            <button 
+              type="button" 
+              onClick={() => setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' })}
+              style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+            >
+              Clear Selection
+            </button>
+          )}
         </div>
       </form>
 
@@ -111,17 +123,20 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
           <table className="calendar-table">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Student Name <span className="telugu-text">(పేరు)</span></th>
                 <th>District <span className="telugu-text">(జిల్లా)</span></th>
                 <th>Phone <span className="telugu-text">(ఫోన్)</span></th>
                 <th>Stay Window <span className="telugu-text">(సమయ వ్యవధి)</span></th>
                 <th>Stay Notes <span className="telugu-text">(గమనికలు)</span></th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredCalendarRows.length > 0 ? (
                 filteredCalendarRows.map(row => (
                   <tr key={`cal-${row.id}`}>
+                    <td><code>{row.id}</code></td>
                     <td><strong>{row.name}</strong></td>
                     <td>{row.district || 'N/A'}</td>
                     <td>{row.phone || 'N/A'}</td>
@@ -136,11 +151,16 @@ export default function StayCalendarScreen({ formData, handleChange, handleSubmi
                       )}
                     </td>
                     <td>{row.postGradStay || 'No notes provided'}</td>
+                    <td>
+                      <button type="button" onClick={() => handleEdit(row)} className="edit-btn">
+                        Configure Stay
+                      </button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="no-data">No students scheduled for campus stay on this date.</td>
+                  <td colSpan="7" className="no-data">No students scheduled for campus stay on this date.</td>
                 </tr>
               )}
             </tbody>

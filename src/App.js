@@ -17,7 +17,7 @@ function App() {
       obj[`${k}Notes`] = false;
       obj[`${k}Classes`] = false;
       obj[`${k}Permissions`] = '';
-      obj[`${k}VideoFileName`] = ''; // Safe string container
+      obj[`${k}VideoFileName`] = '';
     });
     return obj;
   };
@@ -50,6 +50,7 @@ function App() {
   });
 
   const [formData, setFormData] = useState({
+    id: null,
     name: '', district: '', phone: '',
     photoLink: '', photoUrl: '',
     stephen: createDetailedSubsections(stephenKeys),
@@ -62,19 +63,12 @@ function App() {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [currentId, setCurrentId] = useState(null);
   const [activeScreen, setActiveScreen] = useState('creation');
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
   useEffect(() => {
-    const rowsToPersist = rows.map(row => ({
-      ...row,
-      stephen: Object.fromEntries(Object.entries(row.stephen).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
-      rajshekar: Object.fromEntries(Object.entries(row.rajshekar).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
-      sampath: Object.fromEntries(Object.entries(row.sampath).map(([k, v]) => k.includes('VideoFile') ? [k, null] : [k, v])),
-    }));
     try {
-      localStorage.setItem('cbc_students_complete_app_data', JSON.stringify(rowsToPersist));
+      localStorage.setItem('cbc_students_complete_app_data', JSON.stringify(rows));
     } catch (e) {
       console.error('Storage quota reached');
     }
@@ -104,16 +98,19 @@ function App() {
     e.preventDefault();
     if (!formData.name) return;
 
-    if (isEditing) {
-      setRows(rows.map(row => (row.id === currentId ? { ...row, ...formData } : row)));
-      setIsEditing(false);
-      setCurrentId(null);
+    if (formData.id) {
+      // Strictly update the row that matches formData.id
+      setRows(rows.map(row => (row.id === Number(formData.id) ? { ...formData } : row)));
     } else {
-      const newEntry = { id: Date.now(), ...formData };
+      // Create a new entry with the next sequential ID
+      const nextId = rows.length > 0 ? Math.max(...rows.map(r => Number(r.id) || 0)) + 1 : 1;
+      const newEntry = { ...formData, id: nextId };
       setRows([...rows, newEntry]);
     }
 
+    // Reset form data after submit
     setFormData({
+      id: null,
       name: '', district: '', phone: '',
       photoLink: '', photoUrl: '',
       stephen: createDetailedSubsections(stephenKeys),
@@ -126,30 +123,20 @@ function App() {
     });
   };
 
-  const handleEdit = (row) => {
+const handleEdit = (row, targetScreen = 'creation') => {
     setIsEditing(true);
-    setCurrentId(row.id);
-    setFormData({
-      name: row.name, district: row.district || '', phone: row.phone || '',
-      photoLink: row.photoLink || '', photoUrl: row.photoUrl || '',
-      stephen: row.stephen || createDetailedSubsections(stephenKeys),
-      rajshekar: row.rajshekar || createDetailedSubsections(rajkeys),
-      sampath: row.sampath || createDetailedSubsections(sampathKeys),
-      accommodation: row.accommodation || '',
-      postGradStay: row.postGradStay || '',
-      stayStartDateTime: row.stayStartDateTime || '',
-      stayEndDateTime: row.stayEndDateTime || ''
-    });
-    setActiveScreen('creation');
+    setFormData({ ...row });
+    setActiveScreen(targetScreen); // Allows routing dynamically to 'academics' or 'creation'
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
+    if (window.confirm(`Are you sure you want to delete student ID: ${id}?`)) {
       setRows(rows.filter(row => row.id !== id));
-      if (isEditing && currentId === id) {
+      if (isEditing && formData.id === id) {
         setIsEditing(false);
         setFormData({
+          id: null,
           name: '', district: '', phone: '', photoLink: '', photoUrl: '',
           stephen: createDetailedSubsections(stephenKeys),
           rajshekar: createDetailedSubsections(rajkeys),
@@ -165,12 +152,13 @@ function App() {
     doc.setFontSize(14);
     doc.text('CBC-BTC Manager - Complete Records & Stay Schedule', 14, 12);
 
-    const tableColumns = ['Name', 'District', 'Phone', 'Post-Grad Stay Window'];
+    const tableColumns = ['ID', 'Name', 'District', 'Phone', 'Post-Grad Stay Window'];
     const tableRows = rows.map(row => [
+      row.id,
       row.name,
       row.district || '',
       row.phone || '',
-      `From: ${row.stayStartDateTime ? new Date(row.stayStartDateTime).toLocaleString() : 'N/A'}\nTo: ${row.stayEndDateTime ? new Date(row.stayEndDateTime).toLocaleString() : 'N/A'}\nNotes: ${row.postGradStay || 'None'}`
+      `From: ${row.stayStartDateTime ? new Date(row.stayStartDateTime).toLocaleString() : 'N/A'}\nTo: ${row.stayEndDateTime ? new Date(row.stayEndDateTime).toLocaleString() : 'N/A'}`
     ]);
 
     autoTable(doc, { head: [tableColumns], body: tableRows, startY: 18, theme: 'grid' });
@@ -230,8 +218,11 @@ function App() {
         {activeScreen === 'stayCalendar' && (
           <StayCalendarScreen 
             formData={formData} 
+            setFormData={setFormData}
             handleChange={handleChange} 
             handleSubmit={handleSubmit} 
+            rows={rows}
+            handleEdit={handleEdit}
             calendarFilterDate={calendarFilterDate} 
             setCalendarFilterDate={setCalendarFilterDate} 
             filteredCalendarRows={filteredCalendarRows} 

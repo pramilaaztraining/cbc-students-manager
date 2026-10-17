@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 export default function StudentFormScreen({ formData, setFormData, isEditing, handleSubmit, handleFileChange, handleChange, rows, handleEdit, handleDelete, setIsEditing, createDetailedSubsections, stephenKeys, rajkeys, sampathKeys }) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter rows based on name or district search input
   const filteredRows = rows.filter(row => 
     row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase()))
+    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    String(row.id).includes(searchTerm)
   );
 
   return (
@@ -17,7 +17,11 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
       </div>
 
       <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
-        <h3>{isEditing ? 'Edit Student Profile (విద్యార్థి వివరాలను సవరించు)' : 'Create New Student Profile (కొత్త విద్యార్థి వివరాలు)'}</h3>
+        <h3>
+          {isEditing 
+            ? `Edit Student Profile [ID: ${formData.id}] (విద్యార్థి వివరాలను సవరించు)` 
+            : 'Create New Student Profile (కొత్త విద్యార్థి వివరాలు)'}
+        </h3>
         
         <div className="form-grid">
           <div className="form-row-basic" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
@@ -45,7 +49,7 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
 
         <div className="form-actions" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
           <button type="submit" style={{ padding: '12px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-            {isEditing ? 'Update Student Details' : 'Save Student Details'}
+            {isEditing ? `Update Student [ID: ${formData.id}]` : 'Save Student Details'}
           </button>
           {isEditing && (
             <button 
@@ -53,6 +57,7 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
               onClick={() => {
                 setIsEditing(false);
                 setFormData({
+                  id: null,
                   name: '', district: '', phone: '', photoLink: '', photoUrl: '',
                   stephen: createDetailedSubsections(stephenKeys),
                   rajshekar: createDetailedSubsections(rajkeys),
@@ -68,14 +73,13 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
         </div>
       </form>
 
-      {/* SEARCH BAR & DIRECTORY */}
       <div style={{ marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 style={{ margin: 0 }}>Registered Students Directory ({filteredRows.length})</h3>
           <div style={{ minWidth: '260px', flex: '0.4' }}>
             <input 
               type="text" 
-              placeholder="🔍 Search student by name or district..." 
+              placeholder="🔍 Search by ID, name or district..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
               style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
@@ -87,6 +91,7 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
           <table>
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Name <span className="telugu-text">(పేరు)</span></th>
                 <th>District <span className="telugu-text">(జిల్లా)</span></th>
                 <th>Photo <span className="telugu-text">(ఫోటో)</span></th>
@@ -98,6 +103,7 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
               {filteredRows.length > 0 ? (
                 filteredRows.map((row) => (
                   <tr key={row.id}>
+                    <td><code>{row.id}</code></td>
                     <td><strong>{row.name}</strong></td>
                     <td>{row.district}</td>
                     <td>
@@ -118,7 +124,7 @@ export default function StudentFormScreen({ formData, setFormData, isEditing, ha
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="no-data">No students matched your search criteria.</td>
+                  <td colSpan="6" className="no-data">No students matched your search criteria.</td>
                 </tr>
               )}
             </tbody>

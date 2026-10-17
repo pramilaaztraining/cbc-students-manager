@@ -34,7 +34,6 @@ export default function AcademicEvaluationsScreen({
       if (type === 'checkbox') {
         value = e.target.checked;
       } else if (type === 'file') {
-        // Store only the file name string or handle accordingly to prevent object rendering crash
         const file = e.target.files[0];
         value = file ? file.name : '';
       } else {
@@ -55,7 +54,8 @@ export default function AcademicEvaluationsScreen({
 
   const filteredRows = rows.filter(row => 
     row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase()))
+    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    String(row.id).includes(searchTerm)
   );
 
   const renderSubjectCards = (lecturerKey, subjectsList) => {
@@ -66,7 +66,7 @@ export default function AcademicEvaluationsScreen({
           const notesField = `${sub.key}Notes`;
           const classesField = `${sub.key}Classes`;
           const permissionsField = `${sub.key}Permissions`;
-          const videoField = `${sub.key}VideoFileName`; // Using string name to prevent object render error
+          const videoField = `${sub.key}VideoFileName`;
 
           const lecturerData = formData[lecturerKey] || {};
 
@@ -149,10 +149,10 @@ export default function AcademicEvaluationsScreen({
       </div>
 
       <div className="form-card search-card">
-        <h4>🔍 Quick Search Student to Edit Academics <span className="telugu-text">(విద్యార్థిని వెతకండి)</span></h4>
+        <h4>🔍 Quick Search Student by ID or Name <span className="telugu-text">(ID లేదా పేరుతో వెతకండి)</span></h4>
         <input 
           type="text" 
-          placeholder="Type student name to filter list below..." 
+          placeholder="Type student name or ID..." 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
           className="search-input"
@@ -160,8 +160,13 @@ export default function AcademicEvaluationsScreen({
       </div>
 
       <form onSubmit={handleSubmit} className="form-card">
-        <h3>Update Academic Evaluations for: <span className="selected-student">{formData.name || 'Select a student below'}</span></h3>
+        <h3>
+          Update Academic Evaluations for: <span className="selected-student">{formData.name || 'Select a student below'}</span>
+          {formData.id && <span style={{ fontSize: '0.85rem', color: '#2563eb', marginLeft: '10px', fontWeight: 'bold' }}>[Target ID: {formData.id}]</span>}
+        </h3>
         
+        {formData.id && <input type="hidden" name="id" value={formData.id} />}
+
         <div className="input-group">
           <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
           <input 
@@ -243,10 +248,19 @@ export default function AcademicEvaluationsScreen({
           </div>
         </div>
 
-        <div className="form-actions">
+        <div className="form-actions" style={{ display: 'flex', gap: '10px' }}>
           <button type="submit" className="save-btn">
-            Save Academic Records
+            {formData.id ? `Update Academic Records [ID: ${formData.id}]` : 'Save Academic Records'}
           </button>
+          {formData.id && (
+            <button 
+              type="button" 
+              onClick={() => setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' })}
+              style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+            >
+              Clear Selection
+            </button>
+          )}
         </div>
       </form>
 
@@ -256,6 +270,7 @@ export default function AcademicEvaluationsScreen({
           <table>
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Name <span className="telugu-text">(పేరు)</span></th>
                 <th>District <span className="telugu-text">(జిల్లా)</span></th>
                 <th>Prof Stephen</th>
@@ -281,15 +296,20 @@ export default function AcademicEvaluationsScreen({
                   };
 
                   return (
-                    <tr key={row.id}>
+                    <tr key={row.id} style={{ background: formData.id === row.id ? '#eff6ff' : 'transparent' }}>
+                      <td><code>{row.id}</code></td>
                       <td><strong>{row.name}</strong></td>
                       <td>{row.district}</td>
                       <td>{formatTableCell(row.stephen, stephenKeys)}</td>
                       <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
                       <td>{formatTableCell(row.sampath, sampathKeys)}</td>
                       <td>
-                        <button type="button" onClick={() => handleEdit(row)} className="edit-btn">
-                          Edit Academics
+                        <button 
+                          type="button" 
+                          onClick={() => handleEdit(row, 'academics')} 
+                          className="edit-btn"
+                        >
+                          {formData.id === row.id ? 'Editing ID: ' + row.id : 'Edit Academics'}
                         </button>
                       </td>
                     </tr>
@@ -297,7 +317,7 @@ export default function AcademicEvaluationsScreen({
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="no-data">No matching student records found.</td>
+                  <td colSpan="7" className="no-data">No matching student records found.</td>
                 </tr>
               )}
             </tbody>
