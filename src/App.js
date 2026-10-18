@@ -67,7 +67,7 @@ function App() {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [activeScreen, setActiveScreen] = useState('creation'); // 'creation', 'academics', 'stayCalendar', 'contact', 'leadership', 'cbcManager'
+  const [activeScreen, setActiveScreen] = useState('creation'); // 'creation', 'academics', 'stayCalendar', 'contact', 'leadership'
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
   useEffect(() => {
@@ -192,7 +192,6 @@ function App() {
         ) : activeScreen === 'leadership' ? (
           <LeadershipScreen />
         ) : (
-          /* CBC Manager Workflow views */
           <>
             <Header 
               activeScreen={activeScreen} 

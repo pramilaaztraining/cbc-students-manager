@@ -1,8 +1,7 @@
-/* Church Footer Styling */
 .church-footer {
-  background-color: #0f172a;
+  background-color: #0c1322;
   color: #94a3b8;
-  padding: 60px 20px 30px 20px;
+  padding: 60px 20px 40px 20px;
   border-top: 1px solid #1e293b;
   margin-top: auto;
 }
@@ -12,8 +11,8 @@
   width: 92%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr;
-  gap: 40px;
+  grid-template-columns: 2fr 1.2fr 1.8fr;
+  gap: 50px;
 }
 
 @media (max-width: 900px) {
@@ -32,14 +31,18 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 15px;
+  margin-bottom: 18px;
 }
 
 .footer-crest {
-  font-size: 24px;
-  color: #fbbf24;
-  border: 1px solid #fbbf24;
-  padding: 2px 10px;
+  font-size: 20px;
+  color: #f59e0b;
+  border: 1.5px solid #f59e0b;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 6px;
 }
 
@@ -50,38 +53,40 @@
 }
 
 .brand-christ {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 2px;
   color: #ffffff;
 }
 
 .brand-church {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 3px;
-  color: #fbbf24;
+  color: #f59e0b;
 }
 
 .footer-desc {
   font-size: 13px;
   line-height: 1.6;
   color: #94a3b8;
-  margin-bottom: 20px;
+  margin: 0 0 25px 0;
+  max-width: 420px;
 }
 
 .footer-copy {
   font-size: 11px;
   color: #64748b;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
+  margin: 0;
 }
 
 .footer-heading {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: #fbbf24;
-  margin-bottom: 20px;
+  color: #f59e0b;
+  margin: 0 0 20px 0;
 }
 
 .footer-links {
@@ -90,7 +95,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .footer-links a {
@@ -112,108 +117,21 @@
 .gathering-title {
   color: #ffffff;
   font-weight: 600;
+  margin: 0;
 }
 
 .gathering-time {
   color: #cbd5e1;
-  margin-top: 2px;
+  margin: 2px 0 0 0;
 }
 
 .mt-15 {
-  margin-top: 15px;
+  margin-top: 18px !important;
 }
 
 .gathering-address {
   color: #94a3b8;
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-/* Connect Banner */
-.footer-connect-banner {
-  max-width: 1350px;
-  width: 92%;
-  margin: 40px auto 0 auto;
-  padding-top: 30px;
-  border-top: 1px solid #1e293b;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 30px;
-  flex-wrap: wrap;
-}
-
-.footer-connect-content {
-  flex: 1;
-  min-width: 300px;
-}
-
-.connect-badge {
-  display: inline-block;
-  background-color: #2563eb;
-  color: white;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 4px;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-}
-
-.connect-text {
   font-size: 13px;
-  color: #94a3b8;
+  margin: 2px 0 0 0;
   line-height: 1.5;
-  margin: 0;
-}
-
-.footer-social-buttons {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.social-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 16px;
-  border-radius: 8px;
-  color: white;
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-.social-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.wa-btn-enhanced {
-  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-}
-
-.wa-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 3px;
-  border-radius: 50%;
-}
-
-.fb-btn {
-  background-color: #3b5998;
-}
-
-.ig-btn {
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-}
-
-.yt-btn {
-  background-color: #cc0000;
 }

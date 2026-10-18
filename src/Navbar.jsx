@@ -7,7 +7,7 @@ export default function Navbar({ setCurrentScreen }) {
       <div className="floating-nav-container">
         
         {/* Brand Logo & Title */}
-        <div className="nav-brand-section" onClick={() => setCurrentScreen('home')} style={{ cursor: 'pointer' }}>
+        <div className="nav-brand-section" onClick={() => setCurrentScreen('creation')} style={{ cursor: 'pointer' }}>
           <div className="nav-logo-crest">✝</div>
           <div className="nav-brand-titles">
             <span className="nav-brand-main">CHRIST BIBLE COLLEGE</span>
@@ -17,7 +17,7 @@ export default function Navbar({ setCurrentScreen }) {
 
         {/* Navigation Menu Links */}
         <nav className="nav-links-section">
-          <button onClick={() => setCurrentScreen('home')} className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>HOME</button>
+          <button onClick={() => setCurrentScreen('creation')} className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>HOME</button>
           
           <div className="nav-dropdown-wrapper">
             <button className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>ABOUT <span>▾</span></button>
@@ -26,8 +26,14 @@ export default function Navbar({ setCurrentScreen }) {
             </div>
           </div>
 
-          {/* New Separate CBC Manager Menu Link */}
-          <button onClick={() => setCurrentScreen('cbcManager')} className="nav-item nav-manager-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: '800', color: '#2563eb' }}>CBC MANAGER</button>
+          {/* CBC Manager Link */}
+          <button 
+            onClick={() => setCurrentScreen('creation')} 
+            className="nav-item nav-manager-btn" 
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: '800', color: '#2563eb' }}
+          >
+            CBC MANAGER
+          </button>
 
           <a href="#form-section" className="nav-item">SONGBOOK</a>
           <a href="#form-section" className="nav-item">PASTORAL INTERNSHIP</a>

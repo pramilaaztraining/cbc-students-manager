@@ -1,0 +1,76 @@
+.cbc-manager-header-wrapper {
+  text-align: center;
+  padding: 30px 20px 10px 20px;
+  background-color: transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cbc-dashboard-title-area {
+  margin-bottom: 25px;
+}
+
+.cbc-main-title {
+  color: #0f172a;
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.cbc-sub-title {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.cbc-tabs-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+/* Default tab styling (Dark Slate) */
+.cbc-tab-btn {
+  background-color: #1e293b;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.cbc-tab-btn:hover {
+  background-color: #334155;
+}
+
+/* Active tab styling (Vibrant Blue) */
+.cbc-tab-btn.active {
+  background-color: #2563eb !important;
+}
+
+/* Download PDF button styling (Teal) */
+.cbc-pdf-btn {
+  background-color: #0d9488;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s;
+}
+
+.cbc-pdf-btn:hover {
+  background-color: #0f766e;
+}

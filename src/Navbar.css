@@ -30,11 +30,11 @@
 }
 
 .nav-logo-crest {
-  font-size: 22px;
+  font-size: 20px;
   color: #1e3a8a;
   border: 2px solid #1e3a8a;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,14 +48,14 @@
 }
 
 .nav-brand-main {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: #0f172a;
 }
 
 .nav-brand-sub {
-  font-size: 12px;
+  font-size: 11px;
   font-style: italic;
   color: #64748b;
   font-family: serif;
@@ -64,16 +64,16 @@
 .nav-links-section {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
   flex-wrap: wrap;
 }
 
 .nav-item {
   text-decoration: none;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #0f172a;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   transition: color 0.2s;
 }
 
@@ -116,12 +116,12 @@
   color: #2563eb;
 }
 
-.nav-contact-btn {
-  color: #06b6d4;
+.nav-manager-btn {
+  color: #2563eb !important;
 }
 
-.nav-contact-btn:hover {
-  color: #0891b2;
+.nav-contact-btn {
+  color: #06b6d4 !important;
 }
 
 @media (max-width: 900px) {
