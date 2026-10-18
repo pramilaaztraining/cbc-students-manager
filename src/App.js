@@ -30,27 +30,9 @@ function App() {
   const rajkeys = ['law', 'history', 'poetic', 'prophetic'];
   const sampathKeys = ['loc', 'locChronological', 'evangelism'];
 
-  const initialData = [
-    {
-      id: 1,
-      name: 'A. Sadhana',
-      district: 'Hyderabad',
-      photoLink: 'A.Sadhana.jpg',
-      photoUrl: '',
-      phone: '9876543210',
-      stephen: createDetailedSubsections(stephenKeys),
-      rajshekar: createDetailedSubsections(rajkeys),
-      sampath: createDetailedSubsections(sampathKeys),
-      accommodation: '10-12 Jan',
-      postGradStay: 'Staying after graduation for worship and campus assistance',
-      stayStartDateTime: '2026-11-13T08:00',
-      stayEndDateTime: '2026-11-15T20:00'
-    }
-  ];
-
   const [rows, setRows] = useState(() => {
     const saved = localStorage.getItem('cbc_students_complete_app_data');
-    return saved ? JSON.parse(saved) : initialData;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [formData, setFormData] = useState({
