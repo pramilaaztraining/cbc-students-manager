@@ -40,6 +40,8 @@ export default function Navbar({ setCurrentScreen }) {
           <a href="#form-section" className="nav-item">MINISTRIES</a>
           
           <button onClick={() => setCurrentScreen('contact')} className="nav-item nav-contact-btn" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>CONTACT</button>
+      
+      <button onClick={() => setCurrentScreen('courses')} className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>COURSES</button>
         </nav>
 
       </div>

@@ -9,6 +9,7 @@ import StayCalendarScreen from './StayCalendarScreen';
 import AcademicEvaluationsScreen from './AcademicEvaluationsScreen';
 import FloatingSocialBar from './FloatingSocialBar';
 import FlashAnnouncement from './FlashAnnouncement';
+import CoursesScreen from './CoursesScreen';
 
 import Header from './Header';
 import Footer from './Footer';
@@ -173,7 +174,12 @@ function App() {
       <FlashAnnouncement />
 
       <main className="container">
-        {activeScreen === 'contact' ? (
+               
+        {
+        activeScreen === 'courses' ? (
+  <CoursesScreen />
+) :
+        activeScreen === 'contact' ? (
           <ContactScreen />
         ) : activeScreen === 'leadership' ? (
           <LeadershipScreen />
