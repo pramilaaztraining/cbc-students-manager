@@ -1,0 +1,57 @@
+.flash-announcement-bar {
+  background: linear-gradient(90deg, #1e3a8a, #2563eb, #0d9488);
+  color: #ffffff;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+  position: relative;
+  z-index: 999;
+}
+
+.flash-badge {
+  background-color: #f59e0b;
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  margin-right: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.flash-marquee-container {
+  overflow: hidden;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.flash-marquee-content {
+  display: inline-block;
+  animation: marquee 30s linear infinite;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.flash-marquee-content span {
+  margin-right: 60px;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Pause animation when user hovers over the announcement */
+.flash-announcement-bar:hover .flash-marquee-content {
+  animation-play-state: paused;
+}

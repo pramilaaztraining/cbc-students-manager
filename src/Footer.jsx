@@ -18,7 +18,7 @@ export default function Footer() {
           <p className="footer-desc">
             We are a Bible-believing, Christ-exalting, local church congregation situated in Gauribidanur, Karnataka. Seeking to make disciples of Jesus Christ who glorify God.
           </p>
-          <p className="footer-copy">© 2026 CHRIST BIBLE CHURCH BENGALURU.</p>
+          <p className="footer-copy">© 2026 CHRIST BIBLE COLLEGE BENGALURU.</p>
         </div>
 
         {/* Middle Column: Quick Links */}
