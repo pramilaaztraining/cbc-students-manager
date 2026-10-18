@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function StudentFormScreen({ 
   formData, 
@@ -23,6 +25,89 @@ export default function StudentFormScreen({
     (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
     String(row.id).includes(searchTerm)
   );
+
+  // PDF Export Function with embedded profile photos
+  const exportToPDF = () => {
+    const doc = new jsPDF('landscape'); // Landscape layout for wide directory tables
+
+    // PDF Title
+    doc.setFontSize(16);
+    doc.text('Registered Students Directory', 14, 15);
+
+    // Map filtered rows to table content (leave the photo cell empty so we can draw it via hook)
+    const tableRows = filteredRows.map((row, index) => [
+      row.id || index + 1,
+      row.name || '',
+      row.district || 'N/A',
+      '', // Placeholder for Photo column
+      row.phone || 'N/A'
+    ]);
+
+    // Table Headers (English only)
+    const tableColumns = [
+      'ID', 
+      'Name', 
+      'District', 
+      'Photo', 
+      'Phone'
+    ];
+
+    // Generate table using autoTable
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 25,
+      theme: 'grid',
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 6,
+        valign: 'middle',
+        overflow: 'linebreak' 
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185] // Professional blue header theme
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 25, halign: 'center' }, // Photo column width
+        4: { cellWidth: 'auto' }
+      },
+      // Hook to draw student profile images inside the Photo column cells
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === 3) {
+          const rowIndex = data.row.index;
+          const student = filteredRows[rowIndex];
+          const imgUrl = student?.photoUrl || student?.photoLink;
+
+          if (imgUrl) {
+            try {
+              // Dimensions for the image inside the table cell
+              const dim = 12; // size in mm
+              const x = data.cell.x + (data.cell.width - dim) / 2;
+              const y = data.cell.y + (data.cell.height - dim) / 2;
+
+              // Embed image into PDF cell
+              doc.addImage(imgUrl, 'JPEG', x, y, dim, dim);
+            } catch (err) {
+              // Fallback text if image loading/format fails
+              doc.setFontSize(8);
+              doc.setTextColor(150, 150, 150);
+              doc.text('No Image', data.cell.x + 4, data.cell.y + data.cell.height / 2);
+            }
+          } else {
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('No Photo', data.cell.x + 4, data.cell.y + data.cell.height / 2);
+          }
+        }
+      }
+    });
+
+    // Save PDF file
+    doc.save('registered-students-directory.pdf');
+  };
 
   return (
     <div className="screen-section">
@@ -91,14 +176,24 @@ export default function StudentFormScreen({
       <div style={{ marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 style={{ margin: 0 }}>Registered Students Directory ({filteredRows.length})</h3>
-          <div style={{ minWidth: '260px', flex: '0.4' }}>
-            <input 
-              type="text" 
-              placeholder="🔍 Search by ID, name or district..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
-            />
+          
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button 
+              type="button" 
+              onClick={exportToPDF}
+              style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              📥 Export Table to PDF
+            </button>
+            <div style={{ minWidth: '260px' }}>
+              <input 
+                type="text" 
+                placeholder="🔍 Search by ID, name or district..." 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
+              />
+            </div>
           </div>
         </div>
 
