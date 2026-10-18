@@ -20,7 +20,8 @@ export default function LeadershipScreen() {
           <div className="leader-avatar">SB</div>
           <div className="leader-title-area">
             <span className="leader-badge">FACULTY & DIRECTOR</span>
-            <h2 className="leader-name">Prof. Stephen Suresh Babu</h2>
+            <h2 className="leader-name">Prof. Stephen Suresh Babu, Director of CBC</h2>
+            <p className="leader-short-bio">M.Th; M.Tech; M.Div</p>
             <p className="leader-short-bio">Contact Phone: +91 8074852725</p>
           </div>
         </div>
@@ -44,14 +45,15 @@ export default function LeadershipScreen() {
           <div className="leader-avatar">RS</div>
           <div className="leader-title-area">
             <span className="leader-badge">FACULTY & INSTRUCTOR</span>
-            <h2 className="leader-name">Prof. Rajshekar Sir</h2>
+            <h2 className="leader-name">Prof. Raja Shekar</h2>
+                        <p className="leader-short-bio">M.Th; M.Div</p>
             <p className="leader-short-bio">Contact Phone: +91 8885831588</p>
           </div>
         </div>
 
         <div className="leader-quote-box">
           <p>
-            <em>"Prof. Rajshekar Sir brings extensive experience in biblical studies and instruction, guiding students through rigorous curriculum studies and spiritual formation."</em>
+            <em>"Prof. Raja Shekar brings extensive experience in biblical studies and instruction, guiding students through rigorous curriculum studies and spiritual formation."</em>
           </p>
         </div>
 
