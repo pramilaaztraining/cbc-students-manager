@@ -36,12 +36,7 @@ export default function Header({ activeScreen, setActiveScreen, exportToPDF }) {
           3. Post-Grad Stay & Calendar
         </button>
 
-        <button 
-          onClick={exportToPDF}
-          className="cbc-pdf-btn"
-        >
-          📥 Download PDF
-        </button>
+        
       </div>
 
     </div>
