@@ -26,10 +26,13 @@ export default function Navbar({ setCurrentScreen }) {
             </div>
           </div>
 
+          {/* New Separate CBC Manager Menu Link */}
+          <button onClick={() => setCurrentScreen('cbcManager')} className="nav-item nav-manager-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: '800', color: '#2563eb' }}>CBC MANAGER</button>
+
           <a href="#form-section" className="nav-item">SONGBOOK</a>
           <a href="#form-section" className="nav-item">PASTORAL INTERNSHIP</a>
           <a href="#form-section" className="nav-item">MINISTRIES</a>
-          {/* Clicking Contact switches the active screen state */}
+          
           <button onClick={() => setCurrentScreen('contact')} className="nav-item nav-contact-btn" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>CONTACT</button>
         </nav>
 
