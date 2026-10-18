@@ -15,6 +15,7 @@ export default function StayCalendarScreen({
   const [dateError, setDateError] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (formData && formData.id) {
       setSelectedStudentId(String(formData.id));

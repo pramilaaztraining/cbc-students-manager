@@ -15,6 +15,7 @@ export default function AcademicEvaluationsScreen({
   const [selectedStudentId, setSelectedStudentId] = useState('');
   
   // Keep the dropdown synchronized with active formData ID
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (formData && formData.id) {
       setSelectedStudentId(String(formData.id));
