@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable'; // <-- Update import here
 
 export default function StayCalendarScreen({ 
   formData, 
@@ -69,6 +71,76 @@ export default function StayCalendarScreen({
     }
     setDateError('');
     handleSubmit(e);
+  };
+
+  // Fixed Export Function with explicit autoTable function call
+  const exportToPDF = () => {
+    const doc = new jsPDF('landscape'); // Landscape layout for wide tables
+
+    // PDF Title
+    doc.setFontSize(16);
+    doc.text('Student Stay & Family Records', 14, 15);
+
+    // Map filtered rows to table content
+    const tableRows = filteredCalendarRows.map((row, index) => {
+      const fam = row.familyStay || {};
+      const summaryParts = [];
+      if (fam.mother) summaryParts.push('Mother');
+      if (fam.father) summaryParts.push('Father');
+      if (fam.guardian) summaryParts.push('Guardian');
+      if (fam.childrenCount > 0) summaryParts.push(`Children: ${fam.childrenCount}`);
+      if (fam.brothersCount > 0) summaryParts.push(`Brothers: ${fam.brothersCount}`);
+      if (fam.sistersCount > 0) summaryParts.push(`Sisters: ${fam.sistersCount}`);
+
+      const stayWindowText = row.stayStartDateTime && row.stayEndDateTime
+        ? `From: ${new Date(row.stayStartDateTime).toLocaleString()}\nTo: ${new Date(row.stayEndDateTime).toLocaleString()}`
+        : 'Window not set';
+
+      return [
+        row.id || index + 1,
+        row.name || '',
+        row.district || 'N/A',
+        stayWindowText,
+        summaryParts.length > 0 ? summaryParts.join(', ') : 'None',
+        row.postGradStay || 'No notes provided'
+      ];
+    });
+
+    // Exact requested table headers
+    const tableColumns = [
+      'ID', 
+      'Student Name (పేరు)', 
+      'District (జిల్లా)', 
+      'Stay Window (సమయ వ్యవధి)', 
+      'Family Members (కుటుంబ సభ్యులు)', 
+      'Stay Notes (గమనికలు)'
+    ];
+
+    // Generate table using imported autoTable function directly
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 25,
+      theme: 'grid',
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 3,
+        overflow: 'linebreak' 
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185] 
+      },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 50 },
+        4: { cellWidth: 40 },
+        5: { cellWidth: 'auto' }
+      }
+    });
+
+    doc.save('student-stay-records.pdf');
   };
 
   const familyData = formData.familyStay || {};
@@ -269,8 +341,19 @@ export default function StayCalendarScreen({
       </form>
 
       <div className="form-card calendar-widget-card" style={{ background: '#f8fafc', border: '1px solid #cbd5e1' }}>
-        <h3>📅 Campus Stay Calendar Control <span className="telugu-text">(గ్రాడ్యుయేషన్ వసతి క్యాలెండర్ తనిఖీ)</span></h3>
-        <p className="subtitle">Select any date to instantly view who is staying on campus during that period.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>📅 Campus Stay Calendar Control <span className="telugu-text">(గ్రాడ్యుయేషన్ వసతి క్యాలెండర్ తనిఖీ)</span></h3>
+            <p className="subtitle" style={{ margin: '4px 0 0 0' }}>Select any date to instantly view who is staying on campus during that period.</p>
+          </div>
+          <button 
+            type="button" 
+            onClick={exportToPDF}
+            style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            📥 Export Table to PDF
+          </button>
+        </div>
         
         <div className="calendar-filter-row" style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
           <div className="input-group" style={{ flex: '1', minWidth: '220px' }}>

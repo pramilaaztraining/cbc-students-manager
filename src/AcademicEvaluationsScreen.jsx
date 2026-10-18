@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './AcademicEvaluationsScreen.css';
 
 export default function AcademicEvaluationsScreen({ 
@@ -34,6 +36,20 @@ export default function AcademicEvaluationsScreen({
     setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Comprehensive label mapping for actual subject names
+  const subjectNameMap = {
+    synoptic: 'Synoptic Gospels',
+    actsEpistles: 'Acts & Epistles',
+    homiletics: 'Homiletics',
+    law: 'Law',
+    history: 'History',
+    poetic: 'Poetic & Wisdom',
+    prophetic: 'Prophetic',
+    loc: 'Life of Christ',
+    locChronological: 'Life of Christ - Chronological',
+    evangelism: 'Evangelism & Missions'
+  };
+
   const handleChange = (e, lecturerKey, fieldKey, type) => {
     if (!lecturerKey) {
       const { name, value } = e.target;
@@ -48,7 +64,6 @@ export default function AcademicEvaluationsScreen({
         const file = e.target.files[0];
         value = file ? file.name : '';
       } else if (type === 'number' && fieldKey.includes('Permissions')) {
-        // Strictly prevent permissions from dropping below 0
         const num = Number(e.target.value);
         value = isNaN(num) ? 0 : Math.max(0, num);
       } else {
@@ -72,6 +87,77 @@ export default function AcademicEvaluationsScreen({
     (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
     String(row.id).includes(searchTerm)
   );
+
+  // PDF Export Function using actual subject names
+  const exportToPDF = () => {
+    const doc = new jsPDF('landscape'); // Landscape layout to comfortably fit all columns
+
+    // PDF Title
+    doc.setFontSize(16);
+    doc.text('Academic Records Summary', 14, 15);
+
+    // Map filtered rows to match the summary table columns with full names
+    const tableRows = filteredSummaryRows.map((row, index) => {
+      const formatProfSummary = (obj, keys) => {
+        if (!obj) return 'N/A';
+        return keys.map(k => {
+          const fullName = subjectNameMap[k] || k;
+          const ex = obj[`${k}Exam`] ? '[Yes]' : '[No]';
+          const notes = obj[`${k}Notes`] ? '[Yes]' : '[No]';
+          const cls = obj[`${k}Classes`] ? '[Yes]' : '[No]';
+          const perm = obj[`${k}Permissions`] || 0;
+          return `${fullName}\n  Ex: ${ex} | Notes: ${notes} | Classes: ${cls} | Permissions: ${perm}`;
+        }).join('\n\n');
+      };
+
+      const stephenText = formatProfSummary(row.stephen, stephenKeys);
+      const rajshekarText = formatProfSummary(row.rajshekar, rajkeys);
+      const sampathText = formatProfSummary(row.sampath, sampathKeys);
+
+      return [
+        row.id || index + 1,
+        row.name || '',
+        row.district || 'N/A',
+        stephenText,
+        rajshekarText,
+        sampathText
+      ];
+    });
+
+    const tableColumns = [
+      'ID', 
+      'Name (పేరు)', 
+      'District (జిల్లా)', 
+      'Prof Stephen', 
+      'Prof Rajshekar', 
+      'Prof Sampath'
+    ];
+
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 25,
+      theme: 'grid',
+      styles: { 
+        fontSize: 8, 
+        cellPadding: 3,
+        overflow: 'linebreak' 
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185] 
+      },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 65 },
+        4: { cellWidth: 65 },
+        5: { cellWidth: 65 }
+      }
+    });
+
+    doc.save('academic-records-summary.pdf');
+  };
 
   const renderSubjectCards = (lecturerKey, subjectsList) => {
     return (
@@ -183,7 +269,6 @@ export default function AcademicEvaluationsScreen({
         
         {formData.id && <input type="hidden" name="id" value={formData.id} />}
 
-        {/* FULLY SCROLLABLE NATIVE DROPDOWN SELECTOR */}
         <div className="input-group" style={{ position: 'relative' }}>
           <label>Select Student from Directory <span className="telugu-label">జాబితా నుండి విద్యార్థిని ఎంచుకోండి</span></label>
           <select 
@@ -317,7 +402,17 @@ export default function AcademicEvaluationsScreen({
       </form>
 
       <div className="summary-section">
-        <h3>Academic Records Summary (Click 'Edit Academics' to load record)</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
+          <h3>Academic Records Summary (Click 'Edit Academics' to load record)</h3>
+          <button 
+            type="button" 
+            onClick={exportToPDF}
+            style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            📥 Export Table to PDF
+          </button>
+        </div>
+
         <div className="table-wrapper">
           <table>
             <thead>
@@ -338,11 +433,14 @@ export default function AcademicEvaluationsScreen({
                     if (!obj) return 'N/A';
                     return (
                       <div className="prof-cell">
-                        {keys.map(k => (
-                          <div key={k}>
-                            <strong>{k}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0} 
-                          </div>
-                        ))}
+                        {keys.map(k => {
+                          const fullName = subjectNameMap[k] || k;
+                          return (
+                            <div key={k} style={{ marginBottom: '4px' }}>
+                              <strong>{fullName}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0} 
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   };
