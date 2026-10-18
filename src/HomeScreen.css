@@ -1,0 +1,161 @@
+.home-screen-wrapper {
+  max-width: 1350px;
+  width: 94%;
+  margin: 25px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* Hero Banner Container */
+.hero-banner-container {
+  position: relative;
+  width: 100%;
+  height: 520px;
+  background: linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 50px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.hero-overlay-content {
+  max-width: 700px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.welcome-tagline-small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #f59e0b;
+}
+
+.hero-main-title {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.hero-bible-verse {
+  font-size: 14px;
+  font-style: italic;
+  color: #e2e8f0;
+  margin: 5px 0 15px 0;
+}
+
+.hero-bible-verse span {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  margin-left: 8px;
+  letter-spacing: 1px;
+}
+
+.hero-buttons-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 5px;
+}
+
+.btn-plan-visit {
+  background-color: #881337; /* Rich burgundy tone matching screenshot */
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-plan-visit:hover {
+  background-color: #690f29;
+}
+
+.btn-browse-sermons {
+  background-color: #ffffff;
+  color: #0f172a;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-browse-sermons:hover {
+  background-color: #f1f5f9;
+}
+
+/* Info Cards Bar at Bottom */
+.info-cards-bar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 25px 30px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+@media (max-width: 900px) {
+  .info-cards-bar {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .hero-main-title {
+    font-size: 30px;
+  }
+  .hero-banner-container {
+    padding: 25px;
+    height: 420px;
+  }
+}
+
+.info-card-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.info-icon {
+  font-size: 22px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.info-text-group h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.info-text-group p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}

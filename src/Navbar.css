@@ -136,3 +136,45 @@
     gap: 15px;
   }
 }
+.nav-item.active-nav-item {
+  color: #2563eb !important;
+  font-weight: 800;
+  border-bottom: 2px solid #2563eb;
+  padding-bottom: 2px;
+}
+
+.nav-item.active-nav-item {
+  color: #2563eb !important;
+  font-weight: 800;
+  border-bottom: 2px solid #2563eb;
+  padding-bottom: 2px;
+}
+
+/* Ensure the active navigation button is clearly highlighted in blue with an underline */
+.nav-links-section .nav-item.active-nav-item {
+  color: #2563eb !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid #2563eb !important;
+  padding-bottom: 2px !important;
+}
+
+/* Also ensure regular nav-item buttons support custom borders */
+.nav-links-section .nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+
+/* Force CBC Manager to remain standard/black unless actively selected */
+.nav-links-section .nav-manager-btn:not(.active-nav-item) {
+  color: inherit !important;
+}
+
+.nav-links-section .nav-item.active-nav-item {
+  color: #2563eb !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid #2563eb !important;
+  padding-bottom: 2px !important;
+}

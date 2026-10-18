@@ -1,13 +1,13 @@
 import React from 'react';
 import './Navbar.css';
 
-export default function Navbar({ setCurrentScreen }) {
+export default function Navbar({ activeScreen, setCurrentScreen }) {
   return (
     <header className="floating-navbar-wrapper">
       <div className="floating-nav-container">
         
         {/* Brand Logo & Title */}
-        <div className="nav-brand-section" onClick={() => setCurrentScreen('creation')} style={{ cursor: 'pointer' }}>
+        <div className="nav-brand-section" onClick={() => setCurrentScreen('home')} style={{ cursor: 'pointer' }}>
           <div className="nav-logo-crest">✝</div>
           <div className="nav-brand-titles">
             <span className="nav-brand-main">CHRIST BIBLE COLLEGE</span>
@@ -17,31 +17,58 @@ export default function Navbar({ setCurrentScreen }) {
 
         {/* Navigation Menu Links */}
         <nav className="nav-links-section">
-          <button onClick={() => setCurrentScreen('creation')} className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>HOME</button>
+          
+          {/* HOME */}
+          <button 
+            onClick={() => setCurrentScreen('home')} 
+            className={`nav-item ${activeScreen === 'home' ? 'active-nav-item' : ''}`}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            HOME
+          </button>
           
           <div className="nav-dropdown-wrapper">
-            <button className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>ABOUT <span>▾</span></button>
+            <button 
+              className={`nav-item ${activeScreen === 'leadership' ? 'active-nav-item' : ''}`} 
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              ABOUT <span>▾</span>
+            </button>
             <div className="nav-dropdown-menu">
               <button onClick={() => setCurrentScreen('leadership')} className="dropdown-link" style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}>Our Leadership</button>
             </div>
           </div>
 
-          {/* CBC Manager Link */}
+          {/* CBC MANAGER */}
           <button 
             onClick={() => setCurrentScreen('creation')} 
-            className="nav-item nav-manager-btn" 
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: '800', color: '#2563eb' }}
+            className={`nav-item ${['creation', 'academics', 'stayCalendar'].includes(activeScreen) ? 'active-nav-item' : ''}`} 
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
           >
             CBC MANAGER
+          </button>
+
+          {/* COURSES */}
+          <button 
+            onClick={() => setCurrentScreen('courses')} 
+            className={`nav-item ${activeScreen === 'courses' ? 'active-nav-item' : ''}`}
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            COURSES
           </button>
 
           <a href="#form-section" className="nav-item">SONGBOOK</a>
           <a href="#form-section" className="nav-item">PASTORAL INTERNSHIP</a>
           <a href="#form-section" className="nav-item">MINISTRIES</a>
           
-          <button onClick={() => setCurrentScreen('contact')} className="nav-item nav-contact-btn" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>CONTACT</button>
-      
-      <button onClick={() => setCurrentScreen('courses')} className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>COURSES</button>
+          {/* CONTACT */}
+          <button 
+            onClick={() => setCurrentScreen('contact')} 
+            className={`nav-item ${activeScreen === 'contact' ? 'active-nav-item' : ''}`} 
+            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            CONTACT
+          </button>
         </nav>
 
       </div>

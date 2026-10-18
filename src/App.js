@@ -10,6 +10,7 @@ import AcademicEvaluationsScreen from './AcademicEvaluationsScreen';
 import FloatingSocialBar from './FloatingSocialBar';
 import FlashAnnouncement from './FlashAnnouncement';
 import CoursesScreen from './CoursesScreen';
+import HomeScreen from './HomeScreen';
 
 import Header from './Header';
 import Footer from './Footer';
@@ -51,7 +52,7 @@ function App() {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [activeScreen, setActiveScreen] = useState('creation'); // 'creation', 'academics', 'stayCalendar', 'contact', 'leadership'
+  const [activeScreen, setActiveScreen] = useState('home'); // Explicitly defaults to 'home'
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
   useEffect(() => {
@@ -167,19 +168,18 @@ function App() {
       {/* Floating Sticky Social Media Bar */}
       <FloatingSocialBar />
       
-      {/* Top Floating Navigation Bar */}
-      <Navbar setCurrentScreen={setActiveScreen} />
+      {/* Top Floating Navigation Bar with activeScreen prop passed */}
+      <Navbar activeScreen={activeScreen} setCurrentScreen={setActiveScreen} />
 
       {/* Flash Announcement Marquee Banner */}
       <FlashAnnouncement />
 
       <main className="container">
-               
-        {
-        activeScreen === 'courses' ? (
-  <CoursesScreen />
-) :
-        activeScreen === 'contact' ? (
+        {activeScreen === 'home' ? (
+          <HomeScreen setActiveScreen={setActiveScreen} />
+        ) : activeScreen === 'courses' ? (
+          <CoursesScreen />
+        ) : activeScreen === 'contact' ? (
           <ContactScreen />
         ) : activeScreen === 'leadership' ? (
           <LeadershipScreen />
