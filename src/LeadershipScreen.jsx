@@ -4,6 +4,8 @@ import './LeadershipScreen.css';
 export default function LeadershipScreen() {
   return (
     <div className="leadership-page-wrapper">
+      
+      {/* Introduction / Header Card */}
       <div className="leadership-intro-card">
         <span className="intro-tag">SHEPHERDING & CARE</span>
         <h1 className="intro-title">Our Leadership</h1>
@@ -12,33 +14,54 @@ export default function LeadershipScreen() {
         </p>
       </div>
 
+      {/* Leader 1: Prof. Stephen Suresh Babu */}
       <div className="leader-profile-card">
         <div className="leader-card-header">
-          <div className="leader-avatar">DG</div>
+          <div className="leader-avatar">SB</div>
           <div className="leader-title-area">
-            <span className="leader-badge">PASTOR-TEACHER</span>
-            <h2 className="leader-name">Daril Gona</h2>
-            <p className="leader-short-bio">
-              Ordained by Christ Community Church, Daril was sent to plant a new church in Electronic City, Bangalore.
-            </p>
+            <span className="leader-badge">FACULTY & DIRECTOR</span>
+            <h2 className="leader-name">Prof. Stephen Suresh Babu</h2>
+            <p className="leader-short-bio">Contact Phone: +91 8074852725</p>
           </div>
         </div>
 
         <div className="leader-quote-box">
           <p>
-            <em>Daril Gona is happily married to Sharon Gona, and they are blessed with 2 children – Liora and Jeffrey.</em>
+            <em>"Prof. Stephen Suresh Babu serves in leadership and academic administration, dedicated to equipping students through sound theological instruction and discipleship."</em>
           </p>
         </div>
 
         <div className="leader-bio-content">
           <p>
-            Born and raised in a Christian family in Andhra Pradesh, Daril came to know the Lord in his early twenties. After a brief career in the IT industry, his passion to share the gospel led him to join Youth for Christ in Hyderabad, marking the start of his ministry journey.
-          </p>
-          <p>
-            To deepen his understanding, Daril pursued formal theological training at a Pastoral Training Seminary, Goa. After graduating, he served in a church in Mumbai for two years. During the COVID-19 pandemic, he joined Christ Community Church in Pune, where he faithfully served for four years.
+            Dedicated to faithful teaching and mentoring, providing students with a deep foundation in scripture, sound theology, and practical ministry training.
           </p>
         </div>
       </div>
+
+      {/* Leader 2: Prof. Rajshekar Sir */}
+      <div className="leader-profile-card">
+        <div className="leader-card-header">
+          <div className="leader-avatar">RS</div>
+          <div className="leader-title-area">
+            <span className="leader-badge">FACULTY & INSTRUCTOR</span>
+            <h2 className="leader-name">Prof. Rajshekar Sir</h2>
+            <p className="leader-short-bio">Contact Phone: +91 8885831588</p>
+          </div>
+        </div>
+
+        <div className="leader-quote-box">
+          <p>
+            <em>"Prof. Rajshekar Sir brings extensive experience in biblical studies and instruction, guiding students through rigorous curriculum studies and spiritual formation."</em>
+          </p>
+        </div>
+
+        <div className="leader-bio-content">
+          <p>
+            Passionate about theological education and student development, helping shape the next generation of Christian leaders and workers through dedicated classroom instruction.
+          </p>
+        </div>
+      </div>
+
     </div>
   );
 }
