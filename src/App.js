@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './App.css';
+import FloatingSocialBar from './FloatingSocialBar';
 
 import Header from './Header';
 import Footer from './Footer';
@@ -178,6 +179,9 @@ function App() {
 
   return (
     <div className="app-layout">
+      {/* Floating Sticky Social Media Bar */}
+      <FloatingSocialBar />
+      
       <Header 
         activeScreen={activeScreen} 
         setActiveScreen={setActiveScreen} 

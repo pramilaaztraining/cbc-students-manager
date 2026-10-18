@@ -1,0 +1,94 @@
+.social-float-container {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ffffff;
+  border-radius: 12px 0 0 12px;
+  box-shadow: -4px 10px 25px rgba(0, 0, 0, 0.18);
+  width: 60px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-right: none;
+}
+
+.social-float-header {
+  background: #0f172a;
+  color: white;
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.social-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 0 0 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.social-close-btn:hover {
+  color: white;
+}
+
+.social-float-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.float-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  color: #1e293b;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.float-icon-wrap:last-child {
+  border-bottom: none;
+}
+
+.float-icon-wrap:hover {
+  background: #f8fafc;
+}
+
+/* Floating Toggle Button when closed */
+.social-float-toggle {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #2563eb;
+  color: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  box-shadow: -3px 4px 15px rgba(37, 99, 235, 0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.social-float-toggle:hover {
+  background: #1d4ed8;
+}
