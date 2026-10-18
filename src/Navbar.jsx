@@ -6,6 +6,7 @@ export default function Navbar({ setCurrentScreen }) {
     <header className="floating-navbar-wrapper">
       <div className="floating-nav-container">
         
+        {/* Brand Logo & Title */}
         <div className="nav-brand-section" onClick={() => setCurrentScreen('home')} style={{ cursor: 'pointer' }}>
           <div className="nav-logo-crest">✝</div>
           <div className="nav-brand-titles">
@@ -14,9 +15,17 @@ export default function Navbar({ setCurrentScreen }) {
           </div>
         </div>
 
+        {/* Navigation Menu Links */}
         <nav className="nav-links-section">
           <button onClick={() => setCurrentScreen('home')} className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>HOME</button>
-          <a href="#form-section" className="nav-item">ABOUT <span>v</span></a>
+          
+          <div className="nav-dropdown-wrapper">
+            <button className="nav-item" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>ABOUT <span>▾</span></button>
+            <div className="nav-dropdown-menu">
+              <button onClick={() => setCurrentScreen('leadership')} className="dropdown-link" style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}>Our Leadership</button>
+            </div>
+          </div>
+
           <a href="#form-section" className="nav-item">SONGBOOK</a>
           <a href="#form-section" className="nav-item">PASTORAL INTERNSHIP</a>
           <a href="#form-section" className="nav-item">MINISTRIES</a>

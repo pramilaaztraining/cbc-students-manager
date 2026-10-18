@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from './Navbar';
-import ContactScreen from './ContactScreen'; // Import your new contact component
+import ContactScreen from './ContactScreen';
+import LeadershipScreen from './LeadershipScreen';
 import StayCalendarScreen from './StayCalendarScreen';
 import AcademicEvaluationsScreen from './AcademicEvaluationsScreen';
 import FloatingSocialBar from './FloatingSocialBar';
@@ -8,11 +9,12 @@ import Footer from './Footer';
 
 import './Navbar.css';
 import './ContactScreen.css';
+import './LeadershipScreen.css';
 import './Footer.css';
 import './FloatingSocialBar.css';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('home'); // 'home' or 'contact'
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'contact', 'leadership'
   const [isStayConfigured, setIsStayConfigured] = useState(false);
   const [formData, setFormData] = useState({ id: null, name: '', familyStay: {} });
   const [rows, setRows] = useState([]);
@@ -36,16 +38,21 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      {/* Navbar receives the screen switcher */}
+      {/* Floating Pill Navbar */}
       <Navbar setCurrentScreen={setCurrentScreen} />
 
+      {/* Main Content Body */}
       <div className="container">
         {currentScreen === 'contact' ? (
-          /* Show Contact Page when 'contact' is selected */
+                    /* Show Contact Page when 'contact' is selected */
+
           <ContactScreen />
+        ) : currentScreen === 'leadership' ? (
+          <LeadershipScreen />
         ) : (
+
           /* Show Main App Sections when on 'home' */
-          <>
+<>
             <StayCalendarScreen 
               formData={formData}
               setFormData={setFormData}
@@ -74,7 +81,10 @@ export default function App() {
         )}
       </div>
 
+      {/* Floating Sticky Social Bar */}
       <FloatingSocialBar />
+
+      {/* Church Footer */}
       <Footer />
     </div>
   );
