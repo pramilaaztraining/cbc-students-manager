@@ -1,11 +1,18 @@
-/* ========================================================== */
-/* MODERN APP LAYOUT & GLOBAL STYLES                          */
-/* ========================================================== */
-body {
+/* ========================================== */
+/* MODERN APP LAYOUT & GLOBAL STYLES          */
+/* ========================================== */
+html, body, #root {
   margin: 0;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  background-color: #f8fafc;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible; /* Crucial: allows sticky to track the main window scroll */
+}
+
+body {
+  background-color: #fbf9f6 !important;
   color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
 }
 
@@ -13,6 +20,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #fbf9f6;
 }
 
 .container {
@@ -24,9 +32,21 @@ body {
   box-sizing: border-box;
 }
 
-/* ========================================================== */
-/* HEADER STYLING                                             */
-/* ========================================================== */
+/* ========================================== */
+/* STICKY TOP ALL CONTAINER                   */
+/* ========================================== */
+.sticky-top-all-container {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background-color: #0f172a;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+}
+
+/* ========================================== */
+/* HEADER STYLING                             */
+/* ========================================== */
 .app-header {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #fff;
@@ -70,9 +90,9 @@ body {
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-/* ========================================================== */
-/* FOOTER STYLING                                             */
-/* ========================================================== */
+/* ========================================== */
+/* FOOTER STYLING                             */
+/* ========================================== */
 .church-footer {
   background: #0b0f19;
   color: #94a3b8;
@@ -176,9 +196,9 @@ body {
   line-height: 1.4;
 }
 
-/* ========================================================== */
-/* CARDS & COMPONENTS POLISH                                  */
-/* ========================================================== */
+/* ========================================== */
+/* CARDS & COMPONENTS POLISH                  */
+/* ========================================== */
 .form-card, .calendar-widget-card {
   background: #fff;
   padding: 30px;
@@ -194,21 +214,4 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   border: 1px solid #e2e8f0;
   overflow: hidden;
-}
-
-/* Apply the warm off-white background color to the whole page body */
-body {
-  background-color: #fbf9f6 !important;
-  color: #1e293b;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
-/* Ensure your app layout wrapper also inherits or uses the clean background */
-.app-layout {
-  background-color: #fbf9f6;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }

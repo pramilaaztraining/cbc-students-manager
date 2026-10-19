@@ -1,7 +1,7 @@
 import React from 'react';
 import './Header.css';
 
-export default function Header({ activeScreen, setActiveScreen, exportToPDF }) {
+export default function Header({ activeScreen, setActiveScreen }) {
   return (
     <div className="cbc-manager-header-wrapper">
       
@@ -16,6 +16,7 @@ export default function Header({ activeScreen, setActiveScreen, exportToPDF }) {
       {/* Action Tab Navigation Buttons */}
       <div className="cbc-tabs-row">
         <button 
+          type="button"
           onClick={() => setActiveScreen('creation')}
           className={`cbc-tab-btn ${activeScreen === 'creation' ? 'active' : ''}`}
         >
@@ -23,6 +24,7 @@ export default function Header({ activeScreen, setActiveScreen, exportToPDF }) {
         </button>
 
         <button 
+          type="button"
           onClick={() => setActiveScreen('academics')}
           className={`cbc-tab-btn ${activeScreen === 'academics' ? 'active' : ''}`}
         >
@@ -30,13 +32,12 @@ export default function Header({ activeScreen, setActiveScreen, exportToPDF }) {
         </button>
 
         <button 
+          type="button"
           onClick={() => setActiveScreen('stayCalendar')}
           className={`cbc-tab-btn ${activeScreen === 'stayCalendar' ? 'active' : ''}`}
         >
           3. Post-Grad Stay & Calendar
-        </button>
-
-        
+        </button>        
       </div>
 
     </div>

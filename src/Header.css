@@ -1,26 +1,26 @@
 .cbc-manager-header-wrapper {
   text-align: center;
-  padding: 30px 20px 10px 20px;
-  background-color: transparent;
+  padding: 15px 20px 10px 20px;
+  background-color: #ffffff;
   width: 100%;
   box-sizing: border-box;
 }
 
 .cbc-dashboard-title-area {
-  margin-bottom: 25px;
+  margin-bottom: 12px;
 }
 
 .cbc-main-title {
   color: #0f172a;
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 800;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   letter-spacing: -0.5px;
 }
 
 .cbc-sub-title {
   color: #64748b;
-  font-size: 14px;
+  font-size: 13px;
   margin: 0;
   font-weight: 500;
 }
@@ -31,7 +31,7 @@
   align-items: center;
   gap: 15px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 /* Default tab styling (Dark Slate) */
@@ -39,7 +39,7 @@
   background-color: #1e293b;
   color: #ffffff;
   border: none;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 700;
@@ -57,20 +57,12 @@
   background-color: #2563eb !important;
 }
 
-/* Download PDF button styling (Teal) */
-.cbc-pdf-btn {
-  background-color: #0d9488;
-  color: #ffffff;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s;
-}
-
-.cbc-pdf-btn:hover {
-  background-color: #0f766e;
+/* Sticky Container wrapping Navbar, Announcement, and Header */
+.sticky-top-all-container {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background-color: #0f172a;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
 }

@@ -52,7 +52,7 @@ function App() {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [activeScreen, setActiveScreen] = useState('home'); // Explicitly defaults to 'home'
+  const [activeScreen, setActiveScreen] = useState('home');
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
   useEffect(() => {
@@ -163,16 +163,25 @@ function App() {
     return filterDateOnly >= startDateOnly && filterDateOnly <= endDateOnly;
   });
 
+  const isManagerScreen = !['home', 'courses', 'contact', 'leadership'].includes(activeScreen);
+
   return (
     <div className="app-layout">
       {/* Floating Sticky Social Media Bar */}
       <FloatingSocialBar />
       
-      {/* Top Floating Navigation Bar with activeScreen prop passed */}
-      <Navbar activeScreen={activeScreen} setCurrentScreen={setActiveScreen} />
-
-      {/* Flash Announcement Marquee Banner */}
-      <FlashAnnouncement />
+      {/* Pinned Sticky Top Container (Navbar + Announcement + Header Tabs) */}
+      <div className="sticky-top-all-container">
+        <Navbar activeScreen={activeScreen} setCurrentScreen={setActiveScreen} />
+        <FlashAnnouncement />
+        {isManagerScreen && (
+          <Header 
+            activeScreen={activeScreen} 
+            setActiveScreen={setActiveScreen} 
+            exportToPDF={exportToPDF} 
+          />
+        )}
+      </div>
 
       <main className="container">
         {activeScreen === 'home' ? (
@@ -185,12 +194,6 @@ function App() {
           <LeadershipScreen />
         ) : (
           <>
-            <Header 
-              activeScreen={activeScreen} 
-              setActiveScreen={setActiveScreen} 
-              exportToPDF={exportToPDF} 
-            />
-
             {activeScreen === 'creation' && (
               <StudentFormScreen 
                 formData={formData} 
