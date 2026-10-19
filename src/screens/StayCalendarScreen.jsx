@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import './PostGraduationStayScreen.css'; // Reusing your stay screen styling
+import './PostGraduationStayScreen.css';
 
 export default function StayCalendarScreen({ 
   formData, 
@@ -18,16 +18,22 @@ export default function StayCalendarScreen({
   const [dateError, setDateError] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
-  // Keep dropdown and stay configuration lock status synchronized with formData ID
+  const updateStayConfig = useCallback((configured) => {
+    if (typeof setIsStayConfigured === 'function') {
+      setIsStayConfigured(configured);
+    }
+  }, [setIsStayConfigured]);
+
+  // Keep dropdown and stay configuration lock status synchronized with formData ID safely
   useEffect(() => {
     if (formData && formData.id) {
       setSelectedStudentId(String(formData.id));
-      if (typeof setIsStayConfigured === 'function') setIsStayConfigured(true);
+      updateStayConfig(true);
     } else {
       setSelectedStudentId('');
-      if (typeof setIsStayConfigured === 'function') setIsStayConfigured(false);
+      updateStayConfig(false);
     }
-  }, [formData?.id, setIsStayConfigured]);
+  }, [formData, updateStayConfig]);
 
   const handleFamilyCheckboxChange = (memberKey) => {
     const currentFamilyStay = formData.family_stay || formData.familyStay || {};
@@ -77,7 +83,6 @@ export default function StayCalendarScreen({
     handleSubmit(e);
   };
 
-  // Fixed Export Function with explicit autoTable function call
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
 
@@ -170,9 +175,9 @@ export default function StayCalendarScreen({
               if (!val) {
                 setFormData({ 
                   id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', 
-                  stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', post_grad_stay: '', stay_start_date_time: '', stay_end_date_time: '', family_stay: {} 
+                  post_grad_stay: '', stay_start_date_time: '', stay_end_date_time: '', family_stay: {} 
                 });
-                if (typeof setIsStayConfigured === 'function') setIsStayConfigured(false);
+                updateStayConfig(false);
                 return;
               }
 
@@ -185,7 +190,7 @@ export default function StayCalendarScreen({
                   post_grad_stay: found.post_grad_stay || found.postGradStay || '',
                   family_stay: found.family_stay || found.familyStay || {}
                 });
-                if (typeof setIsStayConfigured === 'function') setIsStayConfigured(true);
+                updateStayConfig(true);
               }
             }}
             style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#fff' }}
@@ -331,10 +336,10 @@ export default function StayCalendarScreen({
                 onClick={() => {
                   setFormData({ 
                     id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', 
-                    stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', post_grad_stay: '', stay_start_date_time: '', stay_end_date_time: '', family_stay: {} 
+                    post_grad_stay: '', stay_start_date_time: '', stay_end_date_time: '', family_stay: {} 
                   });
                   setSelectedStudentId('');
-                  if (typeof setIsStayConfigured === 'function') setIsStayConfigured(false);
+                  updateStayConfig(false);
                 }}
                 style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
               >
@@ -439,7 +444,7 @@ export default function StayCalendarScreen({
                           onClick={() => {
                             handleEdit(row, 'stayCalendar');
                             setSelectedStudentId(String(row.id));
-                            if (typeof setIsStayConfigured === 'function') setIsStayConfigured(true);
+                            updateStayConfig(true);
                           }} 
                           className="edit-btn"
                         >

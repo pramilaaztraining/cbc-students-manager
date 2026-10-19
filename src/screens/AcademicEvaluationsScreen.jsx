@@ -8,43 +8,56 @@ export default function AcademicEvaluationsScreen({
   setFormData, 
   handleSubmit, 
   rows, 
-  handleEdit, 
-  stephenKeys, 
-  rajkeys, 
-  sampathKeys 
+  handleEdit 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  
+  const [professorsData, setProfessorsData] = useState([]);
+  const [loadingProfessors, setLoadingProfessors] = useState(true);
+  const [error, setError] = useState(null);
+  const [collapsedSections, setCollapsedSections] = useState({});
+
+  // Fetch dynamic professors and subjects from the backend database on mount
+  useEffect(() => {
+    const fetchProfessors = async () => {
+      try {
+        setLoadingProfessors(true);
+        const res = await fetch('/api/professor-subjects');
+        const contentType = res.headers.get("content-type");
+        
+        if (!res.ok || !contentType || !contentType.includes("application/json")) {
+          throw new Error('Failed to fetch professor configurations from the server.');
+        }
+        
+        const data = await res.json();
+        setProfessorsData(data);
+
+        const initialCollapseState = {};
+        data.forEach((prof, index) => {
+          initialCollapseState[prof.lecturerKey] = index !== 0;
+        });
+        setCollapsedSections(initialCollapseState);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoadingProfessors(false);
+      }
+    };
+
+    fetchProfessors();
+  }, []);
+
+  // Synchronize selected student ID with formData.id safely
   useEffect(() => {
     if (formData && formData.id) {
       setSelectedStudentId(String(formData.id));
     } else {
       setSelectedStudentId('');
     }
-  }, [formData?.id]);
+  }, [formData]);
 
-  const [collapsedSections, setCollapsedSections] = useState({
-    stephen: false,
-    rajshekar: true,
-    sampath: true
-  });
-
-  const toggleSection = (section) => {
-    setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  const subjectNameMap = {
-    synoptic: 'Synoptic Gospels',
-    actsEpistles: 'Acts & Epistles',
-    homiletics: 'Homiletics',
-    law: 'Law',
-    history: 'History',
-    poetic: 'Poetic & Wisdom',
-    prophetic: 'Prophetic',
-    loc: 'Life of Christ',
-    locChronological: 'Life of Christ - Chronological',
-    evangelism: 'Evangelism & Missions'
+  const toggleSection = (sectionKey) => {
+    setCollapsedSections(prev => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
   };
 
   const handleChange = (e, lecturerKey, fieldKey, type) => {
@@ -92,10 +105,11 @@ export default function AcademicEvaluationsScreen({
     doc.text('Academic Records Summary', 14, 15);
 
     const tableRows = filteredSummaryRows.map((row, index) => {
-      const formatProfSummary = (obj, keys) => {
-        if (!obj) return 'N/A';
-        return keys.map(k => {
-          const fullName = subjectNameMap[k] || k;
+      const formatProfSummary = (obj, subjectsList) => {
+        if (!obj || !subjectsList) return 'N/A';
+        return subjectsList.map(sub => {
+          const k = sub.key;
+          const fullName = sub.label;
           const ex = obj[`${k}Exam`] ? '[Yes]' : '[No]';
           const notes = obj[`${k}Notes`] ? '[Yes]' : '[No]';
           const cls = obj[`${k}Classes`] ? '[Yes]' : '[No]';
@@ -104,21 +118,25 @@ export default function AcademicEvaluationsScreen({
         }).join('\n\n');
       };
 
-      const stephenText = formatProfSummary(row.stephen, stephenKeys);
-      const rajshekarText = formatProfSummary(row.rajshekar, rajkeys);
-      const sampathText = formatProfSummary(row.sampath, sampathKeys);
-
-      return [
+      const rowData = [
         row.id || index + 1,
-        `${row.first_name || ''} ${row.last_name || ''}`,
-        row.district || 'N/A',
-        stephenText,
-        rajshekarText,
-        sampathText
+        `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'N/A',
+        row.district || 'N/A'
       ];
+
+      professorsData.forEach(prof => {
+        rowData.push(formatProfSummary(row[prof.lecturerKey], prof.subjects));
+      });
+
+      return rowData;
     });
 
-    const tableColumns = ['ID', 'Full Name', 'District', 'Prof Stephen', 'Prof Rajshekar', 'Prof Sampath'];
+    const tableColumns = [
+      'ID', 
+      'Full Name', 
+      'District', 
+      ...professorsData.map(p => p.lecturerName)
+    ];
 
     autoTable(doc, {
       head: [tableColumns],
@@ -133,6 +151,8 @@ export default function AcademicEvaluationsScreen({
   };
 
   const renderSubjectCards = (lecturerKey, subjectsList) => {
+    if (!subjectsList) return null;
+
     return (
       <div className="subjects-grid">
         {subjectsList.map((sub) => {
@@ -216,6 +236,8 @@ export default function AcademicEvaluationsScreen({
     );
   };
 
+  const studentFullName = `${formData.first_name || ''} ${formData.last_name || ''}`.trim();
+
   return (
     <div className="screen-section">
       <div className="section-intro">
@@ -236,7 +258,7 @@ export default function AcademicEvaluationsScreen({
 
       <form onSubmit={handleSubmit} className="form-card">
         <h3>
-          Update Academic Evaluations for: <span className="selected-student">{formData.first_name ? `${formData.first_name} ${formData.last_name}` : 'Select a student below'}</span>
+          Update Academic Evaluations for: <span className="selected-student">{studentFullName || 'Select a student below'}</span>
           {formData.id && <span style={{ fontSize: '0.85rem', color: '#2563eb', marginLeft: '10px', fontWeight: 'bold' }}>[Target ID: {formData.id}]</span>}
         </h3>
         
@@ -251,7 +273,7 @@ export default function AcademicEvaluationsScreen({
               setSelectedStudentId(val);
               
               if (!val) {
-                setFormData({ id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
+                setFormData({ id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {} });
                 return;
               }
 
@@ -272,60 +294,27 @@ export default function AcademicEvaluationsScreen({
         </div>
 
         <div className="professors-section-wrapper" style={{ marginTop: '20px' }}>
-          <div className="collapsible-panel">
-            <div className="panel-header" onClick={() => toggleSection('stephen')}>
-              <div className="panel-header-text">
-                <span className="panel-title">Lecturer: <strong>Prof Stephen Suresh Babu</strong></span>
+          {loadingProfessors ? (
+            <p style={{ textAlign: 'center', padding: '20px' }}>Loading professors and subjects from database...</p>
+          ) : error ? (
+            <p style={{ textAlign: 'center', color: '#ef4444' }}>Error: {error}</p>
+          ) : (
+            professorsData.map(prof => (
+              <div key={prof.lecturerKey} className="collapsible-panel">
+                <div className="panel-header" onClick={() => toggleSection(prof.lecturerKey)}>
+                  <div className="panel-header-text">
+                    <span className="panel-title">Lecturer: <strong>{prof.lecturerName}</strong></span>
+                  </div>
+                  <span className="toggle-icon">{collapsedSections[prof.lecturerKey] ? '▼' : '▲'}</span>
+                </div>
+                {!collapsedSections[prof.lecturerKey] && (
+                  <div className="panel-body">
+                    {renderSubjectCards(prof.lecturerKey, prof.subjects)}
+                  </div>
+                )}
               </div>
-              <span className="toggle-icon">{collapsedSections.stephen ? '▼' : '▲'}</span>
-            </div>
-            {!collapsedSections.stephen && (
-              <div className="panel-body">
-                {renderSubjectCards('stephen', [
-                  { key: 'synoptic', label: 'Synoptic Gospels' },
-                  { key: 'actsEpistles', label: 'Acts & Epistles' },
-                  { key: 'homiletics', label: 'Homiletics' }
-                ])}
-              </div>
-            )}
-          </div>
-
-          <div className="collapsible-panel">
-            <div className="panel-header" onClick={() => toggleSection('rajshekar')}>
-              <div className="panel-header-text">
-                <span className="panel-title">Lecturer: <strong>Prof Rajshekar Sir</strong></span>
-              </div>
-              <span className="toggle-icon">{collapsedSections.rajshekar ? '▼' : '▲'}</span>
-            </div>
-            {!collapsedSections.rajshekar && (
-              <div className="panel-body">
-                {renderSubjectCards('rajshekar', [
-                  { key: 'law', label: 'Law' },
-                  { key: 'history', label: 'History' },
-                  { key: 'poetic', label: 'Poetic & Wisdom' },
-                  { key: 'prophetic', label: 'Prophetic' }
-                ])}
-              </div>
-            )}
-          </div>
-
-          <div className="collapsible-panel">
-            <div className="panel-header" onClick={() => toggleSection('sampath')}>
-              <div className="panel-header-text">
-                <span className="panel-title">Lecturer: <strong>Prof Sampath Kumar</strong></span>
-              </div>
-              <span className="toggle-icon">{collapsedSections.sampath ? '▼' : '▲'}</span>
-            </div>
-            {!collapsedSections.sampath && (
-              <div className="panel-body">
-                {renderSubjectCards('sampath', [
-                  { key: 'loc', label: 'Life of Christ' },
-                  { key: 'locChronological', label: 'Life of Christ - Chronological Study' },
-                  { key: 'evangelism', label: 'Evangelism & Missions' }
-                ])}
-              </div>
-            )}
-          </div>
+            ))
+          )}
         </div>
 
         <div className="form-actions" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
@@ -344,42 +333,46 @@ export default function AcademicEvaluationsScreen({
         </div>
 
         <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>District</th>
-                <th>Prof Stephen</th>
-                <th>Prof Rajshekar</th>
-                <th>Prof Sampath</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSummaryRows.length > 0 ? (
-                filteredSummaryRows.map((row) => (
-                  <tr key={row.id}>
-                    <td><code>{row.id}</code></td>
-                    <td><strong>{row.first_name} {row.last_name}</strong></td>
-                    <td>{row.district}</td>
-                    <td>Summary Recorded</td>
-                    <td>Summary Recorded</td>
-                    <td>Summary Recorded</td>
-                    <td>
-                      <button type="button" onClick={() => handleEdit(row, 'academics')} className="edit-btn">
-                        Edit Academics
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
+          {loadingProfessors ? (
+            <p style={{ padding: '20px', textAlign: 'center' }}>Loading summary table...</p>
+          ) : (
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan="7" className="no-data">No matching records found.</td>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>District</th>
+                  {professorsData.map(prof => (
+                    <th key={prof.lecturerKey}>{prof.lecturerName}</th>
+                  ))}
+                  <th>Action</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredSummaryRows.length > 0 ? (
+                  filteredSummaryRows.map((row) => (
+                    <tr key={row.id}>
+                      <td><code>{row.id}</code></td>
+                      <td><strong>{row.first_name} {row.last_name}</strong></td>
+                      <td>{row.district || 'N/A'}</td>
+                      {professorsData.map(prof => (
+                        <td key={prof.lecturerKey}>Summary Recorded</td>
+                      ))}
+                      <td>
+                        <button type="button" onClick={() => handleEdit(row, 'academics')} className="edit-btn">
+                          Edit Academics
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4 + professorsData.length} className="no-data">No matching records found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
