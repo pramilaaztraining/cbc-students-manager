@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-import Navbar from './Navbar';
-import ContactScreen from './ContactScreen';
-import LeadershipScreen from './LeadershipScreen';
-import StayCalendarScreen from './StayCalendarScreen';
-import AcademicEvaluationsScreen from './AcademicEvaluationsScreen';
-import FloatingSocialBar from './FloatingSocialBar';
-import FlashAnnouncement from './FlashAnnouncement';
-import CoursesScreen from './CoursesScreen';
-import HomeScreen from './HomeScreen';
+import Navbar from './components/Navbar';
+import ContactScreen from './screens/ContactScreen';
+import LeadershipScreen from './screens/LeadershipScreen';
+import StayCalendarScreen from './screens/StayCalendarScreen';
+import AcademicEvaluationsScreen from './screens/AcademicEvaluationsScreen';
+import FloatingSocialBar from './components/FloatingSocialBar';
+import FlashAnnouncement from './components/FlashAnnouncement';
+import CoursesScreen from './screens/CoursesScreen';
+import HomeScreen from './screens/HomeScreen';
 
-import Header from './Header';
-import Footer from './Footer';
-import StudentFormScreen from './StudentFormScreen';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import StudentFormScreen from './screens/StudentFormScreen';
 
 function App() {
   const createDetailedSubsections = (keys) => {
