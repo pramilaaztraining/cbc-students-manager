@@ -34,3 +34,14 @@ CREATE TABLE student_stays (
     stay_start_date_time TIMESTAMP,
     stay_end_date_time TIMESTAMP
 );
+
+
+--
+CREATE TABLE IF NOT EXISTS academic_evaluations (
+    evaluation_id SERIAL PRIMARY KEY,
+    student_id INT UNIQUE REFERENCES students(id) ON DELETE CASCADE,
+    stephen_data JSONB DEFAULT '{}'::jsonb,
+    rajshekar_data JSONB DEFAULT '{}'::jsonb,
+    sampath_data JSONB DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

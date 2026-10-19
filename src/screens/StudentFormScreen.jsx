@@ -130,11 +130,7 @@ export default function StudentFormScreen({
   rows, 
   handleEdit, 
   handleDelete, 
-  setIsEditing, 
-  createDetailedSubsections, 
-  stephenKeys, 
-  rajkeys, 
-  sampathKeys 
+  setIsEditing 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -157,7 +153,8 @@ export default function StudentFormScreen({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (!formData.photoUrl && !formData.photo_url && !formData.photoLink) {
+    const activePhoto = formData.photoUrl || formData.photo_url || formData.photoLink;
+    if (!activePhoto) {
       alert('Photo is mandatory. Please upload a profile photo.');
       return;
     }
@@ -310,7 +307,7 @@ export default function StudentFormScreen({
             <div className="input-group file-input-group">
               <label>Upload Photo * <span className="telugu-label">ఫోటో</span></label>
               <input type="file" accept="image/*" onChange={handleFileChange} />
-              {(formData.photoUrl || formData.photo_url) && (
+              {(formData.photoUrl || formData.photo_url || formData.photoLink) && (
                 <span style={{ fontSize: '0.8rem', color: '#16a34a', marginTop: '4px', display: 'block' }}>✔ Photo uploaded</span>
               )}
             </div>
@@ -329,10 +326,7 @@ export default function StudentFormScreen({
                 setFormData({
                   id: null,
                   first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
-                  stephen: createDetailedSubsections(stephenKeys),
-                  rajshekar: createDetailedSubsections(rajkeys),
-                  sampath: createDetailedSubsections(sampathKeys),
-                  accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
+                  stephen: {}, rajshekar: {}, sampath: {}
                 });
               }}
               style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
