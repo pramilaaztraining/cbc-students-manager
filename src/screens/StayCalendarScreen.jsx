@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; // <-- Update import here
+import autoTable from 'jspdf-autotable';
+import './PostGraduationStayScreen.css'; // Reusing your stay screen styling
 
 export default function StayCalendarScreen({ 
   formData, 
@@ -17,7 +18,7 @@ export default function StayCalendarScreen({
   const [dateError, setDateError] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Keep dropdown and stay configuration lock status synchronized with formData ID
   useEffect(() => {
     if (formData && formData.id) {
       setSelectedStudentId(String(formData.id));
@@ -29,10 +30,10 @@ export default function StayCalendarScreen({
   }, [formData?.id, setIsStayConfigured]);
 
   const handleFamilyCheckboxChange = (memberKey) => {
-    const currentFamilyStay = formData.familyStay || {};
+    const currentFamilyStay = formData.family_stay || formData.familyStay || {};
     setFormData({
       ...formData,
-      familyStay: {
+      family_stay: {
         ...currentFamilyStay,
         [memberKey]: !currentFamilyStay[memberKey]
       }
@@ -42,11 +43,11 @@ export default function StayCalendarScreen({
   const handleFamilyCountChange = (countKey, value) => {
     const num = Number(value);
     const validValue = isNaN(num) ? 0 : Math.max(0, num);
-    const currentFamilyStay = formData.familyStay || {};
+    const currentFamilyStay = formData.family_stay || formData.familyStay || {};
     
     setFormData({
       ...formData,
-      familyStay: {
+      family_stay: {
         ...currentFamilyStay,
         [countKey]: validValue
       }
@@ -60,9 +61,12 @@ export default function StayCalendarScreen({
       return;
     }
 
-    if (formData.stayStartDateTime && formData.stayEndDateTime) {
-      const start = new Date(formData.stayStartDateTime);
-      const end = new Date(formData.stayEndDateTime);
+    const startVal = formData.stay_start_date_time || formData.stayStartDateTime;
+    const endVal = formData.stay_end_date_time || formData.stayEndDateTime;
+
+    if (startVal && endVal) {
+      const start = new Date(startVal);
+      const end = new Date(endVal);
 
       if (start >= end) {
         setDateError('ప్రారంభ తేదీ మరియు సమయం ముగింపు తేదీ కంటే తక్కువగా ఉండాలి (From Date & Time must be earlier than To Date & Time).');
@@ -75,38 +79,40 @@ export default function StayCalendarScreen({
 
   // Fixed Export Function with explicit autoTable function call
   const exportToPDF = () => {
-    const doc = new jsPDF('landscape'); // Landscape layout for wide tables
+    const doc = new jsPDF('landscape');
 
-    // PDF Title
     doc.setFontSize(16);
     doc.text('Student Stay & Family Records', 14, 15);
 
-    // Map filtered rows to table content
     const tableRows = filteredCalendarRows.map((row, index) => {
-      const fam = row.familyStay || {};
+      const fam = row.family_stay || row.familyStay || {};
       const summaryParts = [];
       if (fam.mother) summaryParts.push('Mother');
       if (fam.father) summaryParts.push('Father');
       if (fam.guardian) summaryParts.push('Guardian');
-      if (fam.childrenCount > 0) summaryParts.push(`Children: ${fam.childrenCount}`);
-      if (fam.brothersCount > 0) summaryParts.push(`Brothers: ${fam.brothersCount}`);
-      if (fam.sistersCount > 0) summaryParts.push(`Sisters: ${fam.sistersCount}`);
+      if (fam.childrenCount > 0 || fam.children_count > 0) summaryParts.push(`Children: ${fam.childrenCount || fam.children_count}`);
+      if (fam.brothersCount > 0 || fam.brothers_count > 0) summaryParts.push(`Brothers: ${fam.brothersCount || fam.brothers_count}`);
+      if (fam.sistersCount > 0 || fam.sisters_count > 0) summaryParts.push(`Sisters: ${fam.sistersCount || fam.sisters_count}`);
 
-      const stayWindowText = row.stayStartDateTime && row.stayEndDateTime
-        ? `From: ${new Date(row.stayStartDateTime).toLocaleString()}\nTo: ${new Date(row.stayEndDateTime).toLocaleString()}`
+      const startT = row.stay_start_date_time || row.stayStartDateTime;
+      const endT = row.stay_end_date_time || row.stayEndDateTime;
+
+      const stayWindowText = startT && endT
+        ? `From: ${new Date(startT).toLocaleString()}\nTo: ${new Date(endT).toLocaleString()}`
         : 'Window not set';
+
+      const fullName = `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.name || '';
 
       return [
         row.id || index + 1,
-        row.name || '',
+        fullName,
         row.district || 'N/A',
         stayWindowText,
         summaryParts.length > 0 ? summaryParts.join(', ') : 'None',
-        row.postGradStay || 'No notes provided'
+        row.post_grad_stay || row.postGradStay || 'No notes provided'
       ];
     });
 
-    // Exact requested table headers
     const tableColumns = [
       'ID', 
       'Student Name (పేరు)', 
@@ -116,20 +122,13 @@ export default function StayCalendarScreen({
       'Stay Notes (గమనికలు)'
     ];
 
-    // Generate table using imported autoTable function directly
     autoTable(doc, {
       head: [tableColumns],
       body: tableRows,
       startY: 25,
       theme: 'grid',
-      styles: { 
-        fontSize: 9, 
-        cellPadding: 3,
-        overflow: 'linebreak' 
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185] 
-      },
+      styles: { fontSize: 9, cellPadding: 3, overflow: 'linebreak' },
+      headStyles: { fillColor: [41, 128, 185] },
       columnStyles: {
         0: { cellWidth: 15 },
         1: { cellWidth: 35 },
@@ -143,7 +142,7 @@ export default function StayCalendarScreen({
     doc.save('student-stay-records.pdf');
   };
 
-  const familyData = formData.familyStay || {};
+  const familyData = formData.family_stay || formData.familyStay || {};
 
   return (
     <div className="screen-section">
@@ -169,7 +168,10 @@ export default function StayCalendarScreen({
               setSelectedStudentId(val);
 
               if (!val) {
-                setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '', familyStay: {} });
+                setFormData({ 
+                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', 
+                  stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', post_grad_stay: '', stay_start_date_time: '', stay_end_date_time: '', family_stay: {} 
+                });
                 if (typeof setIsStayConfigured === 'function') setIsStayConfigured(false);
                 return;
               }
@@ -178,10 +180,10 @@ export default function StayCalendarScreen({
               if (found) {
                 setFormData({
                   ...found,
-                  stayStartDateTime: found.stayStartDateTime || '',
-                  stayEndDateTime: found.stayEndDateTime || '',
-                  postGradStay: found.postGradStay || '',
-                  familyStay: found.familyStay || {}
+                  stay_start_date_time: found.stay_start_date_time || found.stayStartDateTime || '',
+                  stay_end_date_time: found.stay_end_date_time || found.stayEndDateTime || '',
+                  post_grad_stay: found.post_grad_stay || found.postGradStay || '',
+                  family_stay: found.family_stay || found.familyStay || {}
                 });
                 if (typeof setIsStayConfigured === 'function') setIsStayConfigured(true);
               }
@@ -191,12 +193,12 @@ export default function StayCalendarScreen({
             <option value="">-- Choose student from directory to unlock other sections --</option>
             {rows.map(row => (
               <option key={row.id} value={row.id}>
-                ID: {row.id} - {row.name} {row.district ? `(${row.district})` : ''}
+                ID: {row.id} - {row.first_name} {row.last_name} {row.district ? `(${row.district})` : ''}
               </option>
             ))}
           </select>
           <small style={{ color: '#64748b', marginTop: '4px' }}>
-            💡 Target Student: <strong>{formData.id ? `ID #${formData.id} - ${formData.name}` : 'None selected (Other sections locked)'}</strong>
+            💡 Target Student: <strong>{formData.id ? `ID #${formData.id} - ${formData.first_name} ${formData.last_name}` : 'None selected (Other sections locked)'}</strong>
           </small>
         </div>
 
@@ -217,8 +219,8 @@ export default function StayCalendarScreen({
                   <label>From Date & Time <span className="telugu-label">ప్రారంభ తేదీ మరియు సమయం</span></label>
                   <input 
                     type="datetime-local" 
-                    name="stayStartDateTime" 
-                    value={formData.stayStartDateTime || ''} 
+                    name="stay_start_date_time" 
+                    value={formData.stay_start_date_time || formData.stayStartDateTime || ''} 
                     onChange={handleChange} 
                   />
                 </div>
@@ -227,8 +229,8 @@ export default function StayCalendarScreen({
                   <label>To Date & Time <span className="telugu-label">ముగింపు తేదీ మరియు సమయం</span></label>
                   <input 
                     type="datetime-local" 
-                    name="stayEndDateTime" 
-                    value={formData.stayEndDateTime || ''} 
+                    name="stay_end_date_time" 
+                    value={formData.stay_end_date_time || formData.stayEndDateTime || ''} 
                     onChange={handleChange} 
                   />
                 </div>
@@ -275,7 +277,7 @@ export default function StayCalendarScreen({
                       <input 
                         type="number" 
                         min="0"
-                        value={familyData.childrenCount ?? 0}
+                        value={familyData.childrenCount ?? familyData.children_count ?? 0}
                         onChange={(e) => handleFamilyCountChange('childrenCount', e.target.value)}
                         style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box' }}
                       />
@@ -286,7 +288,7 @@ export default function StayCalendarScreen({
                       <input 
                         type="number" 
                         min="0"
-                        value={familyData.brothersCount ?? 0}
+                        value={familyData.brothersCount ?? familyData.brothers_count ?? 0}
                         onChange={(e) => handleFamilyCountChange('brothersCount', e.target.value)}
                         style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box' }}
                       />
@@ -297,7 +299,7 @@ export default function StayCalendarScreen({
                       <input 
                         type="number" 
                         min="0"
-                        value={familyData.sistersCount ?? 0}
+                        value={familyData.sistersCount ?? familyData.sisters_count ?? 0}
                         onChange={(e) => handleFamilyCountChange('sistersCount', e.target.value)}
                         style={{ padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box' }}
                       />
@@ -310,9 +312,9 @@ export default function StayCalendarScreen({
                   <label>Stay Notes / Instructions <span className="telugu-label">వసతి గమనికలు</span></label>
                   <input 
                     type="text" 
-                    name="postGradStay" 
+                    name="post_grad_stay" 
                     placeholder="e.g., Staying with family members until morning session" 
-                    value={formData.postGradStay || ''} 
+                    value={formData.post_grad_stay || formData.postGradStay || ''} 
                     onChange={handleChange} 
                   />
                 </div>
@@ -327,7 +329,10 @@ export default function StayCalendarScreen({
               <button 
                 type="button" 
                 onClick={() => {
-                  setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '', familyStay: {} });
+                  setFormData({ 
+                    id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', 
+                    stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', post_grad_stay: '', stay_start_date_time: '', stay_end_date_time: '', family_stay: {} 
+                  });
                   setSelectedStudentId('');
                   if (typeof setIsStayConfigured === 'function') setIsStayConfigured(false);
                 }}
@@ -392,25 +397,29 @@ export default function StayCalendarScreen({
             <tbody>
               {filteredCalendarRows.length > 0 ? (
                 filteredCalendarRows.map(row => {
-                  const fam = row.familyStay || {};
+                  const fam = row.family_stay || row.familyStay || {};
                   const summaryParts = [];
                   if (fam.mother) summaryParts.push('Mother');
                   if (fam.father) summaryParts.push('Father');
                   if (fam.guardian) summaryParts.push('Guardian');
-                  if (fam.childrenCount > 0) summaryParts.push(`Children: ${fam.childrenCount}`);
-                  if (fam.brothersCount > 0) summaryParts.push(`Brothers: ${fam.brothersCount}`);
-                  if (fam.sistersCount > 0) summaryParts.push(`Sisters: ${fam.sistersCount}`);
+                  if (fam.childrenCount > 0 || fam.children_count > 0) summaryParts.push(`Children: ${fam.childrenCount || fam.children_count}`);
+                  if (fam.brothersCount > 0 || fam.brothers_count > 0) summaryParts.push(`Brothers: ${fam.brothersCount || fam.brothers_count}`);
+                  if (fam.sistersCount > 0 || fam.sisters_count > 0) summaryParts.push(`Sisters: ${fam.sistersCount || fam.sisters_count}`);
+
+                  const startT = row.stay_start_date_time || row.stayStartDateTime;
+                  const endT = row.stay_end_date_time || row.stayEndDateTime;
+                  const fullName = `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.name || '';
 
                   return (
                     <tr key={`cal-${row.id}`} style={{ background: formData.id === row.id ? '#eff6ff' : 'transparent' }}>
                       <td><code>{row.id}</code></td>
-                      <td><strong>{row.name}</strong></td>
+                      <td><strong>{fullName}</strong></td>
                       <td>{row.district || 'N/A'}</td>
                       <td>
-                        {row.stayStartDateTime && row.stayEndDateTime ? (
+                        {startT && endT ? (
                           <div style={{ fontSize: '0.85rem' }}>
-                            <div><strong>From:</strong> {new Date(row.stayStartDateTime).toLocaleString()}</div>
-                            <div><strong>To:</strong> {new Date(row.stayEndDateTime).toLocaleString()}</div>
+                            <div><strong>From:</strong> {new Date(startT).toLocaleString()}</div>
+                            <div><strong>To:</strong> {new Date(endT).toLocaleString()}</div>
                           </div>
                         ) : (
                           <span style={{ color: '#d97706' }}>Window not set</span>
@@ -423,7 +432,7 @@ export default function StayCalendarScreen({
                           <span style={{ color: '#94a3b8' }}>None</span>
                         )}
                       </td>
-                      <td>{row.postGradStay || 'No notes provided'}</td>
+                      <td>{row.post_grad_stay || row.postGradStay || 'No notes provided'}</td>
                       <td>
                         <button 
                           type="button" 

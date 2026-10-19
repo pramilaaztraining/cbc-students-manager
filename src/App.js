@@ -33,15 +33,19 @@ function App() {
   const rajkeys = ['law', 'history', 'poetic', 'prophetic'];
   const sampathKeys = ['loc', 'locChronological', 'evangelism'];
 
-  const [rows, setRows] = useState(() => {
-    const saved = localStorage.getItem('cbc_students_complete_app_data');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [rows, setRows] = useState([]);
 
   const [formData, setFormData] = useState({
     id: null,
-    name: '', district: '', phone: '',
-    photoLink: '', photoUrl: '',
+    first_name: '',
+    last_name: '',
+    email: '',
+    course: '',
+    batch: '',
+    district: '',
+    phone: '',
+    photoLink: '',
+    photoUrl: '',
     stephen: createDetailedSubsections(stephenKeys),
     rajshekar: createDetailedSubsections(rajkeys),
     sampath: createDetailedSubsections(sampathKeys),
@@ -55,13 +59,18 @@ function App() {
   const [activeScreen, setActiveScreen] = useState('home');
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
+  // Fetch normalized student records from backend API on load
   useEffect(() => {
-    try {
-      localStorage.setItem('cbc_students_complete_app_data', JSON.stringify(rows));
-    } catch (e) {
-      console.error('Storage quota reached');
-    }
-  }, [rows]);
+    fetch('http://localhost:5000/api/students')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch from backend server');
+        return res.json();
+      })
+      .then(data => setRows(data))
+      .catch(err => {
+        console.error('Error fetching students from PostgreSQL backend:', err);
+      });
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,25 +92,65 @@ function App() {
     }
   };
 
-  const handleSubmit = (e) => {
+  // Submit handler synchronized with normalized database tables by ID & updated mandatory fields
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name) return;
-
-    if (formData.id && Number(formData.id) > 0) {
-      setRows(rows.map(row => (row.id === Number(formData.id) ? { ...formData } : row)));
-      setIsEditing(false);
-    } else {
-      const validIds = rows.map(r => Number(r.id)).filter(id => !isNaN(id) && id > 0);
-      const nextId = validIds.length > 0 ? Math.max(...validIds) + 1 : 1;
-      
-      const newEntry = { ...formData, id: nextId };
-      setRows([...rows, newEntry]);
+    
+    // Validate required fields: First Name, Batch, Course, District, and Photo
+    if (!formData.first_name || !formData.batch || !formData.course || !formData.district || (!formData.photoUrl && !formData.photo_url)) {
+      alert('Please fill in all mandatory fields: First Name, Course, Batch, District, and Upload Photo.');
+      return;
     }
 
+    if (formData.id && Number(formData.id) > 0) {
+      // UPDATE student record (PUT)
+      try {
+        const response = await fetch(`http://localhost:5000/api/students/${formData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        if (!response.ok) throw new Error('Failed to update student');
+        
+        const updatedStudent = await response.json();
+        setRows(rows.map(row => (row.id === Number(formData.id) ? { ...updatedStudent, photoUrl: updatedStudent.photo_url || formData.photoUrl } : row)));
+        setIsEditing(false);
+        alert('Student record updated successfully!');
+      } catch (err) {
+        console.error('Error updating student in database:', err);
+        alert('Error updating student. Check if your Node server is running.');
+      }
+    } else {
+      // CREATE new student record (POST)
+      try {
+        const response = await fetch('http://localhost:5000/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        if (!response.ok) throw new Error('Failed to create student');
+
+        const newEntry = await response.json();
+        setRows([...rows, { ...newEntry, photoUrl: newEntry.photo_url || formData.photoUrl }]);
+        alert('Student created successfully!');
+      } catch (err) {
+        console.error('Error creating student in database:', err);
+        alert('Error saving student. Check if your Node server is running.');
+      }
+    }
+
+    // Reset form state
     setFormData({
       id: null,
-      name: '', district: '', phone: '',
-      photoLink: '', photoUrl: '',
+      first_name: '',
+      last_name: '',
+      email: '',
+      course: '',
+      batch: '',
+      district: '',
+      phone: '',
+      photoLink: '',
+      photoUrl: '',
       stephen: createDetailedSubsections(stephenKeys),
       rajshekar: createDetailedSubsections(rajkeys),
       sampath: createDetailedSubsections(sampathKeys),
@@ -114,24 +163,40 @@ function App() {
 
   const handleEdit = (row, targetScreen = 'creation') => {
     setIsEditing(true);
-    setFormData({ ...row });
+    setFormData({ 
+      ...row,
+      stephen: row.stephen || createDetailedSubsections(stephenKeys),
+      rajshekar: row.rajshekar || createDetailedSubsections(rajkeys),
+      sampath: row.sampath || createDetailedSubsections(sampathKeys)
+    });
     setActiveScreen(targetScreen);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id) => {
+  // DELETE student record from database
+  const handleDelete = async (id) => {
     if (window.confirm(`Are you sure you want to delete student ID: ${id}?`)) {
-      setRows(rows.filter(row => row.id !== id));
-      if (formData.id === id) {
-        setIsEditing(false);
-        setFormData({
-          id: null,
-          name: '', district: '', phone: '', photoLink: '', photoUrl: '',
-          stephen: createDetailedSubsections(stephenKeys),
-          rajshekar: createDetailedSubsections(rajkeys),
-          sampath: createDetailedSubsections(sampathKeys),
-          accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
+      try {
+        const response = await fetch(`http://localhost:5000/api/students/${id}`, {
+          method: 'DELETE'
         });
+        if (!response.ok) throw new Error('Failed to delete student');
+
+        setRows(rows.filter(row => row.id !== id));
+        if (formData.id === id) {
+          setIsEditing(false);
+          setFormData({
+            id: null,
+            first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
+            stephen: createDetailedSubsections(stephenKeys),
+            rajshekar: createDetailedSubsections(rajkeys),
+            sampath: createDetailedSubsections(sampathKeys),
+            accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
+          });
+        }
+      } catch (err) {
+        console.error('Error deleting student from database:', err);
+        alert('Error deleting student.');
       }
     }
   };
@@ -141,13 +206,14 @@ function App() {
     doc.setFontSize(14);
     doc.text('CBC-BTC Manager - Complete Records & Stay Schedule', 14, 12);
 
-    const tableColumns = ['ID', 'Name', 'District', 'Phone', 'Post-Grad Stay Window'];
+    const tableColumns = ['ID', 'Full Name', 'Email', 'Course / Batch', 'Phone', 'Post-Grad Stay Window'];
     const tableRows = rows.map(row => [
       row.id,
-      row.name,
-      row.district || '',
-      row.phone || '',
-      `From: ${row.stayStartDateTime ? new Date(row.stayStartDateTime).toLocaleString() : 'N/A'}\nTo: ${row.stayEndDateTime ? new Date(row.stayEndDateTime).toLocaleString() : 'N/A'}`
+      `${row.first_name || ''} ${row.last_name || ''}`,
+      row.email || 'N/A',
+      `${row.course || 'N/A'} (Batch ${row.batch || 'N/A'})`,
+      row.phone || 'N/A',
+      `From: ${row.stay_start_date_time ? new Date(row.stay_start_date_time).toLocaleString() : 'N/A'}\nTo: ${row.stay_end_date_time ? new Date(row.stay_end_date_time).toLocaleString() : 'N/A'}`
     ]);
 
     autoTable(doc, { head: [tableColumns], body: tableRows, startY: 18, theme: 'grid' });
@@ -156,10 +222,10 @@ function App() {
 
   const filteredCalendarRows = rows.filter(row => {
     if (!calendarFilterDate) return true;
-    if (!row.stayStartDateTime || !row.stayEndDateTime) return false;
+    if (!row.stay_start_date_time || !row.stay_end_date_time) return false;
     const filterDateOnly = calendarFilterDate;
-    const startDateOnly = row.stayStartDateTime.split('T')[0];
-    const endDateOnly = row.stayEndDateTime.split('T')[0];
+    const startDateOnly = row.stay_start_date_time.split('T')[0];
+    const endDateOnly = row.stay_end_date_time.split('T')[0];
     return filterDateOnly >= startDateOnly && filterDateOnly <= endDateOnly;
   });
 
@@ -167,10 +233,8 @@ function App() {
 
   return (
     <div className="app-layout">
-      {/* Floating Sticky Social Media Bar */}
       <FloatingSocialBar />
       
-      {/* Pinned Sticky Top Container (Navbar + Announcement + Header Tabs) */}
       <div className="sticky-top-all-container">
         <Navbar activeScreen={activeScreen} setCurrentScreen={setActiveScreen} />
         <FlashAnnouncement />
@@ -243,7 +307,6 @@ function App() {
         )}
       </main>
 
-      {/* Church Footer */}
       <Footer />
     </div>
   );

@@ -1,6 +1,124 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+// Reusable Searchable Dropdown Component (Strict selection & filtering only, no direct typing)
+function SearchableDropdown({ options, value, onSelect, placeholder, name, required, fieldLabel }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const wrapperRef = useRef(null);
+  const hiddenInputRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleInvalid = (e) => {
+    e.target.setCustomValidity(`Please select a valid ${fieldLabel} from the list.`);
+  };
+
+  const handleInput = (e) => {
+    e.target.setCustomValidity('');
+  };
+
+  const filteredOptions = options.filter(opt => 
+    String(opt).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+      {/* Readonly input: suppresses typing cursor entirely, clicking opens the selection menu */}
+      <input
+        type="text"
+        readOnly
+        placeholder={placeholder}
+        value={value ? String(value) : ''}
+        onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
+        style={{ 
+          width: '100%', 
+          padding: '10px 30px 10px 10px', 
+          borderRadius: '6px', 
+          border: '1px solid #cbd5e1', 
+          fontSize: '0.9rem', 
+          boxSizing: 'border-box', 
+          backgroundColor: '#fff', 
+          cursor: 'pointer',
+          caretColor: 'transparent' 
+        }}
+      />
+      {/* Dropdown arrow indicator icon */}
+      <span 
+        onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
+        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#64748b', fontSize: '0.8rem', pointerEvents: 'none' }}
+      >
+        ▼
+      </span>
+      
+      {/* Hidden input to enforce validation when required is true */}
+      <input 
+        type="text" 
+        ref={hiddenInputRef}
+        value={value || ''} 
+        required={required} 
+        onInvalid={handleInvalid}
+        onInput={handleInput}
+        onChange={() => {}} 
+        tabIndex={-1} 
+        aria-hidden="true" 
+        style={{ opacity: 0, position: 'absolute', pointerEvents: 'none', height: 0, width: 0 }} 
+      />
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+          backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '0 0 6px 6px',
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+        }}>
+          {/* Filtering search bar inside the dropdown list */}
+          <div style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
+            <input
+              type="text"
+              autoFocus
+              placeholder="🔍 Type to filter list..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          <ul style={{ maxHeight: '150px', overflowY: 'auto', margin: 0, padding: 0, listStyle: 'none' }}>
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt, idx) => (
+                <li
+                  key={idx}
+                  onClick={() => {
+                    onSelect(name, opt);
+                    setIsOpen(false);
+                    setSearchTerm('');
+                    if (hiddenInputRef.current) hiddenInputRef.current.setCustomValidity('');
+                  }}
+                  style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#fff'}
+                >
+                  {opt}
+                </li>
+              ))
+            ) : (
+              <li style={{ padding: '10px', color: '#94a3b8', fontSize: '0.9rem' }}>No matches found</li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function StudentFormScreen({ 
   formData, 
@@ -21,91 +139,77 @@ export default function StudentFormScreen({
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredRows = rows.filter(row => 
-    row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (row.first_name && row.first_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (row.last_name && row.last_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (row.email && row.email.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (row.course && row.course.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (row.batch && String(row.batch).includes(searchTerm)) ||
     (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
     String(row.id).includes(searchTerm)
   );
 
-  // PDF Export Function with embedded profile photos
-  const exportToPDF = () => {
-    const doc = new jsPDF('landscape'); // Landscape layout for wide directory tables
+  const courseOptions = ['BTC', 'B.TH', 'M.TH'];
+  const batchOptions = Array.from({ length: 100 }, (_, i) => `Batch ${i + 1}`);
 
-    // PDF Title
+  const handleDropdownSelect = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.photoUrl && !formData.photo_url && !formData.photoLink) {
+      alert('Photo is mandatory. Please upload a profile photo.');
+      return;
+    }
+    handleSubmit(e);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF('landscape');
     doc.setFontSize(16);
     doc.text('Registered Students Directory', 14, 15);
 
-    // Map filtered rows to table content (leave the photo cell empty so we can draw it via hook)
     const tableRows = filteredRows.map((row, index) => [
       row.id || index + 1,
-      row.name || '',
+      row.first_name || 'N/A',
+      row.last_name || 'N/A',
+      row.email || 'N/A',
+      row.course || 'N/A',
+      row.batch || 'N/A',
       row.district || 'N/A',
-      '', // Placeholder for Photo column
+      '', 
       row.phone || 'N/A'
     ]);
 
-    // Table Headers (English only)
-    const tableColumns = [
-      'ID', 
-      'Name', 
-      'District', 
-      'Photo', 
-      'Phone'
-    ];
+    const tableColumns = ['ID', 'First Name', 'Last Name', 'Email', 'Course', 'Batch', 'District', 'Photo', 'Phone'];
 
-    // Generate table using autoTable
     autoTable(doc, {
       head: [tableColumns],
       body: tableRows,
       startY: 25,
       theme: 'grid',
-      styles: { 
-        fontSize: 10, 
-        cellPadding: 6,
-        valign: 'middle',
-        overflow: 'linebreak' 
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185] // Professional blue header theme
-      },
-      columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 45 },
-        3: { cellWidth: 25, halign: 'center' }, // Photo column width
-        4: { cellWidth: 'auto' }
-      },
-      // Hook to draw student profile images inside the Photo column cells
+      styles: { fontSize: 9, cellPadding: 5, valign: 'middle' },
+      headStyles: { fillColor: [41, 128, 185] },
       didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 3) {
+        if (data.section === 'body' && data.column.index === 7) {
           const rowIndex = data.row.index;
           const student = filteredRows[rowIndex];
-          const imgUrl = student?.photoUrl || student?.photoLink;
-
+          const imgUrl = student?.photoUrl || student?.photo_url;
           if (imgUrl) {
             try {
-              // Dimensions for the image inside the table cell
-              const dim = 12; // size in mm
+              const dim = 10;
               const x = data.cell.x + (data.cell.width - dim) / 2;
               const y = data.cell.y + (data.cell.height - dim) / 2;
-
-              // Embed image into PDF cell
               doc.addImage(imgUrl, 'JPEG', x, y, dim, dim);
             } catch (err) {
-              // Fallback text if image loading/format fails
-              doc.setFontSize(8);
-              doc.setTextColor(150, 150, 150);
-              doc.text('No Image', data.cell.x + 4, data.cell.y + data.cell.height / 2);
+              doc.setFontSize(7);
+              doc.text('No Image', data.cell.x + 2, data.cell.y + data.cell.height / 2);
             }
-          } else {
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text('No Photo', data.cell.x + 4, data.cell.y + data.cell.height / 2);
           }
         }
       }
     });
 
-    // Save PDF file
     doc.save('registered-students-directory.pdf');
   };
 
@@ -113,36 +217,102 @@ export default function StudentFormScreen({
     <div className="screen-section">
       <div className="section-intro">
         <h2>Section 1: Initial Student Detail Creation</h2>
-        <p className="subtitle">Add or edit core student demographics, phone numbers, and profile photos.</p>
+        <p className="subtitle">Add or edit student demographics, courses, batch details, and profile photos.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
+      <form onSubmit={handleFormSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
         <h3>
           {isEditing 
-            ? `Edit Student Profile [ID: ${formData.id}] (విద్యార్థి వివరాలను సవరించు)` 
-            : 'Create New Student Profile (కొత్త విద్యార్థి వివరాలు)'}
+            ? `Edit Student Profile [ID: ${formData.id}]` 
+            : 'Create New Student Profile'}
         </h3>
         
         <div className="form-grid">
-          <div className="form-row-basic" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
+            
+            {/* First Name - Mandatory */}
             <div className="input-group">
-              <label>Name <span className="telugu-label">పేరు</span></label>
-              <input type="text" name="name" placeholder="Enter name..." value={formData.name} onChange={handleChange} required />
+              <label>First Name * <span className="telugu-label">మొదటి పేరు</span></label>
+              <input 
+                type="text" 
+                name="first_name" 
+                placeholder="Enter first name..." 
+                value={formData.first_name || ''} 
+                onChange={handleChange} 
+                onInvalid={(e) => e.target.setCustomValidity('Please enter the First Name.')}
+                onInput={(e) => e.target.setCustomValidity('')}
+                required 
+              />
             </div>
 
+            {/* Last Name - Optional */}
             <div className="input-group">
-              <label>District <span className="telugu-label">జిల్లా</span></label>
-              <input type="text" name="district" placeholder="Enter district..." value={formData.district} onChange={handleChange} />
+              <label>Last Name <span className="telugu-label">ఇంటి పేరు / చివరి పేరు</span></label>
+              <input type="text" name="last_name" placeholder="Enter last name..." value={formData.last_name || ''} onChange={handleChange} />
             </div>
 
-            <div className="input-group file-input-group">
-              <label>Upload Photo <span className="telugu-label">ఫోటో అప్‌లోడ్ చేయండి</span></label>
-              <input type="file" accept="image/*" onChange={handleFileChange} />
+            {/* Email - Optional */}
+            <div className="input-group">
+              <label>Email <span className="telugu-label">ఈమెయిల్</span></label>
+              <input type="email" name="email" placeholder="Enter email..." value={formData.email || ''} onChange={handleChange} />
             </div>
 
+            {/* Course - Mandatory Selection Only */}
+            <div className="input-group">
+              <label>Course * <span className="telugu-label">కోర్స్</span></label>
+              <SearchableDropdown 
+                options={courseOptions} 
+                value={formData.course} 
+                onSelect={handleDropdownSelect} 
+                placeholder="Click to select course..." 
+                name="course" 
+                required={true}
+                fieldLabel="Course"
+              />
+            </div>
+
+            {/* Batch - Mandatory Selection Only */}
+            <div className="input-group">
+              <label>Batch * <span className="telugu-label">బ్యాచ్</span></label>
+              <SearchableDropdown 
+                options={batchOptions} 
+                value={formData.batch} 
+                onSelect={handleDropdownSelect} 
+                placeholder="Click to select batch..." 
+                name="batch" 
+                required={true}
+                fieldLabel="Batch"
+              />
+            </div>
+
+            {/* District - Mandatory */}
+            <div className="input-group">
+              <label>District * <span className="telugu-label">జిల్లా</span></label>
+              <input 
+                type="text" 
+                name="district" 
+                placeholder="Enter district..." 
+                value={formData.district || ''} 
+                onChange={handleChange} 
+                onInvalid={(e) => e.target.setCustomValidity('Please enter the District.')}
+                onInput={(e) => e.target.setCustomValidity('')}
+                required 
+              />
+            </div>
+
+            {/* Phone Number - Optional */}
             <div className="input-group">
               <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
-              <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone} onChange={handleChange} />
+              <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone || ''} onChange={handleChange} />
+            </div>
+
+            {/* Upload Photo - Mandatory */}
+            <div className="input-group file-input-group">
+              <label>Upload Photo * <span className="telugu-label">ఫోటో</span></label>
+              <input type="file" accept="image/*" onChange={handleFileChange} />
+              {(formData.photoUrl || formData.photo_url) && (
+                <span style={{ fontSize: '0.8rem', color: '#16a34a', marginTop: '4px', display: 'block' }}>✔ Photo uploaded</span>
+              )}
             </div>
           </div>
         </div>
@@ -158,7 +328,7 @@ export default function StudentFormScreen({
                 setIsEditing(false);
                 setFormData({
                   id: null,
-                  name: '', district: '', phone: '', photoLink: '', photoUrl: '',
+                  first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
                   stephen: createDetailedSubsections(stephenKeys),
                   rajshekar: createDetailedSubsections(rajkeys),
                   sampath: createDetailedSubsections(sampathKeys),
@@ -181,14 +351,14 @@ export default function StudentFormScreen({
             <button 
               type="button" 
               onClick={exportToPDF}
-              style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
             >
               📥 Export Table to PDF
             </button>
             <div style={{ minWidth: '260px' }}>
               <input 
                 type="text" 
-                placeholder="🔍 Search by ID, name or district..." 
+                placeholder="🔍 Search by name, batch, course..." 
                 value={searchTerm} 
                 onChange={(e) => setSearchTerm(e.target.value)} 
                 style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
@@ -202,11 +372,15 @@ export default function StudentFormScreen({
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Name <span className="telugu-text">(పేరు)</span></th>
-                <th>District <span className="telugu-text">(జిల్లా)</span></th>
-                <th>Photo <span className="telugu-text">(ఫోటో)</span></th>
-                <th>Phone <span className="telugu-text">(ఫోన్)</span></th>
-                <th>Actions <span className="telugu-text">(చర్యలు)</span></th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Course</th>
+                <th>Batch</th>
+                <th>District</th>
+                <th>Photo</th>
+                <th>Phone</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -214,16 +388,20 @@ export default function StudentFormScreen({
                 filteredRows.map((row) => (
                   <tr key={row.id}>
                     <td><code>{row.id}</code></td>
-                    <td><strong>{row.name}</strong></td>
-                    <td>{row.district}</td>
+                    <td><strong>{row.first_name || 'N/A'}</strong></td>
+                    <td>{row.last_name || 'N/A'}</td>
+                    <td>{row.email || 'N/A'}</td>
+                    <td>{row.course || 'N/A'}</td>
+                    <td>{row.batch || 'N/A'}</td>
+                    <td>{row.district || 'N/A'}</td>
                     <td>
-                      {row.photoUrl ? (
-                        <img src={row.photoUrl} alt="Preview" style={{ width: '35px', height: '35px', borderRadius: '50%', objectFit: 'cover' }} />
+                      {row.photoUrl || row.photo_url ? (
+                        <img src={row.photoUrl || row.photo_url} alt="Preview" style={{ width: '35px', height: '35px', borderRadius: '50%', objectFit: 'cover' }} />
                       ) : (
-                        <span>{row.photoLink || 'No Photo'}</span>
+                        <span>No Photo</span>
                       )}
                     </td>
-                    <td>{row.phone}</td>
+                    <td>{row.phone || 'N/A'}</td>
                     <td>
                       <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={() => handleEdit(row)} style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
@@ -234,7 +412,7 @@ export default function StudentFormScreen({
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="no-data">No students matched your search criteria.</td>
+                  <td colSpan="10" className="no-data" style={{ textAlign: 'center', padding: '20px' }}>No students matched your search criteria.</td>
                 </tr>
               )}
             </tbody>

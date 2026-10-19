@@ -16,8 +16,6 @@ export default function AcademicEvaluationsScreen({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   
-  // Keep the dropdown synchronized with active formData ID
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (formData && formData.id) {
       setSelectedStudentId(String(formData.id));
@@ -36,7 +34,6 @@ export default function AcademicEvaluationsScreen({
     setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Comprehensive label mapping for actual subject names
   const subjectNameMap = {
     synoptic: 'Synoptic Gospels',
     actsEpistles: 'Acts & Epistles',
@@ -83,20 +80,17 @@ export default function AcademicEvaluationsScreen({
   };
 
   const filteredSummaryRows = rows.filter(row => 
-    row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (row.first_name && row.first_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (row.last_name && row.last_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
     (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
     String(row.id).includes(searchTerm)
   );
 
-  // PDF Export Function using actual subject names
   const exportToPDF = () => {
-    const doc = new jsPDF('landscape'); // Landscape layout to comfortably fit all columns
-
-    // PDF Title
+    const doc = new jsPDF('landscape');
     doc.setFontSize(16);
     doc.text('Academic Records Summary', 14, 15);
 
-    // Map filtered rows to match the summary table columns with full names
     const tableRows = filteredSummaryRows.map((row, index) => {
       const formatProfSummary = (obj, keys) => {
         if (!obj) return 'N/A';
@@ -116,7 +110,7 @@ export default function AcademicEvaluationsScreen({
 
       return [
         row.id || index + 1,
-        row.name || '',
+        `${row.first_name || ''} ${row.last_name || ''}`,
         row.district || 'N/A',
         stephenText,
         rajshekarText,
@@ -124,36 +118,15 @@ export default function AcademicEvaluationsScreen({
       ];
     });
 
-    const tableColumns = [
-      'ID', 
-      'Name (పేరు)', 
-      'District (జిల్లా)', 
-      'Prof Stephen', 
-      'Prof Rajshekar', 
-      'Prof Sampath'
-    ];
+    const tableColumns = ['ID', 'Full Name', 'District', 'Prof Stephen', 'Prof Rajshekar', 'Prof Sampath'];
 
     autoTable(doc, {
       head: [tableColumns],
       body: tableRows,
       startY: 25,
       theme: 'grid',
-      styles: { 
-        fontSize: 8, 
-        cellPadding: 3,
-        overflow: 'linebreak' 
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185] 
-      },
-      columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 65 },
-        4: { cellWidth: 65 },
-        5: { cellWidth: 65 }
-      }
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+      headStyles: { fillColor: [41, 128, 185] }
     });
 
     doc.save('academic-records-summary.pdf');
@@ -263,7 +236,7 @@ export default function AcademicEvaluationsScreen({
 
       <form onSubmit={handleSubmit} className="form-card">
         <h3>
-          Update Academic Evaluations for: <span className="selected-student">{formData.name || 'Select a student below'}</span>
+          Update Academic Evaluations for: <span className="selected-student">{formData.first_name ? `${formData.first_name} ${formData.last_name}` : 'Select a student below'}</span>
           {formData.id && <span style={{ fontSize: '0.85rem', color: '#2563eb', marginLeft: '10px', fontWeight: 'bold' }}>[Target ID: {formData.id}]</span>}
         </h3>
         
@@ -278,7 +251,7 @@ export default function AcademicEvaluationsScreen({
               setSelectedStudentId(val);
               
               if (!val) {
-                setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
+                setFormData({ id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
                 return;
               }
 
@@ -292,45 +265,26 @@ export default function AcademicEvaluationsScreen({
             <option value="">-- Choose student from directory --</option>
             {rows.map(row => (
               <option key={row.id} value={row.id}>
-                ID: {row.id} - {row.name} {row.district ? `(${row.district})` : ''}
+                ID: {row.id} - {row.first_name} {row.last_name} {row.district ? `(${row.district})` : ''}
               </option>
             ))}
           </select>
-          <small style={{ color: '#64748b', marginTop: '4px' }}>
-            💡 Active Record: <strong>{formData.id ? `ID #${formData.id} - ${formData.name}` : 'None selected'}</strong>
-          </small>
         </div>
 
-        <div className="input-group">
-          <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
-          <input 
-            type="text" 
-            name="name" 
-            placeholder="Enter student name..." 
-            value={formData.name || ''} 
-            onChange={(e) => handleChange(e, null, null, null)} 
-            required 
-          />
-        </div>
-
-        <div className="professors-section-wrapper">
+        <div className="professors-section-wrapper" style={{ marginTop: '20px' }}>
           <div className="collapsible-panel">
             <div className="panel-header" onClick={() => toggleSection('stephen')}>
               <div className="panel-header-text">
-                <span className="panel-title">
-                  Lecturer: <strong>Prof Stephen Suresh Babu</strong> <span className="phone-num">(+91 8074852725)</span>
-                </span>
-                <span className="panel-subtitle">(సినాప్టిక్ గస్పెల్స్, ఆక్ట్స్ & ఎపిస్టల్స్, హోమిలెటిక్స్)</span>
+                <span className="panel-title">Lecturer: <strong>Prof Stephen Suresh Babu</strong></span>
               </div>
               <span className="toggle-icon">{collapsedSections.stephen ? '▼' : '▲'}</span>
             </div>
             {!collapsedSections.stephen && (
               <div className="panel-body">
-                <div className="subjects-heading">SUBJECTS & SUBSECTIONS:</div>
                 {renderSubjectCards('stephen', [
-                  { key: 'synoptic', label: 'Synoptic Gospels', telugu: 'సినాప్టిక్' },
-                  { key: 'actsEpistles', label: 'Acts & Epistles', telugu: 'ఆక్ట్స్' },
-                  { key: 'homiletics', label: 'Homiletics', telugu: 'హోమిలెటిక్స్' }
+                  { key: 'synoptic', label: 'Synoptic Gospels' },
+                  { key: 'actsEpistles', label: 'Acts & Epistles' },
+                  { key: 'homiletics', label: 'Homiletics' }
                 ])}
               </div>
             )}
@@ -339,21 +293,17 @@ export default function AcademicEvaluationsScreen({
           <div className="collapsible-panel">
             <div className="panel-header" onClick={() => toggleSection('rajshekar')}>
               <div className="panel-header-text">
-                <span className="panel-title">
-                  Lecturer: <strong>Prof Rajshekar Sir</strong> <span className="phone-num">(+91-8885831588)</span>
-                </span>
-                <span className="panel-subtitle">(లా, హిస్టరీ, పోయెటిక్ & విజ్డమ్, ప్రాఫెటిక్)</span>
+                <span className="panel-title">Lecturer: <strong>Prof Rajshekar Sir</strong></span>
               </div>
               <span className="toggle-icon">{collapsedSections.rajshekar ? '▼' : '▲'}</span>
             </div>
             {!collapsedSections.rajshekar && (
               <div className="panel-body">
-                <div className="subjects-heading">SUBJECTS & SUBSECTIONS:</div>
                 {renderSubjectCards('rajshekar', [
-                  { key: 'law', label: 'Law', telugu: 'లా' },
-                  { key: 'history', label: 'History', telugu: 'హిస్టరీ' },
-                  { key: 'poetic', label: 'Poetic & Wisdom', telugu: 'పోయెటిక్' },
-                  { key: 'prophetic', label: 'Prophetic', telugu: 'ప్రాఫెటిక్' }
+                  { key: 'law', label: 'Law' },
+                  { key: 'history', label: 'History' },
+                  { key: 'poetic', label: 'Poetic & Wisdom' },
+                  { key: 'prophetic', label: 'Prophetic' }
                 ])}
               </div>
             )}
@@ -362,53 +312,33 @@ export default function AcademicEvaluationsScreen({
           <div className="collapsible-panel">
             <div className="panel-header" onClick={() => toggleSection('sampath')}>
               <div className="panel-header-text">
-                <span className="panel-title">
-                  Lecturer: <strong>Prof Sampath Kumar</strong> <span className="phone-num">(+91 9985236736)</span>
-                </span>
-                <span className="panel-subtitle">(లైఫ్ ఆఫ్ క్రైస్ట్, క్రోనలాజికల్, ఎవంజిలిజం)</span>
+                <span className="panel-title">Lecturer: <strong>Prof Sampath Kumar</strong></span>
               </div>
               <span className="toggle-icon">{collapsedSections.sampath ? '▼' : '▲'}</span>
             </div>
             {!collapsedSections.sampath && (
               <div className="panel-body">
-                <div className="subjects-heading">SUBJECTS & SUBSECTIONS:</div>
                 {renderSubjectCards('sampath', [
-                  { key: 'loc', label: 'Life of Christ', telugu: 'లైఫ్ ఆఫ్ క్రైస్ట్' },
-                  { key: 'locChronological', label: 'Life of Christ - Chronological Study', telugu: 'క్రోనలాజికల్' },
-                  { key: 'evangelism', label: 'Evangelism & Missions', telugu: 'ఎవంజిలిజం' }
+                  { key: 'loc', label: 'Life of Christ' },
+                  { key: 'locChronological', label: 'Life of Christ - Chronological Study' },
+                  { key: 'evangelism', label: 'Evangelism & Missions' }
                 ])}
               </div>
             )}
           </div>
         </div>
 
-        <div className="form-actions" style={{ display: 'flex', gap: '10px' }}>
+        <div className="form-actions" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
           <button type="submit" className="save-btn">
             {formData.id ? `Update Academic Records [ID: ${formData.id}]` : 'Save Academic Records'}
           </button>
-          {formData.id && (
-            <button 
-              type="button" 
-              onClick={() => {
-                setFormData({ id: null, name: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {}, accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: '' });
-                setSelectedStudentId('');
-              }}
-              style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-            >
-              Clear Selection
-            </button>
-          )}
         </div>
       </form>
 
-      <div className="summary-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
-          <h3>Academic Records Summary (Click 'Edit Academics' to load record)</h3>
-          <button 
-            type="button" 
-            onClick={exportToPDF}
-            style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
+      <div className="summary-section" style={{ marginTop: '40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h3>Academic Records Summary</h3>
+          <button type="button" onClick={exportToPDF} style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
             📥 Export Table to PDF
           </button>
         </div>
@@ -418,8 +348,8 @@ export default function AcademicEvaluationsScreen({
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Name <span className="telugu-text">(పేరు)</span></th>
-                <th>District <span className="telugu-text">(జిల్లా)</span></th>
+                <th>Name</th>
+                <th>District</th>
                 <th>Prof Stephen</th>
                 <th>Prof Rajshekar</th>
                 <th>Prof Sampath</th>
@@ -428,49 +358,24 @@ export default function AcademicEvaluationsScreen({
             </thead>
             <tbody>
               {filteredSummaryRows.length > 0 ? (
-                filteredSummaryRows.map((row) => {
-                  const formatTableCell = (obj, keys) => {
-                    if (!obj) return 'N/A';
-                    return (
-                      <div className="prof-cell">
-                        {keys.map(k => {
-                          const fullName = subjectNameMap[k] || k;
-                          return (
-                            <div key={k} style={{ marginBottom: '4px' }}>
-                              <strong>{fullName}:</strong> Ex:{obj[`${k}Exam`]?'✅':'❌'} N:{obj[`${k}Notes`]?'✅':'❌'} Cl:{obj[`${k}Classes`]?'✅':'❌'} P:{obj[`${k}Permissions`]||0} 
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  };
-
-                  return (
-                    <tr key={row.id} style={{ background: formData.id === row.id ? '#eff6ff' : 'transparent' }}>
-                      <td><code>{row.id}</code></td>
-                      <td><strong>{row.name}</strong></td>
-                      <td>{row.district}</td>
-                      <td>{formatTableCell(row.stephen, stephenKeys)}</td>
-                      <td>{formatTableCell(row.rajshekar, rajkeys)}</td>
-                      <td>{formatTableCell(row.sampath, sampathKeys)}</td>
-                      <td>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            handleEdit(row, 'academics');
-                            setSelectedStudentId(String(row.id));
-                          }} 
-                          className="edit-btn"
-                        >
-                          {formData.id === row.id ? 'Editing ID: ' + row.id : 'Edit Academics'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
+                filteredSummaryRows.map((row) => (
+                  <tr key={row.id}>
+                    <td><code>{row.id}</code></td>
+                    <td><strong>{row.first_name} {row.last_name}</strong></td>
+                    <td>{row.district}</td>
+                    <td>Summary Recorded</td>
+                    <td>Summary Recorded</td>
+                    <td>Summary Recorded</td>
+                    <td>
+                      <button type="button" onClick={() => handleEdit(row, 'academics')} className="edit-btn">
+                        Edit Academics
+                      </button>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="no-data">No matching student records found.</td>
+                  <td colSpan="7" className="no-data">No matching records found.</td>
                 </tr>
               )}
             </tbody>

@@ -14,15 +14,15 @@ export default function PostGraduationStayScreen({
   const [dateError, setDateError] = useState('');
 
   const filteredRows = rows.filter(row => 
-    row.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase()))
+    (row.first_name && row.first_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (row.last_name && row.last_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    String(row.id).includes(searchTerm)
   );
 
-  // Handle single range picker updates for start & end
   const handleRangeChange = (dates) => {
     const [start, end] = dates;
     
-    // Create synthetic events to match your existing handleChange handler
     if (start) {
       handleChange({ target: { name: 'stayStartDateTime', value: start.toISOString() } });
     }
@@ -30,12 +30,8 @@ export default function PostGraduationStayScreen({
       handleChange({ target: { name: 'stayEndDateTime', value: end.toISOString() } });
     }
 
-    if (start && end) {
-      if (end < start) {
-        setDateError('ముగింపు తేదీ మరియు సమయం ప్రారంభ తేదీ కంటే తక్కువగా ఉండకూడదు (To Date & Time cannot be earlier than From Date & Time).');
-      } else {
-        setDateError('');
-      }
+    if (start && end && end < start) {
+      setDateError('To Date & Time cannot be earlier than From Date & Time.');
     } else {
       setDateError('');
     }
@@ -43,17 +39,14 @@ export default function PostGraduationStayScreen({
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    
     if (formData.stayStartDateTime && formData.stayEndDateTime) {
       const start = new Date(formData.stayStartDateTime);
       const end = new Date(formData.stayEndDateTime);
-
       if (start >= end) {
-        setDateError('ప్రారంభ తేదీ మరియు సమయం ముగింపు తేదీ కంటే తక్కువగా ఉండాలి (From Date & Time must be earlier than To Date & Time).');
+        setDateError('From Date & Time must be earlier than To Date & Time.');
         return;
       }
     }
-
     handleSubmit(e);
   };
 
@@ -61,12 +54,7 @@ export default function PostGraduationStayScreen({
     if (!isoString) return 'Not Set';
     const date = new Date(isoString);
     return isNaN(date.getTime()) ? 'Not Set' : date.toLocaleString([], { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit', 
-      hour12: true 
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true 
     });
   };
 
@@ -80,12 +68,11 @@ export default function PostGraduationStayScreen({
         <p className="subtitle">Manage precise arrival/departure schedules and filter campus stay dates.</p>
       </div>
 
-      {/* SEARCH BAR TO FILTER RECORDS */}
       <div className="form-card search-card">
-        <h4>🔍 Filter Student Records <span className="telugu-text">(విద్యార్థుల జాబితాను ఫిల్టర్ చేయండి)</span></h4>
+        <h4>🔍 Filter Student Records</h4>
         <input 
           type="text" 
-          placeholder="Type student name or district..." 
+          placeholder="Type student name or ID..." 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
           className="search-input"
@@ -93,36 +80,30 @@ export default function PostGraduationStayScreen({
       </div>
 
       <form onSubmit={handleFormSubmit} className="form-card">
-        <h3>Configure Post-Graduation Stay Window for Student</h3>
+        <h3>Configure Stay Window for Student [ID: {formData.id || 'New'}]</h3>
         
-        {/* STUDENT NAME INPUT */}
         <div className="input-group">
-          <label>Student Name <span className="telugu-label">విద్యార్థి పేరు</span></label>
+          <label>Student Name</label>
           <input 
             type="text" 
-            name="name" 
-            placeholder="Enter student name..." 
-            value={formData.name || ''} 
-            onChange={handleChange} 
-            required 
+            value={`${formData.first_name || ''} ${formData.last_name || ''}`.trim()} 
+            disabled 
+            style={{ background: '#f1f5f9', cursor: 'not-allowed' }}
           />
         </div>
 
-        {/* SINGLE CALENDAR CONTROL FOR START & END WITH AM/PM */}
         <div className="stay-window-panel">
           <div className="panel-header-title">
             <span className="panel-title">🗓️ Campus Stay Date & Time Range</span>
-            <span className="panel-subtitle">(గ్రాడ్యుయేషన్ వసతి ఏకీకృత క్యాలెండర్ - AM / PM)</span>
           </div>
 
           {dateError && <div className="error-banner">{dateError}</div>}
 
           <div className="input-group" style={{ marginTop: '12px' }}>
             <label style={{ fontWeight: '600', color: '#1e293b', display: 'block', marginBottom: '6px' }}>
-              Select From & To Date & Time Range <span className="telugu-label">(ప్రారంభ & ముగింపు సమయం)</span>
+              Select From & To Date & Time Range
             </label>
             
-            {/* SINGLE UNIFIED DATEPICKER INPUT */}
             <DatePicker
               selectsRange={true}
               startDate={startDateValue}
@@ -136,80 +117,63 @@ export default function PostGraduationStayScreen({
               className="single-range-input"
               required
               wrapperClassName="w-full"
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
             />
           </div>
 
-          {/* LIVE SUMMARY BADGE */}
-          <div className="range-preview-badge" style={{
-            marginTop: '12px',
-            padding: '10px 14px',
-            background: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            borderRadius: '6px',
-            fontSize: '13px',
-            color: '#1e40af',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <span><strong>Active Window:</strong> {formatDisplayDateTime(formData.stayStartDateTime)} ➔ {formatDisplayDateTime(formData.stayEndDateTime)}</span>
-            <span style={{ fontSize: '11px', background: '#dbeafe', padding: '2px 6px', borderRadius: '4px' }}>12-Hour AM/PM</span>
-          </div>
-
           <div className="input-group full-width" style={{ marginTop: '16px' }}>
-            <label>Stay Notes / Instructions <span className="telugu-label">వసతి గమనికలు</span></label>
+            <label>Accommodation Details / Remarks</label>
             <input 
               type="text" 
-              name="stayRemarks" 
-              placeholder="e.g., Arriving night before, staying until morning worship session" 
-              value={formData.stayRemarks || ''} 
+              name="accommodation" 
+              placeholder="e.g., Room 102, Main Hostel" 
+              value={formData.accommodation || ''} 
               onChange={handleChange} 
             />
           </div>
         </div>
 
-        <div className="form-actions">
+        <div className="form-actions" style={{ marginTop: '20px' }}>
           <button type="submit" className="save-btn" disabled={Boolean(dateError)}>
             Save Stay Schedule
           </button>
         </div>
       </form>
 
-      {/* SUMMARY TABLE SECTION */}
-      <div className="summary-section">
+      <div className="summary-section" style={{ marginTop: '40px' }}>
         <h3>Post-Graduation Stay Records Summary</h3>
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Name <span className="telugu-text">(పేరు)</span></th>
-                <th>District <span className="telugu-text">(జిల్లా)</span></th>
-                <th>Date Range Start</th>
-                <th>Date Range End</th>
-                <th>Notes</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>District</th>
+                <th>Start Date & Time</th>
+                <th>End Date & Time</th>
+                <th>Accommodation</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.length > 0 ? (
                 filteredRows.map((row) => (
-                  <tr key={row.id || row.name}>
-                    <td><strong>{row.name}</strong></td>
+                  <tr key={row.id}>
+                    <td><code>{row.id}</code></td>
+                    <td><strong>{row.first_name} {row.last_name}</strong></td>
                     <td>{row.district || 'N/A'}</td>
-                    <td>{formatDisplayDateTime(row.stayStartDateTime)}</td>
-                    <td>{formatDisplayDateTime(row.stayEndDateTime)}</td>
-                    <td>{row.stayRemarks || 'No notes provided'}</td>
+                    <td>{formatDisplayDateTime(row.stay_start_date_time)}</td>
+                    <td>{formatDisplayDateTime(row.stay_end_date_time)}</td>
+                    <td>{row.accommodation || 'N/A'}</td>
                     <td>
-                      <button onClick={() => handleEdit(row)} className="edit-btn">
-                        Edit
+                      <button onClick={() => handleEdit(row, 'stayCalendar')} className="edit-btn">
+                        Edit Stay
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="no-data">No matching student records found.</td>
+                  <td colSpan="7" className="no-data">No matching student records found.</td>
                 </tr>
               )}
             </tbody>
