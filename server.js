@@ -10,206 +10,123 @@ const pool = new Pool({
 });
 
 const server = http.createServer(async (req, res) => {
+  // ✅ FIX: Explicitly allow PUT and DELETE in Access-Control-Allow-Methods
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
     return;
   }
 
-  const urlParts = req.url.split('/');
-  
+  const url = new URL(req.url, `http://${req.headers.host}`);
+
+  const parseBody = (req) => {
+    return new Promise((resolve, reject) => {
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  };
+
   try {
-    // ==========================================
-    // 1. STUDENTS API ENDPOINTS (Strictly Demographics)
-    // ==========================================
-
-    if (req.method === 'GET' && req.url === '/api/students') {
-      const query = `
-        SELECT id, first_name, last_name, district, phone, email, course, batch, photo_url
-        FROM students
-        ORDER BY id ASC
-      `;
-      const result = await pool.query(query);
+    // 1. GET: Fetch all students
+    if (url.pathname === '/api/students' && req.method === 'GET') {
+      const result = await pool.query(
+        `SELECT id, first_name, last_name, district, phone, email, course, batch, photo_url, created_at 
+         FROM students ORDER BY id ASC`
+      );
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(result.rows));
-    } 
-
-    else if (req.method === 'POST' && req.url === '/api/students') {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', async () => {
-        try {
-          const data = JSON.parse(body);
-          
-          const studentQuery = `
-            INSERT INTO students (first_name, last_name, district, phone, email, course, batch, photo_url)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *;
-          `;
-          
-          const studentValues = [
-            data.first_name || '', 
-            data.last_name || '', 
-            data.district || '', 
-            data.phone || '',
-            data.email || '', 
-            data.course || '', 
-            data.batch || '', 
-            data.photoUrl || data.photo_url || data.photoLink || ''
-          ];
-
-          const studentResult = await pool.query(studentQuery, studentValues);
-          res.writeHead(201, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(studentResult.rows[0]));
-        } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: err.message }));
-        }
-      });
+      res.end(JSON.stringify(result.rows));
       return;
     }
 
-    else if (req.method === 'PUT' && urlParts[1] === 'api' && urlParts[2] === 'students' && urlParts[3]) {
-      const studentId = urlParts[3];
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', async () => {
-        try {
-          const data = JSON.parse(body);
+    // 2. POST: Create new student
+    if (url.pathname === '/api/students' && req.method === 'POST') {
+      const data = await parseBody(req);
+      const { first_name, last_name, district, phone, email, course, batch, photo_url, photoUrl } = data;
+      const finalPhoto = photo_url || photoUrl || null;
 
-          const updateStudentQuery = `
-            UPDATE students 
-            SET first_name = $1, last_name = $2, district = $3, phone = $4, email = $5, course = $6, batch = $7, photo_url = $8
-            WHERE id = $9
-            RETURNING *;
-          `;
-          
-          const updateValues = [
-            data.first_name || '', 
-            data.last_name || '', 
-            data.district || '', 
-            data.phone || '',
-            data.email || '', 
-            data.course || '', 
-            data.batch || '', 
-            data.photoUrl || data.photo_url || data.photoLink || '', 
-            studentId
-          ];
+      const query = `
+        INSERT INTO students (first_name, last_name, district, phone, email, course, batch, photo_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, first_name, last_name, district, phone, email, course, batch, photo_url, created_at;
+      `;
+      const result = await pool.query(query, [first_name, last_name, district, phone, email, course, batch, finalPhoto]);
 
-          const updatedStudentRes = await pool.query(updateStudentQuery, updateValues);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(updatedStudentRes.rows[0]));
-        } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: err.message }));
-        }
-      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows[0]));
       return;
     }
 
-    else if (req.method === 'DELETE' && urlParts[1] === 'api' && urlParts[2] === 'students' && urlParts[3]) {
-      const studentId = urlParts[3];
-      await pool.query('DELETE FROM students WHERE id = $1', [studentId]);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ success: true, id: studentId }));
-    } 
+    // 3. PUT: Update existing student by ID
+    if (url.pathname.startsWith('/api/students/') && req.method === 'PUT') {
+      const studentId = url.pathname.split('/')[3];
+      const data = await parseBody(req);
+      const { first_name, last_name, district, phone, email, course, batch, photo_url, photoUrl } = data;
+      const finalPhoto = photo_url || photoUrl || null;
 
-    // ==========================================
-    // 2. ACADEMIC EVALUATIONS & PROFESSORS API
-    // ==========================================
-
-    else if (req.method === 'GET' && req.url.startsWith('/api/academic-evaluations')) {
       const query = `
-        SELECT 
-          s.id, s.first_name, s.last_name, s.district, s.course, s.batch,
-          COALESCE(ae.stephen_data, '{}'::jsonb) AS stephen,
-          COALESCE(ae.rajshekar_data, '{}'::jsonb) AS rajshekar,
-          COALESCE(ae.sampath_data, '{}'::jsonb) AS sampath
-        FROM students s
-        LEFT JOIN academic_evaluations ae ON s.id = ae.student_id
-        ORDER BY s.id ASC;
+        UPDATE students 
+        SET first_name = $1, last_name = $2, district = $3, phone = $4, email = $5, course = $6, batch = $7, photo_url = $8
+        WHERE id = $9
+        RETURNING id, first_name, last_name, district, phone, email, course, batch, photo_url, created_at;
       `;
-      const result = await pool.query(query);
+      const result = await pool.query(query, [first_name, last_name, district, phone, email, course, batch, finalPhoto, Number(studentId)]);
+
+      if (result.rows.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Student not found' }));
+        return;
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(result.rows));
+      res.end(JSON.stringify(result.rows[0]));
+      return;
     }
 
-    else if (req.method === 'GET' && req.url.startsWith('/api/professor-subjects')) {
-      const profQuery = `SELECT * FROM professors ORDER BY professor_id ASC;`;
-      const subjQuery = `SELECT * FROM professor_subjects;`;
+    // 4. DELETE student by ID
+    if (url.pathname.startsWith('/api/students/') && req.method === 'DELETE') {
+      const studentId = url.pathname.split('/')[3];
+      await pool.query('DELETE FROM students WHERE id = $1', [Number(studentId)]);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
 
-      const profsResult = await pool.query(profQuery);
-      const subjsResult = await pool.query(subjQuery);
+    // 5. GET: Professor subjects configuration
+    if (url.pathname === '/api/professor-subjects' && req.method === 'GET') {
+      const profResult = await pool.query('SELECT professor_id, name, lecturer_key FROM professors');
+      const subResult = await pool.query('SELECT subject_id, professor_id, subject_key, label, telugu_label FROM subjects');
 
-      const formattedProfessors = profsResult.rows.map(prof => {
-        const matchingSubjects = subjsResult.rows
+      const formattedData = profResult.rows.map(prof => ({
+        lecturerKey: prof.lecturer_key,
+        lecturerName: prof.name,
+        subjects: subResult.rows
           .filter(sub => sub.professor_id === prof.professor_id)
           .map(sub => ({
             key: sub.subject_key,
-            label: sub.subject_label,
-            ...(sub.subject_telugu ? { telugu: sub.subject_telugu } : {})
-          }));
-
-        return {
-          lecturerKey: prof.lecturer_key,
-          lecturerName: prof.lecturer_name,
-          subjects: matchingSubjects
-        };
-      });
+            label: sub.label,
+            telugu: sub.telugu_label
+          }))
+      }));
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(formattedProfessors));
-    }
-
-    else if (req.method === 'POST' && req.url.startsWith('/api/academic-evaluations')) {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', async () => {
-        try {
-          const data = JSON.parse(body);
-          if (!data.id) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ error: 'Student ID is required.' }));
-          }
-
-          const upsertQuery = `
-            INSERT INTO academic_evaluations (student_id, stephen_data, rajshekar_data, sampath_data, updated_at)
-            VALUES ($1, $2, $3, $4, NOW())
-            ON CONFLICT (student_id) 
-            DO UPDATE SET 
-              stephen_data = EXCLUDED.stephen_data,
-              rajshekar_data = EXCLUDED.rajshekar_data,
-              sampath_data = EXCLUDED.sampath_data,
-              updated_at = NOW()
-            RETURNING *;
-          `;
-
-          const values = [
-            data.id, 
-            JSON.stringify(data.stephen || {}), 
-            JSON.stringify(data.rajshekar || {}), 
-            JSON.stringify(data.sampath || {})
-          ];
-
-          const result = await pool.query(upsertQuery, values);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ message: 'Academic records updated successfully!', data: result.rows[0] }));
-        } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: err.message }));
-        }
-      });
+      res.end(JSON.stringify(formattedData));
       return;
-    } 
-
-    else {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'API Route Not Found' }));
     }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Endpoint not found' }));
 
   } catch (err) {
     console.error('Server error:', err);
@@ -218,6 +135,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(5000, () => {
-  console.log('Native Node.js server running on port 5000');
+const PORT = 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT} connected to PostgreSQL (CBC_BTC)`);
 });

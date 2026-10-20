@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Reusable Searchable Dropdown Component
 function SearchableDropdown({ options, value, onSelect, placeholder, name, required, fieldLabel }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,7 +106,7 @@ export default function StudentFormScreen({
   handleFileChange, 
   handleChange, 
   rows, 
-  handleEdit, 
+  handleEdit: parentHandleEdit, 
   handleDelete, 
   setIsEditing 
 }) {
@@ -130,14 +129,21 @@ export default function StudentFormScreen({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    const activePhoto = formData.photoUrl || formData.photo_url || formData.photoLink;
-    if (!activePhoto) {
-      alert('Photo is mandatory. Please upload a profile photo.');
-      return;
+  const handleEditClick = (row) => {
+    const cleanStudentOnly = {
+      id: row.id || null,
+      first_name: row.first_name || '',
+      last_name: row.last_name || '',
+      district: row.district || '',
+      phone: row.phone || '',
+      email: row.email || '',
+      course: row.course || '',
+      batch: row.batch || '',
+      photo_url: row.photo_url || row.photoUrl || ''
+    };
+    if (typeof parentHandleEdit === 'function') {
+      parentHandleEdit(cleanStudentOnly);
     }
-    handleSubmit(e);
   };
 
   const exportToPDF = () => {
@@ -145,7 +151,6 @@ export default function StudentFormScreen({
     doc.setFontSize(16);
     doc.text('Registered Students Directory', 14, 15);
 
-    // Exact order matching UI: ID, First Name, Last Name, District, Email, Phone, Course, Batch, Photo
     const tableRows = filteredRows.map((row, index) => [
       row.id || index + 1,
       row.first_name || 'N/A',
@@ -197,7 +202,7 @@ export default function StudentFormScreen({
         <p className="subtitle">Add or edit student demographics, courses, batch details, and profile photos.</p>
       </div>
 
-      <form onSubmit={handleFormSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
+      <form onSubmit={handleSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
         <h3>{isEditing ? `Edit Student Profile [ID: ${formData.id}]` : 'Create New Student Profile'}</h3>
         
         <div className="form-grid">
@@ -258,8 +263,7 @@ export default function StudentFormScreen({
               onClick={() => {
                 setIsEditing(false);
                 setFormData({
-                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
-                  stephen: {}, rajshekar: {}, sampath: {}
+                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: ''
                 });
               }}
               style={{ padding: '12px 24px', background: '#64748b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
@@ -331,7 +335,7 @@ export default function StudentFormScreen({
                     </td>
                     <td>
                       <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleEdit(row)} style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
+                        <button onClick={() => handleEditClick(row)} style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
                         <button onClick={() => handleDelete(row.id)} style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
                       </div>
                     </td>

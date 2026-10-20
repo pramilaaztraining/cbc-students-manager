@@ -59,7 +59,6 @@ function App() {
   const [activeScreen, setActiveScreen] = useState('home');
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
-  // Fetch normalized student records from backend API on load
   useEffect(() => {
     fetch('http://localhost:5000/api/students')
       .then(res => {
@@ -92,15 +91,27 @@ function App() {
     }
   };
 
-  // Submit handler synchronized with normalized database tables by ID & updated mandatory fields
+  // Strict submit handler sending ONLY student columns
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate required fields: First Name, Batch, Course, District, and Photo
     if (!formData.first_name || !formData.batch || !formData.course || !formData.district || (!formData.photoUrl && !formData.photo_url)) {
       alert('Please fill in all mandatory fields: First Name, Course, Batch, District, and Upload Photo.');
       return;
     }
+
+    const activePhoto = formData.photoUrl || formData.photo_url || formData.photoLink;
+
+    const cleanStudentPayload = {
+      first_name: formData.first_name || '',
+      last_name: formData.last_name || '',
+      district: formData.district || '',
+      phone: formData.phone || '',
+      email: formData.email || '',
+      course: formData.course || '',
+      batch: formData.batch || '',
+      photo_url: activePhoto
+    };
 
     if (formData.id && Number(formData.id) > 0) {
       // UPDATE student record (PUT)
@@ -108,12 +119,12 @@ function App() {
         const response = await fetch(`http://localhost:5000/api/students/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(cleanStudentPayload)
         });
         if (!response.ok) throw new Error('Failed to update student');
         
         const updatedStudent = await response.json();
-        setRows(rows.map(row => (row.id === Number(formData.id) ? { ...updatedStudent, photoUrl: updatedStudent.photo_url || formData.photoUrl } : row)));
+        setRows(rows.map(row => (row.id === Number(formData.id) ? { ...updatedStudent, photoUrl: updatedStudent.photo_url } : row)));
         setIsEditing(false);
         alert('Student record updated successfully!');
       } catch (err) {
@@ -126,12 +137,12 @@ function App() {
         const response = await fetch('http://localhost:5000/api/students', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(cleanStudentPayload)
         });
         if (!response.ok) throw new Error('Failed to create student');
 
         const newEntry = await response.json();
-        setRows([...rows, { ...newEntry, photoUrl: newEntry.photo_url || formData.photoUrl }]);
+        setRows([...rows, { ...newEntry, photoUrl: newEntry.photo_url }]);
         alert('Student created successfully!');
       } catch (err) {
         console.error('Error creating student in database:', err);
@@ -139,7 +150,7 @@ function App() {
       }
     }
 
-    // Reset form state
+    // Reset form state cleanly
     setFormData({
       id: null,
       first_name: '',
@@ -164,7 +175,16 @@ function App() {
   const handleEdit = (row, targetScreen = 'creation') => {
     setIsEditing(true);
     setFormData({ 
-      ...row,
+      id: row.id || null,
+      first_name: row.first_name || '',
+      last_name: row.last_name || '',
+      email: row.email || '',
+      course: row.course || '',
+      batch: row.batch || '',
+      district: row.district || '',
+      phone: row.phone || '',
+      photo_url: row.photo_url || row.photoUrl || '',
+      photoUrl: row.photo_url || row.photoUrl || '',
       stephen: row.stephen || createDetailedSubsections(stephenKeys),
       rajshekar: row.rajshekar || createDetailedSubsections(rajkeys),
       sampath: row.sampath || createDetailedSubsections(sampathKeys)
@@ -173,7 +193,6 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // DELETE student record from database
   const handleDelete = async (id) => {
     if (window.confirm(`Are you sure you want to delete student ID: ${id}?`)) {
       try {
