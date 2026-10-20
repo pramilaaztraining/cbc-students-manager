@@ -1,380 +1,376 @@
 import React, { useState, useEffect } from 'react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import './AcademicEvaluationsScreen.css';
 
-export default function AcademicEvaluationsScreen({ 
-  formData, 
-  setFormData, 
-  handleSubmit, 
-  rows, 
-  handleEdit 
-}) {
+export default function AcademicEvaluationsManager() {
+  const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [professorsData, setProfessorsData] = useState([]);
-  const [loadingProfessors, setLoadingProfessors] = useState(true);
-  const [error, setError] = useState(null);
-  const [collapsedSections, setCollapsedSections] = useState({});
+  const [professorsData, setProfessorsData] = useState({});
+  const [evaluations, setEvaluations] = useState({});
+  const [summaryRecords, setSummaryRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch dynamic professors and subjects from the backend database on mount
+  // 1. Fetch student directory, professor configurations, and summary records on mount
   useEffect(() => {
-    const fetchProfessors = async () => {
+    const loadManagerData = async () => {
       try {
-        setLoadingProfessors(true);
-        const res = await fetch('/api/professor-subjects');
-        const contentType = res.headers.get("content-type");
-        
-        if (!res.ok || !contentType || !contentType.includes("application/json")) {
-          throw new Error('Failed to fetch professor configurations from the server.');
-        }
-        
-        const data = await res.json();
-        setProfessorsData(data);
+        const studentsRes = await fetch('/api/students');
+        const studentsList = await studentsRes.json();
+        setStudents(studentsList || []);
 
-        const initialCollapseState = {};
-        data.forEach((prof, index) => {
-          initialCollapseState[prof.lecturerKey] = index !== 0;
+        const profRes = await fetch('/api/professor-configurations');
+        const profConfigs = await profRes.json();
+
+        const groupedByLecturer = {};
+        const initialEvalState = {};
+
+        (profConfigs || []).forEach(item => {
+          const { lecturer_name, subject_key } = item;
+          if (!groupedByLecturer[lecturer_name]) {
+            groupedByLecturer[lecturer_name] = [];
+          }
+          groupedByLecturer[lecturer_name].push(subject_key);
+
+          initialEvalState[subject_key] = {
+            lecturer_name,
+            exam: false,
+            notes: false,
+            classes: false,
+            permissions: "0",
+            videoFile: null
+          };
         });
-        setCollapsedSections(initialCollapseState);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoadingProfessors(false);
+
+        setProfessorsData(groupedByLecturer);
+        setEvaluations(initialEvalState);
+
+        fetchSummaryRecords();
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading manager data:', error);
+        setLoading(false);
       }
     };
 
-    fetchProfessors();
+    loadManagerData();
   }, []);
 
-  // Synchronize selected student ID with formData.id safely
+  const fetchSummaryRecords = async () => {
+    try {
+      const res = await fetch('/api/academic-summary');
+      if (res.ok) {
+        const data = await res.json();
+        setSummaryRecords(data);
+      }
+    } catch (err) {
+      console.error('Failed to load summary records:', err);
+    }
+  };
+
+  // 2. Fetch saved evaluations whenever a student is chosen from the directory
   useEffect(() => {
-    if (formData && formData.id) {
-      setSelectedStudentId(String(formData.id));
-    } else {
-      setSelectedStudentId('');
-    }
-  }, [formData]);
+    if (!selectedStudentId) return;
 
-  const toggleSection = (sectionKey) => {
-    setCollapsedSections(prev => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
+    const fetchStudentEvals = async () => {
+      try {
+        const response = await fetch(`/api/student-evaluations/${selectedStudentId}`);
+        if (!response.ok) return;
+        const savedRecords = await response.json();
+
+        setEvaluations(prev => {
+          const updated = { ...prev };
+          
+          Object.keys(updated).forEach(key => {
+            updated[key] = {
+              ...updated[key],
+              exam: false,
+              notes: false,
+              classes: false,
+              permissions: "0",
+              videoFile: null
+            };
+          });
+
+          (savedRecords || []).forEach(record => {
+            if (updated[record.subject_key]) {
+              updated[record.subject_key] = {
+                ...updated[record.subject_key],
+                exam: record.exam,
+                notes: record.notes,
+                classes: record.classes,
+                permissions: record.permissions || "0",
+                videoFile: record.video_file_name ? { name: record.video_file_name } : null
+              };
+            }
+          });
+
+          return updated;
+        });
+      } catch (err) {
+        console.error('Error loading student evaluations:', err);
+      }
+    };
+
+    fetchStudentEvals();
+  }, [selectedStudentId]);
+
+  const handleCheckboxChange = (subjectKey, field) => {
+    setEvaluations(prev => ({
+      ...prev,
+      [subjectKey]: {
+        ...prev[subjectKey],
+        [field]: !prev[subjectKey][field]
+      }
+    }));
   };
 
-  const handleChange = (e, lecturerKey, fieldKey, type) => {
-    if (!lecturerKey) {
-      const { name, value } = e.target;
-      if (typeof setFormData === 'function') {
-        setFormData(prev => ({ ...prev, [name]: value }));
+  const handlePermissionsChange = (subjectKey, value) => {
+    setEvaluations(prev => ({
+      ...prev,
+      [subjectKey]: {
+        ...prev[subjectKey],
+        permissions: value
       }
-    } else {
-      let value;
-      if (type === 'checkbox') {
-        value = e.target.checked;
-      } else if (type === 'file') {
-        const file = e.target.files[0];
-        value = file ? file.name : '';
-      } else if (type === 'number' && fieldKey.includes('Permissions')) {
-        const num = Number(e.target.value);
-        value = isNaN(num) ? 0 : Math.max(0, num);
-      } else {
-        value = e.target.value;
-      }
-
-      if (typeof setFormData === 'function') {
-        setFormData(prev => ({
-          ...prev,
-          [lecturerKey]: {
-            ...(prev[lecturerKey] || {}),
-            [fieldKey]: value
-          }
-        }));
-      }
-    }
+    }));
   };
 
-  const filteredSummaryRows = rows.filter(row => 
-    (row.first_name && row.first_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
-    (row.last_name && row.last_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
-    (row.district && row.district.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    String(row.id).includes(searchTerm)
-  );
+  const handleSaveAcademicRecords = async () => {
+    if (!selectedStudentId) {
+      alert('Please select a student from the directory first.');
+      return;
+    }
 
-  const exportToPDF = () => {
-    const doc = new jsPDF('landscape');
-    doc.setFontSize(16);
-    doc.text('Academic Records Summary', 14, 15);
+    try {
+      const payload = Object.keys(evaluations).map(subjectKey => ({
+        student_id: Number(selectedStudentId),
+        lecturer_name: evaluations[subjectKey].lecturer_name,
+        subject_key: subjectKey,
+        exam: evaluations[subjectKey].exam,
+        notes: evaluations[subjectKey].notes,
+        classes: evaluations[subjectKey].classes,
+        permissions: evaluations[subjectKey].permissions,
+        video_file_name: evaluations[subjectKey].videoFile ? evaluations[subjectKey].videoFile.name : null
+      }));
 
-    const tableRows = filteredSummaryRows.map((row, index) => {
-      const formatProfSummary = (obj, subjectsList) => {
-        if (!obj || !subjectsList) return 'N/A';
-        return subjectsList.map(sub => {
-          const k = sub.key;
-          const fullName = sub.label;
-          const ex = obj[`${k}Exam`] ? '[Yes]' : '[No]';
-          const notes = obj[`${k}Notes`] ? '[Yes]' : '[No]';
-          const cls = obj[`${k}Classes`] ? '[Yes]' : '[No]';
-          const perm = obj[`${k}Permissions`] || 0;
-          return `${fullName}\n  Ex: ${ex} | Notes: ${notes} | Classes: ${cls} | Permissions: ${perm}`;
-        }).join('\n\n');
-      };
-
-      const rowData = [
-        row.id || index + 1,
-        `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'N/A',
-        row.district || 'N/A'
-      ];
-
-      professorsData.forEach(prof => {
-        rowData.push(formatProfSummary(row[prof.lecturerKey], prof.subjects));
+      const response = await fetch('/api/student-evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
-      return rowData;
-    });
+      if (!response.ok) throw new Error('Failed to save records to database.');
 
-    const tableColumns = [
-      'ID', 
-      'Full Name', 
-      'District', 
-      ...professorsData.map(p => p.lecturerName)
-    ];
-
-    autoTable(doc, {
-      head: [tableColumns],
-      body: tableRows,
-      startY: 25,
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
-      headStyles: { fillColor: [41, 128, 185] }
-    });
-
-    doc.save('academic-records-summary.pdf');
+      alert('Academic records saved successfully!');
+      fetchSummaryRecords();
+    } catch (error) {
+      console.error(error);
+      alert('Error saving academic records.');
+    }
   };
 
-  const renderSubjectCards = (lecturerKey, subjectsList) => {
-    if (!subjectsList) return null;
+  // Filter students based on Quick Search Table input
+  const filteredStudents = students.filter(student => 
+    student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(student.id).includes(searchTerm)
+  );
 
-    return (
-      <div className="subjects-grid">
-        {subjectsList.map((sub) => {
-          const examField = `${sub.key}Exam`;
-          const notesField = `${sub.key}Notes`;
-          const classesField = `${sub.key}Classes`;
-          const permissionsField = `${sub.key}Permissions`;
-          const videoField = `${sub.key}VideoFileName`;
-
-          const lecturerData = formData[lecturerKey] || {};
-
-          return (
-            <div key={sub.key} className="subject-card">
-              <div className="subject-title-wrapper">
-                <h4 className="subject-title">{sub.label}</h4>
-                {sub.telugu && <span className="subject-telugu">({sub.telugu})</span>}
-              </div>
-
-              <div className="checkbox-group">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={!!lecturerData[examField]} 
-                    onChange={(e) => handleChange(e, lecturerKey, examField, 'checkbox')} 
-                  />
-                  Exam Completed
-                </label>
-
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={!!lecturerData[notesField]} 
-                    onChange={(e) => handleChange(e, lecturerKey, notesField, 'checkbox')} 
-                  />
-                  Notes Completed
-                </label>
-
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={!!lecturerData[classesField]} 
-                    onChange={(e) => handleChange(e, lecturerKey, classesField, 'checkbox')} 
-                  />
-                  All Classes Attended
-                </label>
-              </div>
-
-              <div className="permissions-row">
-                <span className="permissions-label">Permissions:</span>
-                <input 
-                  type="number" 
-                  min="0"
-                  className="permissions-input"
-                  value={lecturerData[permissionsField] || 0} 
-                  onChange={(e) => handleChange(e, lecturerKey, permissionsField, 'number')} 
-                />
-              </div>
-
-              <hr className="card-divider" />
-
-              <div className="upload-section">
-                <span className="upload-label">Upload Video:</span>
-                <div className="file-input-wrapper">
-                  <input 
-                    type="file" 
-                    id={`file-${lecturerKey}-${sub.key}`}
-                    accept="video/*"
-                    onChange={(e) => handleChange(e, lecturerKey, videoField, 'file')} 
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor={`file-${lecturerKey}-${sub.key}`} className="choose-file-btn">Choose File</label>
-                  <span className="file-name-display">
-                    {lecturerData[videoField] || 'No file chosen'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const studentFullName = `${formData.first_name || ''} ${formData.last_name || ''}`.trim();
+  if (loading) {
+    return <div className="p-8 text-center text-gray-600 font-medium">Loading Academic Manager...</div>;
+  }
 
   return (
-    <div className="screen-section">
-      <div className="section-intro">
-        <h2>Section 2: Academic Evaluations</h2>
-        <p className="subtitle">Search for a student to edit/update their academic evaluations, exams, and notes.</p>
+    <div className="container mx-auto p-4 max-w-6xl font-sans">
+      
+      {/* SECTION HEADER */}
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-1">Section 2: Academic Evaluations</h3>
+        <p className="text-sm text-gray-600">Search for a student to edit/update their academic evaluations, exams, and notes.</p>
       </div>
 
-      <div className="form-card search-card">
-        <h4>🔍 Quick Search Table <span className="telugu-text">(పట్టికను వెతకండి)</span></h4>
+      {/* QUICK SEARCH TABLE CONTAINER */}
+      <div className="bg-white shadow rounded-lg p-6 mb-6 border border-gray-200">
+        <label className="block text-sm font-semibold text-gray-800 mb-2">
+          🔍 Quick Search Table <span className="text-xs font-normal text-gray-500">(పట్టికను వెతకండి)</span>
+        </label>
         <input 
           type="text" 
           placeholder="Type name or ID to filter table..." 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-          className="search-input"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full border rounded-md px-3 py-2 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
-      <form onSubmit={handleSubmit} className="form-card">
-        <h3>
-          Update Academic Evaluations for: <span className="selected-student">{studentFullName || 'Select a student below'}</span>
-          {formData.id && <span style={{ fontSize: '0.85rem', color: '#2563eb', marginLeft: '10px', fontWeight: 'bold' }}>[Target ID: {formData.id}]</span>}
-        </h3>
-        
-        {formData.id && <input type="hidden" name="id" value={formData.id} />}
+      {/* UPDATE ACADEMIC EVALUATIONS CONTAINER */}
+      <div className="bg-white shadow rounded-lg p-6 mb-6 border border-gray-200">
+        <h4 className="font-semibold text-gray-800 mb-4 text-base">
+          Update Academic Evaluations for: <span className="text-blue-600 font-bold">{selectedStudentId ? `Student ID: ${selectedStudentId}` : 'Select a student below'}</span>
+        </h4>
 
-        <div className="input-group" style={{ position: 'relative' }}>
-          <label>Select Student from Directory <span className="telugu-label">జాబితా నుండి విద్యార్థిని ఎంచుకోండి</span></label>
+        <div className="mb-6">
+          <label className="block text-xs text-gray-600 mb-1 font-medium">
+            Select Student from Directory జాబితా నుండి విద్యార్థిని ఎన్నుకోండి
+          </label>
           <select 
             value={selectedStudentId} 
-            onChange={(e) => {
-              const val = e.target.value;
-              setSelectedStudentId(val);
-              
-              if (!val) {
-                setFormData({ id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '', stephen: {}, rajshekar: {}, sampath: {} });
-                return;
-              }
-
-              const found = rows.find(r => String(r.id) === val);
-              if (found) {
-                setFormData({ ...found });
-              }
-            }} 
-            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#fff' }}
+            onChange={(e) => setSelectedStudentId(e.target.value)}
+            className="w-full border rounded-md px-3 py-2.5 bg-white text-sm shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">-- Choose student from directory --</option>
-            {rows.map(row => (
-              <option key={row.id} value={row.id}>
-                ID: {row.id} - {row.first_name} {row.last_name} {row.district ? `(${row.district})` : ''}
+            {filteredStudents.map(student => (
+              <option key={student.id} value={student.id}>
+                ID: {student.id} - {student.full_name}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="professors-section-wrapper" style={{ marginTop: '20px' }}>
-          {loadingProfessors ? (
-            <p style={{ textAlign: 'center', padding: '20px' }}>Loading professors and subjects from database...</p>
-          ) : error ? (
-            <p style={{ textAlign: 'center', color: '#ef4444' }}>Error: {error}</p>
-          ) : (
-            professorsData.map(prof => (
-              <div key={prof.lecturerKey} className="collapsible-panel">
-                <div className="panel-header" onClick={() => toggleSection(prof.lecturerKey)}>
-                  <div className="panel-header-text">
-                    <span className="panel-title">Lecturer: <strong>{prof.lecturerName}</strong></span>
-                  </div>
-                  <span className="toggle-icon">{collapsedSections[prof.lecturerKey] ? '▼' : '▲'}</span>
+        {/* Dynamic Professor & Subject Cards (Loads when student is selected) */}
+        {selectedStudentId && (
+          <div className="space-y-6 mb-6">
+            {Object.keys(professorsData).map(lecturerName => (
+              <div key={lecturerName} className="border p-4 rounded-lg bg-gray-50">
+                <h4 className="font-bold text-base mb-4 text-blue-900">Lecturer: {lecturerName}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  
+                  {professorsData[lecturerName].map(subjectKey => {
+                    const subState = evaluations[subjectKey] || {};
+                    return (
+                      <div key={subjectKey} className="bg-white p-4 rounded-md border shadow-sm flex flex-col justify-between">
+                        <div>
+                          <h5 className="font-semibold mb-2 capitalize text-gray-800 text-sm">{subjectKey}</h5>
+                          <label className="block text-xs mb-1.5 text-gray-700 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={subState.exam || false} 
+                              onChange={() => handleCheckboxChange(subjectKey, 'exam')}
+                              className="mr-2 rounded border-gray-300"
+                            /> Exam Completed
+                          </label>
+                          <label className="block text-xs mb-1.5 text-gray-700 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={subState.notes || false} 
+                              onChange={() => handleCheckboxChange(subjectKey, 'notes')}
+                              className="mr-2 rounded border-gray-300"
+                            /> Notes Completed
+                          </label>
+                          <label className="block text-xs mb-3 text-gray-700 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={subState.classes || false} 
+                              onChange={() => handleCheckboxChange(subjectKey, 'classes')}
+                              className="mr-2 rounded border-gray-300"
+                            /> All Classes Attended
+                          </label>
+                          <div className="text-xs text-gray-700 flex items-center">
+                            <span>Permissions:</span>
+                            <input 
+                              type="text" 
+                              value={subState.permissions ?? "0"} 
+                              onChange={(e) => handlePermissionsChange(subjectKey, e.target.value)}
+                              className="ml-2 border rounded px-2 py-1 w-14 text-center text-xs bg-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
                 </div>
-                {!collapsedSections[prof.lecturerKey] && (
-                  <div className="panel-body">
-                    {renderSubjectCards(prof.lecturerKey, prof.subjects)}
-                  </div>
-                )}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <div className="form-actions" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-          <button type="submit" className="save-btn">
-            {formData.id ? `Update Academic Records [ID: ${formData.id}]` : 'Save Academic Records'}
-          </button>
-        </div>
-      </form>
+        <button 
+          onClick={handleSaveAcademicRecords}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-5 py-2.5 rounded-md transition shadow-sm"
+        >
+          Save Academic Records
+        </button>
+      </div>
 
-      <div className="summary-section" style={{ marginTop: '40px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <h3>Academic Records Summary</h3>
-          <button type="button" onClick={exportToPDF} style={{ padding: '10px 18px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+      {/* ACADEMIC RECORDS SUMMARY GRID TABLE CONTAINER */}
+      <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Academic Records Summary</h3>
+          <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
             📥 Export Table to PDF
           </button>
         </div>
 
-        <div className="table-wrapper">
-          {loadingProfessors ? (
-            <p style={{ padding: '20px', textAlign: 'center' }}>Loading summary table...</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>District</th>
-                  {professorsData.map(prof => (
-                    <th key={prof.lecturerKey}>{prof.lecturerName}</th>
-                  ))}
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSummaryRows.length > 0 ? (
-                  filteredSummaryRows.map((row) => (
-                    <tr key={row.id}>
-                      <td><code>{row.id}</code></td>
-                      <td><strong>{row.first_name} {row.last_name}</strong></td>
-                      <td>{row.district || 'N/A'}</td>
-                      {professorsData.map(prof => (
-                        <td key={prof.lecturerKey}>Summary Recorded</td>
+        <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-blue-600 text-white text-xs font-semibold">
+                <th className="py-3 px-4 border-r border-blue-500 w-16">ID</th>
+                <th className="py-3 px-4 border-r border-blue-500 w-48">Name</th>
+                <th className="py-3 px-4 border-r border-blue-500 w-36">District</th>
+                <th className="py-3 px-4 border-r border-blue-500">Prof Stephen</th>
+                <th className="py-3 px-4 border-r border-blue-500">Prof Rajshekar</th>
+                <th className="py-3 px-4">Prof Sampath</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 text-xs">
+              {summaryRecords.length > 0 ? (
+                summaryRecords.map(record => (
+                  <tr key={record.id} className="hover:bg-gray-50/50">
+                    <td className="py-4 px-4 align-top font-medium text-gray-900 border-r">{record.id}</td>
+                    <td className="py-4 px-4 align-top font-medium text-gray-900 border-r">{record.full_name}</td>
+                    <td className="py-4 px-4 align-top text-gray-600 border-r">{record.district}</td>
+                    
+                    {/* Prof Stephen Column */}
+                    <td className="py-4 px-4 align-top text-gray-700 border-r space-y-3">
+                      {record.evaluations?.filter(e => e.lecturer_name?.includes('Stephen')).map(ev => (
+                        <div key={ev.subject_key} className="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                          <p className="font-semibold text-gray-900 capitalize">{ev.subject_key}</p>
+                          <p className="text-gray-500 text-[11px]">
+                            Ex: [{ev.exam ? 'Yes' : 'No'}] | Notes: [{ev.notes ? 'Yes' : 'No'}] | Classes: [{ev.classes ? 'Yes' : 'No'}]<br />
+                            Permissions: {ev.permissions}
+                          </p>
+                        </div>
                       ))}
-                      <td>
-                        <button type="button" onClick={() => handleEdit(row, 'academics')} className="edit-btn">
-                          Edit Academics
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4 + professorsData.length} className="no-data">No matching records found.</td>
+                    </td>
+
+                    {/* Prof Rajshekar Column */}
+                    <td className="py-4 px-4 align-top text-gray-700 border-r space-y-3">
+                      {record.evaluations?.filter(e => e.lecturer_name?.includes('Rajshekar')).map(ev => (
+                        <div key={ev.subject_key} className="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                          <p className="font-semibold text-gray-900 capitalize">{ev.subject_key}</p>
+                          <p className="text-gray-500 text-[11px]">
+                            Ex: [{ev.exam ? 'Yes' : 'No'}] | Notes: [{ev.notes ? 'Yes' : 'No'}] | Classes: [{ev.classes ? 'Yes' : 'No'}]<br />
+                            Permissions: {ev.permissions}
+                          </p>
+                        </div>
+                      ))}
+                    </td>
+
+                    {/* Prof Sampath Column */}
+                    <td className="py-4 px-4 align-top text-gray-700 space-y-3">
+                      {record.evaluations?.filter(e => e.lecturer_name?.includes('Sampath')).map(ev => (
+                        <div key={ev.subject_key} className="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                          <p className="font-semibold text-gray-900 capitalize">{ev.subject_key}</p>
+                          <p className="text-gray-500 text-[11px]">
+                            Ex: [{ev.exam ? 'Yes' : 'No'}] | Notes: [{ev.notes ? 'Yes' : 'No'}] | Classes: [{ev.classes ? 'Yes' : 'No'}]<br />
+                            Permissions: {ev.permissions}
+                          </p>
+                        </div>
+                      ))}
+                    </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-gray-400">
+                    No matching records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
     </div>
   );
 }

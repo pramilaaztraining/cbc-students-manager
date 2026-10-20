@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Reusable Searchable Dropdown Component (Strict selection & filtering only, no direct typing)
+// Reusable Searchable Dropdown Component
 function SearchableDropdown({ options, value, onSelect, placeholder, name, required, fieldLabel }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,21 +19,12 @@ function SearchableDropdown({ options, value, onSelect, placeholder, name, requi
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInvalid = (e) => {
-    e.target.setCustomValidity(`Please select a valid ${fieldLabel} from the list.`);
-  };
-
-  const handleInput = (e) => {
-    e.target.setCustomValidity('');
-  };
-
   const filteredOptions = options.filter(opt => 
     String(opt).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
-      {/* Readonly input: suppresses typing cursor entirely, clicking opens the selection menu */}
       <input
         type="text"
         readOnly
@@ -41,46 +32,35 @@ function SearchableDropdown({ options, value, onSelect, placeholder, name, requi
         value={value ? String(value) : ''}
         onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
         style={{ 
-          width: '100%', 
-          padding: '10px 30px 10px 10px', 
-          borderRadius: '6px', 
-          border: '1px solid #cbd5e1', 
-          fontSize: '0.9rem', 
-          boxSizing: 'border-box', 
-          backgroundColor: '#fff', 
-          cursor: 'pointer',
-          caretColor: 'transparent' 
+          width: '100%', padding: '10px 30px 10px 10px', borderRadius: '6px', 
+          border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box', 
+          backgroundColor: '#fff', cursor: 'pointer', caretColor: 'transparent' 
         }}
       />
-      {/* Dropdown arrow indicator icon */}
       <span 
         onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
         style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#64748b', fontSize: '0.8rem', pointerEvents: 'none' }}
       >
         ▼
       </span>
-      
-      {/* Hidden input to enforce validation when required is true */}
       <input 
         type="text" 
         ref={hiddenInputRef}
         value={value || ''} 
         required={required} 
-        onInvalid={handleInvalid}
-        onInput={handleInput}
+        onInvalid={(e) => e.target.setCustomValidity(`Please select a valid ${fieldLabel}.`)}
+        onInput={(e) => e.target.setCustomValidity('')}
         onChange={() => {}} 
         tabIndex={-1} 
         aria-hidden="true" 
         style={{ opacity: 0, position: 'absolute', pointerEvents: 'none', height: 0, width: 0 }} 
       />
-
       {isOpen && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
           backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '0 0 6px 6px',
           boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
         }}>
-          {/* Filtering search bar inside the dropdown list */}
           <div style={{ padding: '8px', borderBottom: '1px solid #f1f5f9' }}>
             <input
               type="text"
@@ -91,7 +71,6 @@ function SearchableDropdown({ options, value, onSelect, placeholder, name, requi
               style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
             />
           </div>
-
           <ul style={{ maxHeight: '150px', overflowY: 'auto', margin: 0, padding: 0, listStyle: 'none' }}>
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt, idx) => (
@@ -166,19 +145,20 @@ export default function StudentFormScreen({
     doc.setFontSize(16);
     doc.text('Registered Students Directory', 14, 15);
 
+    // Exact order matching UI: ID, First Name, Last Name, District, Email, Phone, Course, Batch, Photo
     const tableRows = filteredRows.map((row, index) => [
       row.id || index + 1,
       row.first_name || 'N/A',
       row.last_name || 'N/A',
+      row.district || 'N/A',
       row.email || 'N/A',
+      row.phone || 'N/A',
       row.course || 'N/A',
       row.batch || 'N/A',
-      row.district || 'N/A',
-      '', 
-      row.phone || 'N/A'
+      '' 
     ]);
 
-    const tableColumns = ['ID', 'First Name', 'Last Name', 'Email', 'Course', 'Batch', 'District', 'Photo', 'Phone'];
+    const tableColumns = ['ID', 'First Name', 'Last Name', 'District', 'Email', 'Phone', 'Course', 'Batch', 'Photo'];
 
     autoTable(doc, {
       head: [tableColumns],
@@ -188,7 +168,7 @@ export default function StudentFormScreen({
       styles: { fontSize: 9, cellPadding: 5, valign: 'middle' },
       headStyles: { fillColor: [41, 128, 185] },
       didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 7) {
+        if (data.section === 'body' && data.column.index === 8) {
           const rowIndex = data.row.index;
           const student = filteredRows[rowIndex];
           const imgUrl = student?.photoUrl || student?.photo_url;
@@ -218,92 +198,46 @@ export default function StudentFormScreen({
       </div>
 
       <form onSubmit={handleFormSubmit} className={`form-card ${isEditing ? 'editing-mode' : ''}`}>
-        <h3>
-          {isEditing 
-            ? `Edit Student Profile [ID: ${formData.id}]` 
-            : 'Create New Student Profile'}
-        </h3>
+        <h3>{isEditing ? `Edit Student Profile [ID: ${formData.id}]` : 'Create New Student Profile'}</h3>
         
         <div className="form-grid">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
             
-            {/* First Name - Mandatory */}
             <div className="input-group">
               <label>First Name * <span className="telugu-label">మొదటి పేరు</span></label>
-              <input 
-                type="text" 
-                name="first_name" 
-                placeholder="Enter first name..." 
-                value={formData.first_name || ''} 
-                onChange={handleChange} 
-                onInvalid={(e) => e.target.setCustomValidity('Please enter the First Name.')}
-                onInput={(e) => e.target.setCustomValidity('')}
-                required 
-              />
+              <input type="text" name="first_name" placeholder="Enter first name..." value={formData.first_name || ''} onChange={handleChange} required />
             </div>
 
-            {/* Last Name - Optional */}
             <div className="input-group">
               <label>Last Name <span className="telugu-label">ఇంటి పేరు / చివరి పేరు</span></label>
               <input type="text" name="last_name" placeholder="Enter last name..." value={formData.last_name || ''} onChange={handleChange} />
             </div>
 
-            {/* Email - Optional */}
             <div className="input-group">
               <label>Email <span className="telugu-label">ఈమెయిల్</span></label>
               <input type="email" name="email" placeholder="Enter email..." value={formData.email || ''} onChange={handleChange} />
             </div>
 
-            {/* Course - Mandatory Selection Only */}
             <div className="input-group">
               <label>Course * <span className="telugu-label">కోర్స్</span></label>
-              <SearchableDropdown 
-                options={courseOptions} 
-                value={formData.course} 
-                onSelect={handleDropdownSelect} 
-                placeholder="Click to select course..." 
-                name="course" 
-                required={true}
-                fieldLabel="Course"
-              />
+              <SearchableDropdown options={courseOptions} value={formData.course} onSelect={handleDropdownSelect} placeholder="Click to select course..." name="course" required={true} fieldLabel="Course" />
             </div>
 
-            {/* Batch - Mandatory Selection Only */}
             <div className="input-group">
               <label>Batch * <span className="telugu-label">బ్యాచ్</span></label>
-              <SearchableDropdown 
-                options={batchOptions} 
-                value={formData.batch} 
-                onSelect={handleDropdownSelect} 
-                placeholder="Click to select batch..." 
-                name="batch" 
-                required={true}
-                fieldLabel="Batch"
-              />
+              <SearchableDropdown options={batchOptions} value={formData.batch} onSelect={handleDropdownSelect} placeholder="Click to select batch..." name="batch" required={true} fieldLabel="Batch" />
             </div>
 
-            {/* District - Mandatory */}
             <div className="input-group">
               <label>District * <span className="telugu-label">జిల్లా</span></label>
-              <input 
-                type="text" 
-                name="district" 
-                placeholder="Enter district..." 
-                value={formData.district || ''} 
-                onChange={handleChange} 
-                onInvalid={(e) => e.target.setCustomValidity('Please enter the District.')}
-                onInput={(e) => e.target.setCustomValidity('')}
-                required 
-              />
+              <input type="text" name="district" placeholder="Enter district..." value={formData.district || ''} onChange={handleChange} required />
             </div>
 
-            {/* Phone Number - Optional */}
             <div className="input-group">
               <label>Phone Number <span className="telugu-label">ఫోన్ నంబర్</span></label>
               <input type="text" name="phone" placeholder="Enter phone..." value={formData.phone || ''} onChange={handleChange} />
             </div>
 
-            {/* Upload Photo - Mandatory */}
             <div className="input-group file-input-group">
               <label>Upload Photo * <span className="telugu-label">ఫోటో</span></label>
               <input type="file" accept="image/*" onChange={handleFileChange} />
@@ -324,8 +258,7 @@ export default function StudentFormScreen({
               onClick={() => {
                 setIsEditing(false);
                 setFormData({
-                  id: null,
-                  first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
+                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
                   stephen: {}, rajshekar: {}, sampath: {}
                 });
               }}
@@ -368,12 +301,12 @@ export default function StudentFormScreen({
                 <th>ID</th>
                 <th>First Name</th>
                 <th>Last Name</th>
+                <th>District</th>
                 <th>Email</th>
+                <th>Phone</th>
                 <th>Course</th>
                 <th>Batch</th>
-                <th>District</th>
                 <th>Photo</th>
-                <th>Phone</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -384,10 +317,11 @@ export default function StudentFormScreen({
                     <td><code>{row.id}</code></td>
                     <td><strong>{row.first_name || 'N/A'}</strong></td>
                     <td>{row.last_name || 'N/A'}</td>
+                    <td>{row.district || 'N/A'}</td>
                     <td>{row.email || 'N/A'}</td>
+                    <td>{row.phone || 'N/A'}</td>
                     <td>{row.course || 'N/A'}</td>
                     <td>{row.batch || 'N/A'}</td>
-                    <td>{row.district || 'N/A'}</td>
                     <td>
                       {row.photoUrl || row.photo_url ? (
                         <img src={row.photoUrl || row.photo_url} alt="Preview" style={{ width: '35px', height: '35px', borderRadius: '50%', objectFit: 'cover' }} />
@@ -395,7 +329,6 @@ export default function StudentFormScreen({
                         <span>No Photo</span>
                       )}
                     </td>
-                    <td>{row.phone || 'N/A'}</td>
                     <td>
                       <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={() => handleEdit(row)} style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>

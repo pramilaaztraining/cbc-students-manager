@@ -45,3 +45,7 @@ CREATE TABLE IF NOT EXISTS academic_evaluations (
     sampath_data JSONB DEFAULT '{}'::jsonb,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE student_evaluations 
+ADD CONSTRAINT unique_student_evaluation 
+UNIQUE (student_id, lecturer_name, subject_key);
