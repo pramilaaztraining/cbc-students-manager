@@ -38,18 +38,14 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // ----------------------------------------------------
-    // 1. GET: Fetch all students joined with stay records
+    // 1. GET: Fetch all students (Core details only)
     // ----------------------------------------------------
     if (url.pathname === '/api/students' && req.method === 'GET') {
       const query = `
         SELECT 
-          s.id, s.first_name, s.last_name, s.district, s.phone, s.email, s.course, s.batch, s.photo_url, s.created_at,
-          st.stay_start_date_time, 
-          st.stay_end_date_time, 
-          st.stay_details 
-        FROM students s
-        LEFT JOIN student_stays st ON s.id = st.student_id
-        ORDER BY s.id ASC;
+          id, first_name, last_name, district, phone, email, course, batch, photo_url, created_at
+        FROM students
+        ORDER BY id ASC;
       `;
       const result = await pool.query(query);
       res.writeHead(200, { 'Content-Type': 'application/json' });
