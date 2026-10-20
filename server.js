@@ -10,7 +10,6 @@ const pool = new Pool({
 });
 
 const server = http.createServer(async (req, res) => {
-  // CORS configuration allowing GET, POST, PUT, DELETE, and OPTIONS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -39,13 +38,20 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // ----------------------------------------------------
-    // 1. GET: Fetch all students
+    // 1. GET: Fetch all students joined with stay records
     // ----------------------------------------------------
     if (url.pathname === '/api/students' && req.method === 'GET') {
-      const result = await pool.query(
-        `SELECT id, first_name, last_name, district, phone, email, course, batch, photo_url, created_at 
-         FROM students ORDER BY id ASC`
-      );
+      const query = `
+        SELECT 
+          s.id, s.first_name, s.last_name, s.district, s.phone, s.email, s.course, s.batch, s.photo_url, s.created_at,
+          st.stay_start_date_time, 
+          st.stay_end_date_time, 
+          st.stay_details 
+        FROM students s
+        LEFT JOIN student_stays st ON s.id = st.student_id
+        ORDER BY s.id ASC;
+      `;
+      const result = await pool.query(query);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result.rows));
       return;
@@ -189,6 +195,68 @@ const server = http.createServer(async (req, res) => {
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true, message: 'Evaluations saved successfully' }));
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 8. GET: Fetch student stay details by student ID
+    // ----------------------------------------------------
+    if (url.pathname.startsWith('/api/stays/') && req.method === 'GET') {
+      const studentId = url.pathname.split('/')[3];
+      const result = await pool.query('SELECT * FROM student_stays WHERE student_id = $1', [Number(studentId)]);
+      
+      if (result.rows.length > 0) {
+        const row = result.rows[0];
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          stayStartDateTime: row.stay_start_date_time ? new Date(row.stay_start_date_time).toISOString().slice(0, 16) : '',
+          stayEndDateTime: row.stay_end_date_time ? new Date(row.stay_end_date_time).toISOString().slice(0, 16) : '',
+          ...(row.stay_details || {})
+        }));
+      } else {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          stayStartDateTime: '', 
+          stayEndDateTime: '', 
+          mother: false,
+          father: false,
+          guardian: false,
+          childrenCount: 0, 
+          brothersCount: 0, 
+          sistersCount: 0, 
+          stayNotes: '' 
+        }));
+      }
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 9. PUT: Save or Update student stay details (Upsert)
+    // ----------------------------------------------------
+    if (url.pathname.startsWith('/api/stays/') && req.method === 'PUT') {
+      const studentId = Number(url.pathname.split('/')[3]);
+      const data = await parseBody(req);
+      const { stayStartDateTime, stayEndDateTime, ...details } = data;
+
+      const upsertQuery = `
+        INSERT INTO student_stays (student_id, stay_start_date_time, stay_end_date_time, stay_details)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (student_id) 
+        DO UPDATE SET 
+          stay_start_date_time = $2, 
+          stay_end_date_time = $3, 
+          stay_details = $4;
+      `;
+      
+      await pool.query(upsertQuery, [
+        studentId, 
+        stayStartDateTime || null, 
+        stayEndDateTime || null, 
+        JSON.stringify(details)
+      ]);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'Stay details saved successfully' }));
       return;
     }
 

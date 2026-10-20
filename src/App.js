@@ -59,16 +59,19 @@ function App() {
   const [activeScreen, setActiveScreen] = useState('home');
   const [calendarFilterDate, setCalendarFilterDate] = useState('');
 
+  const fetchStudents = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/students');
+      if (!res.ok) throw new Error('Failed to fetch from backend server');
+      const data = await res.json();
+      setRows([...data]); // Spread creates a new array reference so React detects the update and re-renders grid
+    } catch (err) {
+      console.error('Error fetching students from PostgreSQL backend:', err);
+    }
+  };
+
   useEffect(() => {
-    fetch('http://localhost:5000/api/students')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch from backend server');
-        return res.json();
-      })
-      .then(data => setRows(data))
-      .catch(err => {
-        console.error('Error fetching students from PostgreSQL backend:', err);
-      });
+    fetchStudents();
   }, []);
 
   const handleChange = (e) => {
@@ -94,7 +97,6 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // If saving in Section 2 (Academic Evaluations)
     if (activeScreen === 'academics') {
       if (!formData.id) {
         alert('Please select a student from the directory first.');
@@ -109,8 +111,6 @@ function App() {
         if (!response.ok) throw new Error('Failed to save academic evaluations');
         
         alert('Academic evaluations saved successfully to database!');
-        
-        // 🛑 Keeps user in the Academic Evaluations section without refreshing or jumping
         setActiveScreen('academics');
         return;
       } catch (err) {
@@ -147,8 +147,7 @@ function App() {
         });
         if (!response.ok) throw new Error('Failed to update student');
         
-        const updatedStudent = await response.json();
-        setRows(rows.map(row => (row.id === Number(formData.id) ? { ...updatedStudent, photoUrl: updatedStudent.photo_url } : row)));
+        await fetchStudents();
         setIsEditing(false);
         alert('Student record updated successfully!');
       } catch (err) {
@@ -164,8 +163,7 @@ function App() {
         });
         if (!response.ok) throw new Error('Failed to create student');
 
-        const newEntry = await response.json();
-        setRows([...rows, { ...newEntry, photoUrl: newEntry.photo_url }]);
+        await fetchStudents();
         alert('Student created successfully!');
       } catch (err) {
         console.error('Error creating student in database:', err);
@@ -229,7 +227,7 @@ function App() {
         });
         if (!response.ok) throw new Error('Failed to delete student');
 
-        setRows(rows.filter(row => row.id !== id));
+        await fetchStudents();
         if (formData.id === id) {
           setIsEditing(false);
           setFormData({
@@ -332,12 +330,9 @@ function App() {
 
             {activeScreen === 'stayCalendar' && (
               <StayCalendarScreen 
-                formData={formData} 
-                setFormData={setFormData}
-                handleChange={handleChange} 
-                handleSubmit={handleSubmit} 
-                rows={rows}
-                handleEdit={(row) => handleEdit(row, 'stayCalendar')}
+                rows={rows} 
+                refreshStudents={fetchStudents}
+                handleEdit={handleEdit}
                 calendarFilterDate={calendarFilterDate} 
                 setCalendarFilterDate={setCalendarFilterDate} 
                 filteredCalendarRows={filteredCalendarRows} 
