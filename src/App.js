@@ -64,7 +64,7 @@ function App() {
       const res = await fetch('http://localhost:5000/api/students');
       if (!res.ok) throw new Error('Failed to fetch from backend server');
       const data = await res.json();
-      setRows([...data]); // Spread creates a new array reference so React detects the update and re-renders grid
+      setRows([...data]);
     } catch (err) {
       console.error('Error fetching students from PostgreSQL backend:', err);
     }
@@ -246,23 +246,48 @@ function App() {
     }
   };
 
+  const formatFamilySummaryForPDF = (stayDetails) => {
+    if (!stayDetails || typeof stayDetails !== 'object') return 'None';
+    const parents = [];
+    if (stayDetails.mother) parents.push('Mother');
+    if (stayDetails.father) parents.push('Father');
+    if (stayDetails.guardian) parents.push('Guardian');
+
+    const parts = [];
+    if (parents.length > 0) parts.push(`Parents: ${parents.join(', ')}`);
+    if (Number(stayDetails.childrenCount) > 0) parts.push(`Children: ${stayDetails.childrenCount}`);
+    if (Number(stayDetails.brothersCount) > 0) parts.push(`Brothers: ${stayDetails.brothersCount}`);
+    if (Number(stayDetails.sistersCount) > 0) parts.push(`Sisters: ${stayDetails.sistersCount}`);
+
+    return parts.length > 0 ? parts.join(' | ') : 'None';
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     doc.setFontSize(14);
-    doc.text('CBC-BTC Manager - Complete Records & Stay Schedule', 14, 12);
+    doc.text('CBC-BTC Manager - Campus Stay & Schedule Records', 14, 12);
 
-    const tableColumns = ['ID', 'Full Name', 'Email', 'Course / Batch', 'Phone', 'Post-Grad Stay Window'];
+    const tableColumns = ['ID', 'Student Name', 'District', 'Stay Window', 'Family Members', 'Stay Notes'];
     const tableRows = rows.map(row => [
       row.id,
       `${row.first_name || ''} ${row.last_name || ''}`,
-      row.email || 'N/A',
-      `${row.course || 'N/A'} (Batch ${row.batch || 'N/A'})`,
-      row.phone || 'N/A',
-      `From: ${row.stay_start_date_time ? new Date(row.stay_start_date_time).toLocaleString() : 'N/A'}\nTo: ${row.stay_end_date_time ? new Date(row.stay_end_date_time).toLocaleString() : 'N/A'}`
+      row.district || 'N/A',
+      row.stay_start_date_time && row.stay_end_date_time 
+        ? `From: ${new Date(row.stay_start_date_time).toLocaleString()}\nTo: ${new Date(row.stay_end_date_time).toLocaleString()}` 
+        : 'Window not set',
+      formatFamilySummaryForPDF(row.stay_details),
+      row.stay_details?.stayNotes || 'No notes'
     ]);
 
-    autoTable(doc, { head: [tableColumns], body: tableRows, startY: 18, theme: 'grid' });
-    doc.save('CBC_BTC_Complete_Records.pdf');
+    autoTable(doc, { 
+      head: [tableColumns], 
+      body: tableRows, 
+      startY: 18, 
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 4 },
+      headStyles: { fillColor: [37, 99, 235] }
+    });
+    doc.save('CBC_BTC_Campus_Stay_Records.pdf');
   };
 
   const filteredCalendarRows = rows.filter(row => {

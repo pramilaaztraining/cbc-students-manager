@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import StudentSelectDropdown from './StudentSelectDropdown';
 import './StayCalendarScreen.css';
 
@@ -11,6 +13,7 @@ export default function StayCalendarScreen({
   refreshStudents 
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [gridSearchTerm, setGridSearchTerm] = useState(''); // 🔍 Search state for the grid
   const [currentStudent, setCurrentStudent] = useState(null);
   const [stayData, setStayData] = useState({
     stayStartDateTime: '',
@@ -103,7 +106,6 @@ export default function StayCalendarScreen({
 
       alert('Stay window and family members updated successfully!');
       
-      // 🔄 Instantly re-fetches latest database records so grid updates immediately
       if (refreshStudents) {
         await refreshStudents();
       }
@@ -124,6 +126,26 @@ export default function StayCalendarScreen({
   const studentFullName = currentStudent ? `${currentStudent.first_name || ''} ${currentStudent.last_name || ''}`.trim() : '';
 
   const formatFamilySummary = (stayDetails) => {
+    if (!stayDetails || typeof stayDetails !== 'object') return <span style={{ color: '#94a3b8' }}>None</span>;
+    const parents = [];
+    if (stayDetails.mother) parents.push('Mother');
+    if (stayDetails.father) parents.push('Father');
+    if (stayDetails.guardian) parents.push('Guardian');
+
+    const parts = [];
+    if (parents.length > 0) parts.push(`Parents: ${parents.join(', ')}`);
+    if (Number(stayDetails.childrenCount) > 0) parts.push(`Children: ${stayDetails.childrenCount}`);
+    if (Number(stayDetails.brothersCount) > 0) parts.push(`Brothers: ${stayDetails.brothersCount}`);
+    if (Number(stayDetails.sistersCount) > 0) parts.push(`Sisters: ${stayDetails.sistersCount}`);
+
+    return parts.length > 0 ? (
+      <span style={{ color: '#334155', fontWeight: 500 }}>{parts.join(' | ')}</span>
+    ) : (
+      <span style={{ color: '#94a3b8' }}>None</span>
+    );
+  };
+
+  const formatFamilySummaryForPDF = (stayDetails) => {
     if (!stayDetails || typeof stayDetails !== 'object') return 'None';
     const parents = [];
     if (stayDetails.mother) parents.push('Mother');
@@ -137,6 +159,46 @@ export default function StayCalendarScreen({
     if (Number(stayDetails.sistersCount) > 0) parts.push(`Sisters: ${stayDetails.sistersCount}`);
 
     return parts.length > 0 ? parts.join(' | ') : 'None';
+  };
+
+  // 🔍 Filter rows based on search input
+  const searchedGridRows = (filteredCalendarRows || []).filter(row => {
+    const query = gridSearchTerm.toLowerCase();
+    const fullName = `${row.first_name || ''} ${row.last_name || ''}`.toLowerCase();
+    const district = (row.district || '').toLowerCase();
+    const notes = (row.stay_details?.stayNotes || '').toLowerCase();
+    const idStr = String(row.id || '');
+
+    return fullName.includes(query) || district.includes(query) || notes.includes(query) || idStr.includes(query);
+  });
+
+  // 📥 PDF Export Handler
+  const exportSectionToPDF = () => {
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(14);
+    doc.text('CBC-BTC Manager - Campus Stay & Calendar Records', 14, 12);
+
+    const tableColumns = ['ID', 'Student Name', 'District', 'Stay Window', 'Family Members', 'Stay Notes'];
+    const tableRows = searchedGridRows.map(row => [
+      row.id,
+      `${row.first_name || ''} ${row.last_name || ''}`,
+      row.district || 'N/A',
+      row.stay_start_date_time && row.stay_end_date_time 
+        ? `From: ${new Date(row.stay_start_date_time).toLocaleString()}\nTo: ${new Date(row.stay_end_date_time).toLocaleString()}` 
+        : 'Window not set',
+      formatFamilySummaryForPDF(row.stay_details),
+      row.stay_details?.stayNotes || 'No notes'
+    ]);
+
+    autoTable(doc, { 
+      head: [tableColumns], 
+      body: tableRows, 
+      startY: 18, 
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 4 },
+      headStyles: { fillColor: [37, 99, 235] }
+    });
+    doc.save('Campus_Stay_Records.pdf');
   };
 
   return (
@@ -290,63 +352,159 @@ export default function StayCalendarScreen({
         )}
       </form>
 
-      {/* Summary Table */}
+      {/* Summary Table with Search & PDF Export */}
       <div style={{ marginTop: '40px' }}>
-        <h3 style={{ margin: '0 0 15px 0' }}>📅 Campus Stay Calendar Control</h3>
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr style={{ background: '#2563eb', color: '#fff' }}>
-                <th style={{ padding: '10px' }}>ID</th>
-                <th style={{ padding: '10px' }}>Student Name</th>
-                <th style={{ padding: '10px' }}>District</th>
-                <th style={{ padding: '10px' }}>Stay Window</th>
-                <th style={{ padding: '10px' }}>Family Members</th>
-                <th style={{ padding: '10px' }}>Stay Notes</th>
-                <th style={{ padding: '10px' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCalendarRows && filteredCalendarRows.length > 0 ? (
-                filteredCalendarRows.map(row => (
-                  <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '10px' }}><code>{row.id}</code></td>
-                    <td style={{ padding: '10px' }}><strong>{row.first_name} {row.last_name}</strong></td>
-                    <td style={{ padding: '10px' }}>{row.district || 'N/A'}</td>
-                    <td style={{ padding: '10px', fontSize: '0.85rem' }}>
-                      {row.stay_start_date_time && row.stay_end_date_time ? (
-                        `${new Date(row.stay_start_date_time).toLocaleString()} to ${new Date(row.stay_end_date_time).toLocaleString()}`
-                      ) : (
-                        <span style={{ color: '#d97706', fontWeight: '500' }}>Window not set</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '10px', fontSize: '0.85rem' }}>
-                      {formatFamilySummary(row.stay_details)}
-                    </td>
-                    <td style={{ padding: '10px', fontSize: '0.85rem', color: '#64748b' }}>
-                      {row.stay_details?.stayNotes || 'No notes'}
-                    </td>
-                    <td style={{ padding: '10px' }}>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          handleEdit(row, 'stayCalendar');
-                          handleStudentSelect(String(row.id));
-                        }} 
-                        style={{ padding: '6px 12px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                      >
-                        Configure Stay
-                      </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '15px' }}>
+          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>📅 Campus Stay Calendar Control</h3>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* 🔍 Search Input */}
+            <input 
+              type="text"
+              placeholder="Search by name, district, ID..."
+              value={gridSearchTerm}
+              onChange={(e) => setGridSearchTerm(e.target.value)}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.85rem',
+                width: '220px',
+                outline: 'none'
+              }}
+            />
+
+            <span style={{ fontSize: '0.85rem', color: '#64748b', background: '#f1f5f9', padding: '6px 12px', borderRadius: '20px', fontWeight: 500 }}>
+              Records: {searchedGridRows.length}
+            </span>
+
+            {/* 📥 Download PDF Button */}
+            <button 
+              type="button"
+              onClick={exportSectionToPDF}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                background: '#10b981',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+              }}
+            >
+              📥 Download PDF
+            </button>
+          </div>
+        </div>
+
+        <div style={{ 
+          background: '#ffffff', 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', 
+          border: '1px solid #e2e8f0',
+          overflow: 'hidden'
+        }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1', color: '#1e293b' }}>
+                  <th style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '0.03em' }}>ID</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '0.03em' }}>Student Name</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '0.03em' }}>District</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '0.03em' }}>Stay Window</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '0.03em' }}>Family Members</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '0.03em' }}>Stay Notes</th>
+                  <th style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '0.85rem', letterSpacing: '0.03em', textAlign: 'center' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {searchedGridRows && searchedGridRows.length > 0 ? (
+                  searchedGridRows.map((row, idx) => (
+                    <tr 
+                      key={row.id} 
+                      style={{ 
+                        borderBottom: '1px solid #f1f5f9',
+                        transition: 'background-color 0.2s ease',
+                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = idx % 2 === 0 ? '#ffffff' : '#fafafa'}
+                    >
+                      <td style={{ padding: '16px', color: '#64748b', fontWeight: 600 }}>
+                        <span style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem' }}>#{row.id}</span>
+                      </td>
+                      <td style={{ padding: '16px', color: '#0f172a', fontWeight: 600, wordBreak: 'break-word', maxWidth: '200px' }}>
+                        {row.first_name} {row.last_name}
+                      </td>
+                      <td style={{ padding: '16px', color: '#475569', textTransform: 'capitalize' }}>
+                        {row.district || 'N/A'}
+                      </td>
+                      <td style={{ padding: '16px', fontSize: '0.85rem', color: '#334155', minWidth: '220px' }}>
+                        {row.stay_start_date_time && row.stay_end_date_time ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ color: '#047857', fontWeight: 500 }}>🟢 From: {new Date(row.stay_start_date_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                            <span style={{ color: '#b91c1c', fontWeight: 500 }}>🔴 To: {new Date(row.stay_end_date_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                          </div>
+                        ) : (
+                          <span style={{ background: '#fffbeb', color: '#d97706', padding: '4px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, border: '1px solid #fde68a' }}>
+                            ⏳ Window not set
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px', fontSize: '0.85rem', color: '#475569', maxWidth: '250px' }}>
+                        {formatFamilySummary(row.stay_details)}
+                      </td>
+                      <td style={{ padding: '16px', fontSize: '0.85rem', color: '#64748b', maxWidth: '180px', wordBreak: 'break-word' }}>
+                        {row.stay_details?.stayNotes ? (
+                          <span style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'inline-block' }}>
+                            {row.stay_details.stayNotes}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>No notes</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px', textAlign: 'center' }}>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            handleEdit(row, 'stayCalendar');
+                            handleStudentSelect(String(row.id));
+                          }} 
+                          style={{ 
+                            padding: '8px 14px', 
+                            background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+                            color: '#fff', 
+                            border: 'none', 
+                            borderRadius: '6px', 
+                            cursor: 'pointer', 
+                            fontWeight: '600',
+                            fontSize: '0.82rem',
+                            boxShadow: '0 2px 4px rgba(217, 119, 6, 0.2)',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          Configure Stay
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontStyle: 'italic' }}>
+                      No matching stay records found.
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>No stay records found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
