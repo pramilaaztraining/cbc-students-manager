@@ -91,10 +91,35 @@ function App() {
     }
   };
 
-  // Strict submit handler sending ONLY student columns
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // If saving in Section 2 (Academic Evaluations)
+    if (activeScreen === 'academics') {
+      if (!formData.id) {
+        alert('Please select a student from the directory first.');
+        return;
+      }
+      try {
+        const response = await fetch(`http://localhost:5000/api/evaluations/${formData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        if (!response.ok) throw new Error('Failed to save academic evaluations');
+        
+        alert('Academic evaluations saved successfully to database!');
+        
+        // 🛑 Keeps user in the Academic Evaluations section without refreshing or jumping
+        setActiveScreen('academics');
+        return;
+      } catch (err) {
+        console.error('Error saving evaluations:', err);
+        alert('Error saving academic evaluations.');
+        return;
+      }
+    }
+
     if (!formData.first_name || !formData.batch || !formData.course || !formData.district || (!formData.photoUrl && !formData.photo_url)) {
       alert('Please fill in all mandatory fields: First Name, Course, Batch, District, and Upload Photo.');
       return;
@@ -114,7 +139,6 @@ function App() {
     };
 
     if (formData.id && Number(formData.id) > 0) {
-      // UPDATE student record (PUT)
       try {
         const response = await fetch(`http://localhost:5000/api/students/${formData.id}`, {
           method: 'PUT',
@@ -129,10 +153,9 @@ function App() {
         alert('Student record updated successfully!');
       } catch (err) {
         console.error('Error updating student in database:', err);
-        alert('Error updating student. Check if your Node server is running.');
+        alert('Error updating student.');
       }
     } else {
-      // CREATE new student record (POST)
       try {
         const response = await fetch('http://localhost:5000/api/students', {
           method: 'POST',
@@ -146,11 +169,10 @@ function App() {
         alert('Student created successfully!');
       } catch (err) {
         console.error('Error creating student in database:', err);
-        alert('Error saving student. Check if your Node server is running.');
+        alert('Error saving student.');
       }
     }
 
-    // Reset form state cleanly
     setFormData({
       id: null,
       first_name: '',
@@ -172,23 +194,29 @@ function App() {
     });
   };
 
-  const handleEdit = (row, targetScreen = 'creation') => {
+  const handleEdit = async (row, targetScreen = 'creation') => {
     setIsEditing(true);
+    let evaluationData = {};
+    
+    if (targetScreen === 'academics') {
+      try {
+        const res = await fetch(`http://localhost:5000/api/evaluations/${row.id}`);
+        if (res.ok) {
+          evaluationData = await res.json();
+        }
+      } catch (err) {
+        console.error('Error fetching evaluations on edit:', err);
+      }
+    }
+
     setFormData({ 
-      id: row.id || null,
-      first_name: row.first_name || '',
-      last_name: row.last_name || '',
-      email: row.email || '',
-      course: row.course || '',
-      batch: row.batch || '',
-      district: row.district || '',
-      phone: row.phone || '',
-      photo_url: row.photo_url || row.photoUrl || '',
-      photoUrl: row.photo_url || row.photoUrl || '',
-      stephen: row.stephen || createDetailedSubsections(stephenKeys),
-      rajshekar: row.rajshekar || createDetailedSubsections(rajkeys),
-      sampath: row.sampath || createDetailedSubsections(sampathKeys)
+      ...row,
+      ...evaluationData,
+      stephen: evaluationData.stephen || row.stephen || createDetailedSubsections(stephenKeys),
+      rajshekar: evaluationData.rajshekar || row.rajshekar || createDetailedSubsections(rajkeys),
+      sampath: evaluationData.sampath || row.sampath || createDetailedSubsections(sampathKeys)
     });
+    
     setActiveScreen(targetScreen);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -289,10 +317,6 @@ function App() {
                 handleEdit={(row) => handleEdit(row, 'creation')} 
                 handleDelete={handleDelete} 
                 setIsEditing={setIsEditing} 
-                createDetailedSubsections={createDetailedSubsections} 
-                stephenKeys={stephenKeys} 
-                rajkeys={rajkeys} 
-                sampathKeys={sampathKeys} 
               />
             )}
 
@@ -303,9 +327,6 @@ function App() {
                 handleSubmit={handleSubmit} 
                 rows={rows} 
                 handleEdit={(row) => handleEdit(row, 'academics')}
-                stephenKeys={stephenKeys} 
-                rajkeys={rajkeys} 
-                sampathKeys={sampathKeys} 
               />
             )}
 

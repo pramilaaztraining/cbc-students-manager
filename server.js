@@ -10,12 +10,11 @@ const pool = new Pool({
 });
 
 const server = http.createServer(async (req, res) => {
-  // ✅ FIX: Explicitly allow PUT and DELETE in Access-Control-Allow-Methods
+  // CORS configuration allowing GET, POST, PUT, DELETE, and OPTIONS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
@@ -39,7 +38,9 @@ const server = http.createServer(async (req, res) => {
   };
 
   try {
+    // ----------------------------------------------------
     // 1. GET: Fetch all students
+    // ----------------------------------------------------
     if (url.pathname === '/api/students' && req.method === 'GET') {
       const result = await pool.query(
         `SELECT id, first_name, last_name, district, phone, email, course, batch, photo_url, created_at 
@@ -50,7 +51,9 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ----------------------------------------------------
     // 2. POST: Create new student
+    // ----------------------------------------------------
     if (url.pathname === '/api/students' && req.method === 'POST') {
       const data = await parseBody(req);
       const { first_name, last_name, district, phone, email, course, batch, photo_url, photoUrl } = data;
@@ -68,7 +71,9 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ----------------------------------------------------
     // 3. PUT: Update existing student by ID
+    // ----------------------------------------------------
     if (url.pathname.startsWith('/api/students/') && req.method === 'PUT') {
       const studentId = url.pathname.split('/')[3];
       const data = await parseBody(req);
@@ -94,7 +99,9 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ----------------------------------------------------
     // 4. DELETE student by ID
+    // ----------------------------------------------------
     if (url.pathname.startsWith('/api/students/') && req.method === 'DELETE') {
       const studentId = url.pathname.split('/')[3];
       await pool.query('DELETE FROM students WHERE id = $1', [Number(studentId)]);
@@ -103,25 +110,85 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 5. GET: Professor subjects configuration
+    // ----------------------------------------------------
+    // 5. GET: Professor & subjects configuration
+    // ----------------------------------------------------
     if (url.pathname === '/api/professor-subjects' && req.method === 'GET') {
-      const profResult = await pool.query('SELECT professor_id, name, lecturer_key FROM professors');
-      const subResult = await pool.query('SELECT subject_id, professor_id, subject_key, label, telugu_label FROM subjects');
+      const profResult = await pool.query('SELECT professor_id, lecturer_name, lecturer_key FROM professors ORDER BY professor_id ASC');
+      const subResult = await pool.query('SELECT subject_id, professor_id, subject_key, subject_label, subject_telugu FROM professor_subjects');
 
       const formattedData = profResult.rows.map(prof => ({
         lecturerKey: prof.lecturer_key,
-        lecturerName: prof.name,
+        lecturerName: prof.lecturer_name,
         subjects: subResult.rows
           .filter(sub => sub.professor_id === prof.professor_id)
           .map(sub => ({
             key: sub.subject_key,
-            label: sub.label,
-            telugu: sub.telugu_label
+            label: sub.subject_label,
+            telugu: sub.subject_telugu
           }))
       }));
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(formattedData));
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 6. GET: Fetch academic evaluations for a student ID
+    // ----------------------------------------------------
+    if (url.pathname.startsWith('/api/evaluations/') && req.method === 'GET') {
+      const studentId = url.pathname.split('/')[3];
+      const result = await pool.query('SELECT * FROM student_evaluations WHERE student_id = $1', [Number(studentId)]);
+      
+      const evaluationsMap = {};
+      result.rows.forEach(row => {
+        const lecturerKey = row.lecturer_name;
+        if (!evaluationsMap[lecturerKey]) evaluationsMap[lecturerKey] = {};
+        
+        evaluationsMap[lecturerKey][`${row.subject_key}Exam`] = row.exam;
+        evaluationsMap[lecturerKey][`${row.subject_key}Notes`] = row.notes;
+        evaluationsMap[lecturerKey][`${row.subject_key}Classes`] = row.classes;
+        evaluationsMap[lecturerKey][`${row.subject_key}Permissions`] = row.permissions || '';
+        evaluationsMap[lecturerKey][`${row.subject_key}VideoFileName`] = row.video_file_name || '';
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(evaluationsMap));
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 7. PUT: Save or Update academic evaluations (Upsert)
+    // ----------------------------------------------------
+    if (url.pathname.startsWith('/api/evaluations/') && req.method === 'PUT') {
+      const studentId = Number(url.pathname.split('/')[3]);
+      const data = await parseBody(req);
+      
+      for (const [lecturerKey, subjectsObj] of Object.entries(data)) {
+        if (typeof subjectsObj !== 'object' || subjectsObj === null) continue;
+
+        const subjectKeys = new Set(Object.keys(subjectsObj).map(k => k.replace(/(Exam|Notes|Classes|Permissions|VideoFileName)$/, '')));
+
+        for (const subKey of subjectKeys) {
+          const exam = !!subjectsObj[`${subKey}Exam`];
+          const notes = !!subjectsObj[`${subKey}Notes`];
+          const classes = !!subjectsObj[`${subKey}Classes`];
+          const permissions = subjectsObj[`${subKey}Permissions`] || '';
+          const videoFileName = subjectsObj[`${subKey}VideoFileName`] || '';
+
+          const upsertQuery = `
+            INSERT INTO student_evaluations (student_id, lecturer_name, subject_key, exam, notes, classes, permissions, video_file_name)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (student_id, lecturer_name, subject_key) 
+            DO UPDATE SET exam = $4, notes = $5, classes = $6, permissions = $7, video_file_name = $8;
+          `;
+          await pool.query(upsertQuery, [studentId, lecturerKey, subKey, exam, notes, classes, permissions, videoFileName]);
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'Evaluations saved successfully' }));
       return;
     }
 
