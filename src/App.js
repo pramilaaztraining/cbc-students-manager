@@ -103,14 +103,30 @@ function App() {
         return;
       }
       try {
+        const cleanEvaluationPayload = {
+          id: formData.id,
+          stephen: formData.stephen || {},
+          rajshekar: formData.rajshekar || {},
+          sampath: formData.sampath || {}
+        };
+
         const response = await fetch(`http://localhost:5000/api/evaluations/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(cleanEvaluationPayload)
         });
         if (!response.ok) throw new Error('Failed to save academic evaluations');
         
         alert('Academic evaluations saved successfully to database!');
+
+        // ✨ Deselect student and reset academic evaluation form fields
+        setFormData({
+          id: null,
+          stephen: createDetailedSubsections(stephenKeys),
+          rajshekar: createDetailedSubsections(rajkeys),
+          sampath: createDetailedSubsections(sampathKeys)
+        });
+
         setActiveScreen('academics');
         return;
       } catch (err) {
@@ -201,6 +217,7 @@ function App() {
         const res = await fetch(`http://localhost:5000/api/evaluations/${row.id}`);
         if (res.ok) {
           evaluationData = await res.json();
+          delete evaluationData.stay_details;
         }
       } catch (err) {
         console.error('Error fetching evaluations on edit:', err);

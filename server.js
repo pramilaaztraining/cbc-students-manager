@@ -150,6 +150,9 @@ const server = http.createServer(async (req, res) => {
       const evaluationsMap = {};
       result.rows.forEach(row => {
         const lecturerKey = row.lecturer_name;
+        // Ignore any legacy stay_details keys if they exist in DB
+        if (lecturerKey === 'stay_details') return;
+
         if (!evaluationsMap[lecturerKey]) evaluationsMap[lecturerKey] = {};
         
         evaluationsMap[lecturerKey][`${row.subject_key}Exam`] = row.exam;
@@ -172,7 +175,9 @@ const server = http.createServer(async (req, res) => {
       const data = await parseBody(req);
       
       for (const [lecturerKey, subjectsObj] of Object.entries(data)) {
-        if (typeof subjectsObj !== 'object' || subjectsObj === null) continue;
+        // 🚫 Explicitly skip non-professor keys like stay_details, id, first_name, etc.
+        if (lecturerKey === 'stay_details' || typeof subjectsObj !== 'object' || subjectsObj === null) continue;
+        if (['id', 'first_name', 'last_name', 'district', 'phone', 'email', 'course', 'batch', 'photo_url', 'photoLink', 'photoUrl', 'accommodation', 'postGradStay', 'stayStartDateTime', 'stayEndDateTime'].includes(lecturerKey)) continue;
 
         const subjectKeys = new Set(Object.keys(subjectsObj).map(k => k.replace(/(Exam|Notes|Classes|Permissions|VideoFileName)$/, '')));
 
