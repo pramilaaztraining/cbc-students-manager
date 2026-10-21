@@ -230,7 +230,7 @@ export default function AcademicEvaluationsScreen({
       {/* Summary Table */}
       <div style={{ marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '15px' }}>
-          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic Records Summary ({searchedGridRows.length})</h3>
+          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic Records Summary </h3>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <input 

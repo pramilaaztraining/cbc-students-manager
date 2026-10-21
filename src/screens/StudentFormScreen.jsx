@@ -298,7 +298,7 @@ export default function StudentFormScreen({
 
       <div className="directory-section">
         <div className="directory-header">
-          <h3 className="directory-title">Registered Students Directory ({searchedRows.length})</h3>
+          <h3 className="directory-title">Registered Students Directory </h3>
           
           <div className="directory-controls">
             <input 

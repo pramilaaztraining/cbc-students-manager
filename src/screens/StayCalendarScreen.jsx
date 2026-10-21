@@ -210,9 +210,7 @@ export default function StayCalendarScreen({
 
       <form onSubmit={handleStaySubmit} className="form-card">
         <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', fontWeight: '600', fontSize: '0.9rem', marginBottom: '5px', color: '#1e293b' }}>
-            Select Student from Directory <span style={{ fontSize: '0.8rem', color: '#64748b' }}>జాబితా నుండి విద్యార్థిని ఎన్నుకోండి</span>
-          </label>
+         
           <StudentSelectDropdown 
             rows={rows} 
             selectedStudentId={selectedStudentId} 
