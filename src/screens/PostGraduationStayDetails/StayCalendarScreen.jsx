@@ -3,6 +3,8 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import StudentSelectDropdown from '../CommonScreenComponents/StudentSelectDropdown';
 import './StayCalendarScreen.css';
+// ✅ Use this (absolute import from src)
+import { apiFetch } from '../../utils/api';
 
 export default function StayCalendarScreen({ 
   rows, 
@@ -96,7 +98,7 @@ export default function StayCalendarScreen({
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/stays/${currentStudent.id}`, {
+      const response = await apiFetch(`/api/stays/${currentStudent.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(stayData)

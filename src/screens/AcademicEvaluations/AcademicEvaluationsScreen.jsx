@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import StudentSelectDropdown from '../CommonScreenComponents/StudentSelectDropdown'; // Adjust import path if needed
+import StudentSelectDropdown from '../CommonScreenComponents/StudentSelectDropdown';
 import './AcademicEvaluationsScreen.css';
+// ✅ Use this (absolute import from src)
+import { apiFetch } from '../../utils/api';
 
 export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
   const [professorsList, setProfessorsList] = useState([]);
@@ -15,8 +17,8 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
 
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:5000/api/professors').then(res => res.json()),
-      fetch('http://localhost:5000/api/professor-subjects').then(res => res.json())
+      apiFetch('/api/professors').then(res => res.json()),
+      apiFetch('/api/professor-subjects').then(res => res.json())
     ])
       .then(([profData, subData]) => {
         setProfessorsList(profData || []);
@@ -29,7 +31,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
     if (rows && rows.length > 0) {
       rows.forEach(async (row) => {
         try {
-          const res = await fetch(`http://localhost:5000/api/evaluations/${row.id}`);
+          const res = await apiFetch(`/api/evaluations/${row.id}`);
           if (res.ok) {
             const data = await res.json();
             const evalsMap = {};
@@ -71,7 +73,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
     });
 
     try {
-      const res = await fetch(`http://localhost:5000/api/evaluations/${studentId}`);
+      const res = await apiFetch(`/api/evaluations/${studentId}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -122,14 +124,14 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
     const evaluationsArray = Object.values(studentEvaluations);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/evaluations/${selectedStudentId}`, {
+      const res = await apiFetch(`/api/evaluations/${selectedStudentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ evaluations: evaluationsArray })
       });
       if (res.ok) {
         alert('Evaluations saved successfully!');
-        const refreshedRes = await fetch(`http://localhost:5000/api/evaluations/${selectedStudentId}`);
+        const refreshedRes = await apiFetch(`/api/evaluations/${selectedStudentId}`);
         if (refreshedRes.ok) {
           const freshData = await refreshedRes.json();
           const evalsMap = {};
@@ -201,7 +203,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
           const vid = ev.video_file_name || 'None';
 
           return `${sub.subject_label}: Ex:[${ex}] N:[${n}] Cl:[${cl}] P:${p} Vid:${vid}`;
-        }).join('\n\n'); // Gap added between each subject block in PDF
+        }).join('\n\n');
       })
     ]);
 
@@ -359,7 +361,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
       {/* Summary Table Grid & Search */}
       <div style={{ marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '15px' }}>
-          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic EvaluationSummary</h3>
+          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic Evaluation Summary</h3>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <input 

@@ -17,6 +17,8 @@ import Footer from './components/Footer';
 import FloatingSocialBar from './components/FloatingSocialBar';
 import FlashAnnouncement from './components/FlashAnnouncement';
 
+import { apiFetch } from './utils/api'; // ✅ Correct path from src/App.js
+
 function App() {
   const createDetailedSubsections = (keys) => {
     const obj = {};
@@ -62,7 +64,7 @@ function App() {
 
   const fetchStudents = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/students');
+      const res = await apiFetch('/api/students');
       if (!res.ok) throw new Error('Failed to fetch from backend server');
       const data = await res.json();
       setRows([...data]);
@@ -111,7 +113,7 @@ function App() {
           sampath: formData.sampath || {}
         };
 
-        const response = await fetch(`http://localhost:5000/api/evaluations/${formData.id}`, {
+        const response = await apiFetch(`/api/evaluations/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(cleanEvaluationPayload)
@@ -157,7 +159,7 @@ function App() {
 
     if (formData.id && Number(formData.id) > 0) {
       try {
-        const response = await fetch(`http://localhost:5000/api/students/${formData.id}`, {
+        const response = await apiFetch(`/api/students/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(cleanStudentPayload)
@@ -173,7 +175,7 @@ function App() {
       }
     } else {
       try {
-        const response = await fetch('http://localhost:5000/api/students', {
+        const response = await apiFetch('/api/students', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(cleanStudentPayload)
@@ -215,7 +217,7 @@ function App() {
     
     if (targetScreen === 'academics') {
       try {
-        const res = await fetch(`http://localhost:5000/api/evaluations/${row.id}`);
+        const res = await apiFetch(`/api/evaluations/${row.id}`);
         if (res.ok) {
           evaluationData = await res.json();
           delete evaluationData.stay_details;
@@ -240,7 +242,7 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm(`Are you sure you want to delete student ID: ${id}?`)) {
       try {
-        const response = await fetch(`http://localhost:5000/api/students/${id}`, {
+        const response = await apiFetch(`/api/students/${id}`, {
           method: 'DELETE'
         });
         if (!response.ok) throw new Error('Failed to delete student');
