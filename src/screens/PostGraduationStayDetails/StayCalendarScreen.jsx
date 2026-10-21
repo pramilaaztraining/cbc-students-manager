@@ -8,8 +8,8 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [allStaysMap, setAllStaysMap] = useState({});
   const [gridSearchTerm, setGridSearchTerm] = useState('');
+  const [isLocked, setIsLocked] = useState(true);
 
-  // Form state without accommodation and post_grad_stay
   const [stayData, setStayData] = useState({
     stay_start_date_time: '',
     stay_end_date_time: '',
@@ -41,6 +41,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
   const handleStudentSelect = async (studentId) => {
     if (!studentId) {
       setSelectedStudentId(null);
+      setIsLocked(true);
       setStayData({
         stay_start_date_time: '',
         stay_end_date_time: '',
@@ -54,6 +55,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
     }
     
     setSelectedStudentId(studentId);
+    setIsLocked(false); // Unlock form when a student is actively selected
 
     try {
       const res = await apiFetch(`/api/student-stays/${studentId}`);
@@ -89,6 +91,11 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
     } catch (err) {
       console.error('Error fetching student stay details:', err);
     }
+  };
+
+  const handleEvaluateClick = (row) => {
+    handleStudentSelect(row.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleInputChange = (field, value) => {
@@ -128,11 +135,25 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
 
       if (res.ok) {
         alert('Stay details saved successfully!');
+        
         const refreshedRes = await apiFetch(`/api/student-stays/${selectedStudentId}`);
         if (refreshedRes.ok) {
           const freshData = await refreshedRes.json();
           setAllStaysMap(prev => ({ ...prev, [selectedStudentId]: freshData }));
         }
+
+        // RESET DROPDOWN, CLEAR FORM, AND LOCK SECTIONS AFTER SAVE
+        setSelectedStudentId(null);
+        setIsLocked(true);
+        setStayData({
+          stay_start_date_time: '',
+          stay_end_date_time: '',
+          family_parents: [],
+          children_count: 0,
+          brothers_count: 0,
+          sisters_count: 0,
+          stay_notes: ''
+        });
       } else {
         alert('Failed to save stay details.');
       }
@@ -188,9 +209,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
     <div className="screen-section" style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       
       <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontWeight: '600', color: '#1e293b', fontSize: '0.95rem', marginBottom: '6px' }}>
-          Select Student from Directory జాబితా నుండి విద్యార్థిని ఎంచుకోండి
-        </label>
+        
         <StudentSelectDropdown 
           rows={rows} 
           selectedStudentId={selectedStudentId || ''} 
@@ -205,12 +224,36 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
         
+        {/* Lock Overlay when no student is selected / after saving */}
+        {isLocked && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(255, 255, 255, 0.85)',
+            zIndex: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '10px',
+            border: '2px dashed #cbd5e1',
+            padding: '30px',
+            textAlign: 'center'
+          }}>
+            <h4 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '1.1rem' }}>🔒 Stay Details Section Locked</h4>
+            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Please select a student from the directory above or click "Evaluate" in the summary table to unlock and edit.</p>
+          </div>
+        )}
+
         {/* Stay & Time Window Card */}
         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
           <h3 style={{ margin: '0 0 15px 0', fontSize: '1rem', color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px' }}>
-            Campus Stay & Time Window <span style={{ color: '#64748b', fontWeight: 'normal' }}>(వసతి & సమయ నియంత్రణ)</span>
+            Post-Graduation Campus Stay & Time Window <span style={{ color: '#64748b', fontWeight: 'normal' }}>(గ్రాడ్యుయేషన్ వసతి & సమయ నియంత్రణ)</span>
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
@@ -419,12 +462,13 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                   <th style={{ padding: '14px' }}>Children</th>
                   <th style={{ padding: '14px' }}>Siblings (B/S)</th>
                   <th style={{ padding: '14px' }}>Notes</th>
+                  <th style={{ padding: '14px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {searchedGridRows.length === 0 ? (
                   <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
                       No student records found matching your search.
                     </td>
                   </tr>
@@ -442,6 +486,15 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                         <td style={{ padding: '16px', verticalAlign: 'top' }}>B: {stay.brothers_count ?? 0} / S: {stay.sisters_count ?? 0}</td>
                         <td style={{ padding: '16px', verticalAlign: 'top', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={stay.stay_notes}>
                           {stay.stay_notes || 'N/A'}
+                        </td>
+                        <td style={{ padding: '16px', verticalAlign: 'top', textAlign: 'center' }}>
+                          <button 
+                            type="button" 
+                            onClick={() => handleEvaluateClick(row)} 
+                            style={{ padding: '6px 12px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                          >
+                            Evaluate
+                          </button>
                         </td>
                       </tr>
                     );
