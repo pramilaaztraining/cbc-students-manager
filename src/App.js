@@ -3,18 +3,19 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 import Navbar from './components/Navbar';
-import ContactScreen from './screens/ContactScreen';
-import LeadershipScreen from './screens/LeadershipScreen';
-import StayCalendarScreen from './screens/StayCalendarScreen';
-import AcademicEvaluationsScreen from './screens/AcademicEvaluationsScreen';
-import FloatingSocialBar from './components/FloatingSocialBar';
-import FlashAnnouncement from './components/FlashAnnouncement';
-import CoursesScreen from './screens/CoursesScreen';
-import HomeScreen from './screens/HomeScreen';
+// Update these import statements in your src/App.js file:
+import HomeScreen from './screens/Home/HomeScreen';
+import StudentFormScreen from './screens/StudentDetail/StudentFormScreen';
+import AcademicEvaluationsScreen from './screens/AcademicEvaluations/AcademicEvaluationsScreen';
+import CoursesScreen from './screens/Courses/CoursesScreen';
+import ContactScreen from './screens/Contact/ContactScreen';
+import LeadershipScreen from './screens/Leadership/LeadershipScreen';
+import StayCalendarScreen from './screens/PostGraduationStayDetails/StayCalendarScreen'; // Match your exact subfolder name
 
 import Header from './components/Header';
 import Footer from './components/Footer';
-import StudentFormScreen from './screens/StudentFormScreen';
+import FloatingSocialBar from './components/FloatingSocialBar';
+import FlashAnnouncement from './components/FlashAnnouncement';
 
 function App() {
   const createDetailedSubsections = (keys) => {

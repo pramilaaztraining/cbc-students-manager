@@ -1,13 +1,16 @@
 import React from 'react';
+import './StudentSelectDropdown.css';
 
 export default function StudentSelectDropdown({ rows, selectedStudentId, onStudentChange }) {
   return (
-    <div className="input-group" style={{ position: 'relative' }}>
-      <label>Select Student from Directory <span className="telugu-label">జాబితా నుండి విద్యార్థిని ఎంచుకోండి</span></label>
+    <div className="student-select-group">
+      <label className="student-select-label">
+        Select Student from Directory <span className="telugu-label">జాబితా నుండి విద్యార్థిని ఎంచుకోండి</span>
+      </label>
       <select 
         value={selectedStudentId} 
         onChange={(e) => onStudentChange(e.target.value)} 
-        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#fff' }}
+        className="student-select-dropdown"
       >
         <option value="">-- Choose student from directory --</option>
         {rows.map(row => (

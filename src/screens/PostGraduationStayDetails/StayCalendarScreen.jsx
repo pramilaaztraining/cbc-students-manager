@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import StudentSelectDropdown from './StudentSelectDropdown';
+import StudentSelectDropdown from '../CommonScreenComponents/StudentSelectDropdown';
 import './StayCalendarScreen.css';
 
 export default function StayCalendarScreen({ 

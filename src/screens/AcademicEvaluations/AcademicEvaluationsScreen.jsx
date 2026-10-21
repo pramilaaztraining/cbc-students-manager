@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import StudentSelectDropdown from './StudentSelectDropdown';
+import StudentSelectDropdown from '../CommonScreenComponents/StudentSelectDropdown'; // Adjust import path if needed
 import './AcademicEvaluationsScreen.css';
 
 export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
@@ -201,7 +201,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
           const vid = ev.video_file_name || 'None';
 
           return `${sub.subject_label}: Ex:[${ex}] N:[${n}] Cl:[${cl}] P:${p} Vid:${vid}`;
-        }).join('\n');
+        }).join('\n\n'); // Gap added between each subject block in PDF
       })
     ]);
 
@@ -210,7 +210,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
       body: tableRows, 
       startY: 18, 
       theme: 'grid',
-      styles: { fontSize: 7, cellPadding: 3 },
+      styles: { fontSize: 7, cellPadding: 4 },
       headStyles: { fillColor: [37, 99, 235] }
     });
     
@@ -264,7 +264,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
                       return (
                         <div key={sub.subject_id} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
                           
-                          {/* Subject Name (Key Hidden) */}
+                          {/* Subject Name */}
                           <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.95rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
                             {sub.subject_label}
                           </div>
@@ -359,7 +359,7 @@ export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
       {/* Summary Table Grid & Search */}
       <div style={{ marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '15px' }}>
-          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic Records Summary Grid</h3>
+          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic EvaluationSummary</h3>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <input 
