@@ -1,9 +1,33 @@
 -- =========================================================================
--- CHRIST BIBLE COLLEGE (CBC) BANGALORE - FULL DATABASE SETUP SCRIPT
+-- CHRIST BIBLE COLLEGE (CBC) BANGALORE - COMPLETE DATABASE & CASCADE SETUP
 -- =========================================================================
 
--- 1. CORE STUDENTS TABLE
-CREATE TABLE IF NOT EXISTS students (
+-- Note: Run this command first if creating the database from scratch:
+--CREATE DATABASE cbc_db;
+---\c cbc_db;
+-- -------------------------------------------------------------------------
+-- 1. DROP EXISTING TABLES (If resetting in correct dependency order)
+-- -------------------------------------------------------------------------
+DROP TABLE IF EXISTS topical_division_items CASCADE;
+DROP TABLE IF EXISTS topical_divisions CASCADE;
+DROP TABLE IF EXISTS nt_books CASCADE;
+DROP TABLE IF EXISTS nt_divisions CASCADE;
+DROP TABLE IF EXISTS ot_books CASCADE;
+DROP TABLE IF EXISTS ot_divisions CASCADE;
+DROP TABLE IF EXISTS student_stays CASCADE;
+DROP TABLE IF EXISTS student_evaluations CASCADE;
+DROP TABLE IF EXISTS professor_subjects CASCADE;
+DROP TABLE IF EXISTS subjects CASCADE;
+DROP TABLE IF EXISTS professors CASCADE;
+DROP TABLE IF EXISTS students CASCADE;
+
+
+-- -------------------------------------------------------------------------
+-- 2. CREATE TABLES WITH CASCADING DELETES
+-- -------------------------------------------------------------------------
+
+-- Core Students Table
+CREATE TABLE students (
     id SERIAL PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
@@ -16,30 +40,30 @@ CREATE TABLE IF NOT EXISTS students (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. PROFESSORS TABLE
-CREATE TABLE IF NOT EXISTS professors (
+-- Professors Table
+CREATE TABLE professors (
     professor_id SERIAL PRIMARY KEY,
     lecturer_key VARCHAR(50) UNIQUE NOT NULL, -- e.g., 'stephen', 'rajshekar', 'sampath'
     lecturer_name VARCHAR(100) NOT NULL       -- e.g., 'Prof Stephen Suresh Babu'
 );
 
--- 3. STANDALONE SUBJECTS TABLE
-CREATE TABLE IF NOT EXISTS subjects (
+-- Standalone Subjects Table
+CREATE TABLE subjects (
     subject_id SERIAL PRIMARY KEY,
     subject_key VARCHAR(50) UNIQUE NOT NULL,  -- e.g., 'synoptic', 'law', 'loc'
     subject_label VARCHAR(150) NOT NULL       -- e.g., 'Synoptic Gospels'
 );
 
--- 4. JUNCTION TABLE: PROFESSORS TO SUBJECTS
-CREATE TABLE IF NOT EXISTS professor_subjects (
+-- Junction Table: Professors to Subjects (Cascades if professor or subject is deleted)
+CREATE TABLE professor_subjects (
     id SERIAL PRIMARY KEY,
     professor_id INT REFERENCES professors(professor_id) ON DELETE CASCADE,
     subject_id INT REFERENCES subjects(subject_id) ON DELETE CASCADE,
     CONSTRAINT unique_prof_subject UNIQUE (professor_id, subject_id)
 );
 
--- 5. STUDENT ACADEMIC EVALUATIONS TABLE
-CREATE TABLE IF NOT EXISTS student_evaluations (
+-- Student Academic Evaluations Table (Cascades if student, professor, or subject is deleted)
+CREATE TABLE student_evaluations (
     id SERIAL PRIMARY KEY,
     student_id INT REFERENCES students(id) ON DELETE CASCADE,
     professor_id INT REFERENCES professors(professor_id) ON DELETE CASCADE,
@@ -52,23 +76,23 @@ CREATE TABLE IF NOT EXISTS student_evaluations (
     CONSTRAINT unique_student_subject UNIQUE (student_id, subject_id)
 );
 
--- 6. STUDENT STAYS & ACCOMMODATION TABLE
-CREATE TABLE IF NOT EXISTS student_stays (
+-- Student Stays & Accommodation Table (Cascades if student is deleted)
+CREATE TABLE student_stays (
     id SERIAL PRIMARY KEY,
-    student_id INTEGER UNIQUE NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    accommodation VARCHAR(255),
-    post_grad_stay VARCHAR(255),
+    student_id INT UNIQUE NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  --  accommodation VARCHAR(255),
+  --  post_grad_stay VARCHAR(255),
     stay_start_date_time TIMESTAMP,
     stay_end_date_time TIMESTAMP,
     family_parents VARCHAR(100),
-    children_count INTEGER DEFAULT 0,
-    brothers_count INTEGER DEFAULT 0,
-    sisters_count INTEGER DEFAULT 0,
+    children_count INT DEFAULT 0,
+    brothers_count INT DEFAULT 0,
+    sisters_count INT DEFAULT 0,
     stay_notes TEXT
 );
 
--- 7. OLD TESTAMENT CANON TABLES
-CREATE TABLE IF NOT EXISTS ot_divisions (
+-- Old Testament Canon Tables
+CREATE TABLE ot_divisions (
     division_id SERIAL PRIMARY KEY,
     testament VARCHAR(50) NOT NULL, 
     division_name VARCHAR(100) NOT NULL, 
@@ -76,7 +100,7 @@ CREATE TABLE IF NOT EXISTS ot_divisions (
     sort_order INT NOT NULL 
 );
 
-CREATE TABLE IF NOT EXISTS ot_books (
+CREATE TABLE ot_books (
     book_id SERIAL PRIMARY KEY,
     division_id INT REFERENCES ot_divisions(division_id) ON DELETE CASCADE,
     book_name VARCHAR(100) NOT NULL,
@@ -84,8 +108,8 @@ CREATE TABLE IF NOT EXISTS ot_books (
     traditional_order INT NOT NULL 
 );
 
--- 8. NEW TESTAMENT CANON TABLES
-CREATE TABLE IF NOT EXISTS nt_divisions (
+-- New Testament Canon Tables
+CREATE TABLE nt_divisions (
     division_id SERIAL PRIMARY KEY,
     testament VARCHAR(50) NOT NULL, 
     division_name VARCHAR(100) NOT NULL, 
@@ -93,7 +117,7 @@ CREATE TABLE IF NOT EXISTS nt_divisions (
     sort_order INT NOT NULL 
 );
 
-CREATE TABLE IF NOT EXISTS nt_books (
+CREATE TABLE nt_books (
     book_id SERIAL PRIMARY KEY,
     division_id INT REFERENCES nt_divisions(division_id) ON DELETE CASCADE,
     book_name VARCHAR(100) NOT NULL,
@@ -101,15 +125,15 @@ CREATE TABLE IF NOT EXISTS nt_books (
     traditional_order INT NOT NULL 
 );
 
--- 9. TOPICAL / THEMATIC DIVISIONS (Life of Christ & Evangelism)
-CREATE TABLE IF NOT EXISTS topical_divisions (
+-- Topical / Thematic Divisions (Life of Christ & Evangelism)
+CREATE TABLE topical_divisions (
     division_id SERIAL PRIMARY KEY,
     subject_name VARCHAR(100) NOT NULL, 
     division_code VARCHAR(50) NOT NULL UNIQUE, 
     sort_order INT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS topical_division_items (
+CREATE TABLE topical_division_items (
     item_id SERIAL PRIMARY KEY,
     division_id INT REFERENCES topical_divisions(division_id) ON DELETE CASCADE,
     title VARCHAR(150) NOT NULL, 
@@ -118,9 +142,9 @@ CREATE TABLE IF NOT EXISTS topical_division_items (
 );
 
 
--- =========================================================================
--- SEED DATA & INITIAL INSERTS
--- =========================================================================
+-- -------------------------------------------------------------------------
+-- 3. SEED INITIAL DATA
+-- -------------------------------------------------------------------------
 
 -- Seed Professors
 INSERT INTO professors (lecturer_key, lecturer_name) VALUES

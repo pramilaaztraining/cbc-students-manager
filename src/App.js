@@ -31,11 +31,6 @@ function App() {
     });
     return obj;
   };
-
-  const stephenKeys = ['synoptic', 'actsEpistles', 'homiletics'];
-  const rajkeys = ['law', 'history', 'poetic', 'prophetic'];
-  const sampathKeys = ['loc', 'locChronological', 'evangelism'];
-
   const [rows, setRows] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -49,13 +44,6 @@ function App() {
     phone: '',
     photoLink: '',
     photoUrl: '',
-    stephen: createDetailedSubsections(stephenKeys),
-    rajshekar: createDetailedSubsections(rajkeys),
-    sampath: createDetailedSubsections(sampathKeys),
-    accommodation: '',
-    postGradStay: '',
-    stayStartDateTime: '',
-    stayEndDateTime: ''
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -108,9 +96,6 @@ function App() {
       try {
         const cleanEvaluationPayload = {
           id: formData.id,
-          stephen: formData.stephen || {},
-          rajshekar: formData.rajshekar || {},
-          sampath: formData.sampath || {}
         };
 
         const response = await apiFetch(`/api/evaluations/${formData.id}`, {
@@ -125,9 +110,6 @@ function App() {
         // ✨ Deselect student and reset academic evaluation form fields
         setFormData({
           id: null,
-          stephen: createDetailedSubsections(stephenKeys),
-          rajshekar: createDetailedSubsections(rajkeys),
-          sampath: createDetailedSubsections(sampathKeys)
         });
 
         setActiveScreen('academics');
@@ -201,13 +183,6 @@ function App() {
       phone: '',
       photoLink: '',
       photoUrl: '',
-      stephen: createDetailedSubsections(stephenKeys),
-      rajshekar: createDetailedSubsections(rajkeys),
-      sampath: createDetailedSubsections(sampathKeys),
-      accommodation: '',
-      postGradStay: '',
-      stayStartDateTime: '',
-      stayEndDateTime: ''
     });
   };
 
@@ -230,9 +205,6 @@ function App() {
     setFormData({ 
       ...row,
       ...evaluationData,
-      stephen: evaluationData.stephen || row.stephen || createDetailedSubsections(stephenKeys),
-      rajshekar: evaluationData.rajshekar || row.rajshekar || createDetailedSubsections(rajkeys),
-      sampath: evaluationData.sampath || row.sampath || createDetailedSubsections(sampathKeys)
     });
     
     setActiveScreen(targetScreen);
@@ -253,10 +225,6 @@ function App() {
           setFormData({
             id: null,
             first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
-            stephen: createDetailedSubsections(stephenKeys),
-            rajshekar: createDetailedSubsections(rajkeys),
-            sampath: createDetailedSubsections(sampathKeys),
-            accommodation: '', postGradStay: '', stayStartDateTime: '', stayEndDateTime: ''
           });
         }
       } catch (err) {

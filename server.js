@@ -220,31 +220,16 @@ const server = http.createServer(async (req, res) => {
     // ----------------------------------------------------
     // 9. GET: Fetch student stay details by student ID
     // ----------------------------------------------------
-    if (url.pathname.startsWith('/api/stays/') && req.method === 'GET') {
+    if (url.pathname.startsWith('/api/student-stays/') && req.method === 'GET') {
       const studentId = url.pathname.split('/')[3];
       const result = await pool.query('SELECT * FROM student_stays WHERE student_id = $1', [Number(studentId)]);
       
       if (result.rows.length > 0) {
-        const row = result.rows[0];
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          stayStartDateTime: row.stay_start_date_time ? new Date(row.stay_start_date_time).toISOString().slice(0, 16) : '',
-          stayEndDateTime: row.stay_end_date_time ? new Date(row.stay_end_date_time).toISOString().slice(0, 16) : '',
-          ...(row.stay_details || {})
-        }));
+        res.end(JSON.stringify(result.rows[0]));
       } else {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ 
-          stayStartDateTime: '', 
-          stayEndDateTime: '', 
-          mother: false,
-          father: false,
-          guardian: false,
-          childrenCount: 0, 
-          brothersCount: 0, 
-          sistersCount: 0, 
-          stayNotes: '' 
-        }));
+        res.end(JSON.stringify(null));
       }
       return;
     }
@@ -252,26 +237,55 @@ const server = http.createServer(async (req, res) => {
     // ----------------------------------------------------
     // 10. PUT: Save or Update student stay details (Upsert)
     // ----------------------------------------------------
-    if (url.pathname.startsWith('/api/stays/') && req.method === 'PUT') {
+    if (url.pathname.startsWith('/api/student-stays/') && req.method === 'PUT') {
       const studentId = Number(url.pathname.split('/')[3]);
       const data = await parseBody(req);
-      const { stayStartDateTime, stayEndDateTime, ...details } = data;
+      
+      const {
+        stay_start_date_time,
+        stay_end_date_time,
+        family_parents,
+        children_count,
+        brothers_count,
+        sisters_count,
+        stay_notes
+      } = data;
+
+      const startDate = stay_start_date_time && stay_start_date_time.trim() !== '' ? stay_start_date_time : null;
+      const endDate = stay_end_date_time && stay_end_date_time.trim() !== '' ? stay_end_date_time : null;
 
       const upsertQuery = `
-        INSERT INTO student_stays (student_id, stay_start_date_time, stay_end_date_time, stay_details)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO student_stays (
+          student_id, 
+          stay_start_date_time, 
+          stay_end_date_time,           
+          family_parents,
+          children_count, 
+          brothers_count, 
+          sisters_count, 
+          stay_notes
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (student_id) 
-        DO UPDATE SET 
+        DO UPDATE SET           
           stay_start_date_time = $2, 
           stay_end_date_time = $3, 
-          stay_details = $4;
+          family_parents = $4,
+          children_count = $5,
+          brothers_count = $6,
+          sisters_count = $7,
+          stay_notes = $8;
       `;
       
       await pool.query(upsertQuery, [
-        studentId, 
-        stayStartDateTime || null, 
-        stayEndDateTime || null, 
-        JSON.stringify(details)
+        studentId,      
+        startDate, 
+        endDate,
+        family_parents || null,
+        Number(children_count) || 0,
+        Number(brothers_count) || 0,
+        Number(sisters_count) || 0,
+        stay_notes || null
       ]);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });

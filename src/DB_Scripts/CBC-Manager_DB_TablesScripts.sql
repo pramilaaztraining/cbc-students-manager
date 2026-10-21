@@ -26,15 +26,20 @@ CREATE TABLE student_evaluations (
 );
 
 -- 3. Post-Grad Stay & Calendar Windows (Managed via StayCalendarScreen)
+-- Student Stays & Accommodation Table (Cascades if student is deleted)
 CREATE TABLE student_stays (
     id SERIAL PRIMARY KEY,
-    student_id INT REFERENCES students(id) ON DELETE CASCADE,
-    accommodation VARCHAR(255),
-    post_grad_stay VARCHAR(255),
+    student_id INT UNIQUE NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  --  accommodation VARCHAR(255),
+  --  post_grad_stay VARCHAR(255),
     stay_start_date_time TIMESTAMP,
-    stay_end_date_time TIMESTAMP
+    stay_end_date_time TIMESTAMP,
+    family_parents VARCHAR(100),
+    children_count INT DEFAULT 0,
+    brothers_count INT DEFAULT 0,
+    sisters_count INT DEFAULT 0,
+    stay_notes TEXT
 );
-
 
 --
 CREATE TABLE IF NOT EXISTS academic_evaluations (
