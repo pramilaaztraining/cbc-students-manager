@@ -22,6 +22,13 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 
+  // Root status check to prevent "Endpoint not found" when visiting localhost:5000/
+  if (url.pathname === '/' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'API server is running successfully!' }));
+    return;
+  }
+
   const parseBody = (req) => {
     return new Promise((resolve, reject) => {
       let body = '';
@@ -113,94 +120,105 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ----------------------------------------------------
-    // 5. GET: Professor & subjects configuration
+    // 5. GET: Fetch all professors
     // ----------------------------------------------------
-    if (url.pathname === '/api/professor-subjects' && req.method === 'GET') {
-      const profResult = await pool.query('SELECT professor_id, lecturer_name, lecturer_key FROM professors ORDER BY professor_id ASC');
-      const subResult = await pool.query('SELECT subject_id, professor_id, subject_key, subject_label, subject_telugu FROM professor_subjects');
-
-      const formattedData = profResult.rows.map(prof => ({
-        lecturerKey: prof.lecturer_key,
-        lecturerName: prof.lecturer_name,
-        subjects: subResult.rows
-          .filter(sub => sub.professor_id === prof.professor_id)
-          .map(sub => ({
-            key: sub.subject_key,
-            label: sub.subject_label,
-            telugu: sub.subject_telugu
-          }))
-      }));
-
+    if (url.pathname === '/api/professors' && req.method === 'GET') {
+      const result = await pool.query('SELECT professor_id, lecturer_key, lecturer_name FROM professors ORDER BY professor_id ASC;');
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(formattedData));
+      res.end(JSON.stringify(result.rows));
       return;
     }
 
     // ----------------------------------------------------
-    // 6. GET: Fetch academic evaluations for a student ID
+    // 6. GET: Fetch normalized professor subjects (joining subjects & mapping tables)
+    // ----------------------------------------------------
+    if (url.pathname === '/api/professor-subjects' && req.method === 'GET') {
+      const query = `
+        SELECT 
+          ps.id AS mapping_id,
+          ps.professor_id,
+          s.subject_id,
+          s.subject_key,
+          s.subject_label
+        FROM professor_subjects ps
+        JOIN subjects s ON ps.subject_id = s.subject_id
+        ORDER BY s.subject_id ASC;
+      `;
+      const result = await pool.query(query);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows));
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 7. GET: Fetch academic evaluations for a student ID (Normalized by IDs)
     // ----------------------------------------------------
     if (url.pathname.startsWith('/api/evaluations/') && req.method === 'GET') {
       const studentId = url.pathname.split('/')[3];
       const result = await pool.query('SELECT * FROM student_evaluations WHERE student_id = $1', [Number(studentId)]);
       
-      const evaluationsMap = {};
-      result.rows.forEach(row => {
-        const lecturerKey = row.lecturer_name;
-        // Ignore any legacy stay_details keys if they exist in DB
-        if (lecturerKey === 'stay_details') return;
-
-        if (!evaluationsMap[lecturerKey]) evaluationsMap[lecturerKey] = {};
-        
-        evaluationsMap[lecturerKey][`${row.subject_key}Exam`] = row.exam;
-        evaluationsMap[lecturerKey][`${row.subject_key}Notes`] = row.notes;
-        evaluationsMap[lecturerKey][`${row.subject_key}Classes`] = row.classes;
-        evaluationsMap[lecturerKey][`${row.subject_key}Permissions`] = row.permissions || '';
-        evaluationsMap[lecturerKey][`${row.subject_key}VideoFileName`] = row.video_file_name || '';
-      });
-
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(evaluationsMap));
+      res.end(JSON.stringify(result.rows));
       return;
     }
 
     // ----------------------------------------------------
-    // 7. PUT: Save or Update academic evaluations (Upsert)
+    // 8. PUT: Save or Update academic evaluations (Upsert via subject_id & professor_id)
     // ----------------------------------------------------
     if (url.pathname.startsWith('/api/evaluations/') && req.method === 'PUT') {
       const studentId = Number(url.pathname.split('/')[3]);
       const data = await parseBody(req);
-      
-      for (const [lecturerKey, subjectsObj] of Object.entries(data)) {
-        // 🚫 Explicitly skip non-professor keys like stay_details, id, first_name, etc.
-        if (lecturerKey === 'stay_details' || typeof subjectsObj !== 'object' || subjectsObj === null) continue;
-        if (['id', 'first_name', 'last_name', 'district', 'phone', 'email', 'course', 'batch', 'photo_url', 'photoLink', 'photoUrl', 'accommodation', 'postGradStay', 'stayStartDateTime', 'stayEndDateTime'].includes(lecturerKey)) continue;
+      const evaluations = data.evaluations || [];
 
-        const subjectKeys = new Set(Object.keys(subjectsObj).map(k => k.replace(/(Exam|Notes|Classes|Permissions|VideoFileName)$/, '')));
+      if (!Array.isArray(evaluations)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Evaluations payload must be an array' }));
+        return;
+      }
 
-        for (const subKey of subjectKeys) {
-          const exam = !!subjectsObj[`${subKey}Exam`];
-          const notes = !!subjectsObj[`${subKey}Notes`];
-          const classes = !!subjectsObj[`${subKey}Classes`];
-          const permissions = subjectsObj[`${subKey}Permissions`] || '';
-          const videoFileName = subjectsObj[`${subKey}VideoFileName`] || '';
+      for (const ev of evaluations) {
+        const { professor_id, subject_id, exam, notes, classes, permissions, video_file_name } = ev;
+        if (!subject_id || !professor_id) continue;
 
-          const upsertQuery = `
-            INSERT INTO student_evaluations (student_id, lecturer_name, subject_key, exam, notes, classes, permissions, video_file_name)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            ON CONFLICT (student_id, lecturer_name, subject_key) 
-            DO UPDATE SET exam = $4, notes = $5, classes = $6, permissions = $7, video_file_name = $8;
-          `;
-          await pool.query(upsertQuery, [studentId, lecturerKey, subKey, exam, notes, classes, permissions, videoFileName]);
+        // Validate and clamp permissions safely between 0 and 20
+        let parsedPermissions = Number(permissions);
+        if (isNaN(parsedPermissions) || parsedPermissions < 0) {
+          parsedPermissions = 0;
+        } else if (parsedPermissions > 20) {
+          parsedPermissions = 20;
         }
+
+        const upsertQuery = `
+          INSERT INTO student_evaluations (student_id, professor_id, subject_id, exam, notes, classes, permissions, video_file_name)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          ON CONFLICT (student_id, subject_id) 
+          DO UPDATE SET 
+            professor_id = $2,
+            exam = $4, 
+            notes = $5, 
+            classes = $6, 
+            permissions = $7, 
+            video_file_name = $8;
+        `;
+        await pool.query(upsertQuery, [
+          studentId, 
+          Number(professor_id), 
+          Number(subject_id), 
+          !!exam, 
+          !!notes, 
+          !!classes, 
+          String(parsedPermissions), 
+          video_file_name || null
+        ]);
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, message: 'Evaluations saved successfully' }));
+      res.end(JSON.stringify({ success: true, message: 'Evaluations saved successfully with validation' }));
       return;
     }
 
     // ----------------------------------------------------
-    // 8. GET: Fetch student stay details by student ID
+    // 9. GET: Fetch student stay details by student ID
     // ----------------------------------------------------
     if (url.pathname.startsWith('/api/stays/') && req.method === 'GET') {
       const studentId = url.pathname.split('/')[3];
@@ -232,7 +250,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ----------------------------------------------------
-    // 9. PUT: Save or Update student stay details (Upsert)
+    // 10. PUT: Save or Update student stay details (Upsert)
     // ----------------------------------------------------
     if (url.pathname.startsWith('/api/stays/') && req.method === 'PUT') {
       const studentId = Number(url.pathname.split('/')[3]);
@@ -260,23 +278,6 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ success: true, message: 'Stay details saved successfully' }));
       return;
     }
-
-
-    // GET: Fetch all professors
-if (url.pathname === '/api/professors' && req.method === 'GET') {
-  const result = await pool.query('SELECT professor_id, lecturer_key, lecturer_name FROM professors;');
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(result.rows));
-  return;
-}
-
-// GET: Fetch all professor subjects
-if (url.pathname === '/api/professor-subjects' && req.method === 'GET') {
-  const result = await pool.query('SELECT subject_id, professor_id, subject_key, subject_label FROM professor_subjects;');
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(result.rows));
-  return;
-}
 
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Endpoint not found' }));

@@ -5,37 +5,75 @@ CREATE TABLE IF NOT EXISTS professors (
     lecturer_name VARCHAR(100) NOT NULL       -- e.g., 'Prof Stephen Suresh Babu'
 );
 
--- 2. Create the Subjects table linked to each Professor
-CREATE TABLE IF NOT EXISTS professor_subjects (
+-- 2. Create the standalone Subjects table
+CREATE TABLE IF NOT EXISTS subjects (
     subject_id SERIAL PRIMARY KEY,
-    professor_id INT REFERENCES professors(professor_id) ON DELETE CASCADE,
-    subject_key VARCHAR(50) NOT NULL,         -- e.g., 'synoptic', 'law', 'loc'
-    subject_label VARCHAR(150) NOT NULL,      -- e.g., 'Synoptic Gospels'
-    subject_telugu VARCHAR(100)               -- Optional localized text
+    subject_key VARCHAR(50) UNIQUE NOT NULL,  -- e.g., 'synoptic', 'law', 'loc'
+    subject_label VARCHAR(150) NOT NULL       -- e.g., 'Synoptic Gospels'
 );
 
--- 3. Seed Initial Data
+-- 3. Create the Junction Table mapping Professors to Subjects
+CREATE TABLE IF NOT EXISTS professor_subjects (
+    id SERIAL PRIMARY KEY,
+    professor_id INT REFERENCES professors(professor_id) ON DELETE CASCADE,
+    subject_id INT REFERENCES subjects(subject_id) ON DELETE CASCADE,
+    CONSTRAINT unique_prof_subject UNIQUE (professor_id, subject_id)
+);
+
+-- 4. Create the Normalized Student Evaluations Table
+CREATE TABLE IF NOT EXISTS student_evaluations (
+    id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL,
+    professor_id INT REFERENCES professors(professor_id) ON DELETE CASCADE,
+    subject_id INT REFERENCES subjects(subject_id) ON DELETE CASCADE,
+    exam BOOLEAN DEFAULT FALSE,
+    notes BOOLEAN DEFAULT FALSE,
+    classes BOOLEAN DEFAULT FALSE,
+    permissions TEXT DEFAULT '0',
+    video_file_name VARCHAR(255),
+    CONSTRAINT unique_student_subject UNIQUE (student_id, subject_id)
+);
+
+-- 5. Seed Initial Professors
 INSERT INTO professors (lecturer_key, lecturer_name) VALUES
 ('stephen', 'Prof Stephen Suresh Babu'),
 ('rajshekar', 'Prof Rajshekar Sir'),
 ('sampath', 'Prof Sampath Kumar')
 ON CONFLICT (lecturer_key) DO NOTHING;
 
--- Seed Subjects for Stephen
-INSERT INTO professor_subjects (professor_id, subject_key, subject_label) VALUES
-((SELECT professor_id FROM professors WHERE lecturer_key = 'stephen'), 'synoptic', 'Synoptic Gospels'),
-((SELECT professor_id FROM professors WHERE lecturer_key = 'stephen'), 'actsEpistles', 'Acts & Epistles'),
-((SELECT professor_id FROM professors WHERE lecturer_key = 'stephen'), 'homiletics', 'Homiletics');
+-- 6. Seed Global Subjects
+INSERT INTO subjects (subject_key, subject_label) VALUES
+('synoptic', 'Synoptic Gospels'),
+('actsEpistles', 'Acts & Epistles'),
+('homiletics', 'Homiletics'),
+('law', 'Law'),
+('history', 'History'),
+('poetic', 'Poetic & Wisdom'),
+('prophetic', 'Prophetic'),
+('loc', 'Life of Christ'),
+('locChronological', 'Life of Christ - Chronological Study'),
+('evangelism', 'Evangelism & Missions')
+ON CONFLICT (subject_key) DO NOTHING;
 
--- Seed Subjects for Rajshekar
-INSERT INTO professor_subjects (professor_id, subject_id, subject_label) VALUES
-((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), 'law', 'Law'),
-((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), 'history', 'History'),
-((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), 'poetic', 'Poetic & Wisdom'),
-((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), 'prophetic', 'Prophetic');
+-- 7. Map Professors to their respective Subjects in the Junction Table
+-- Mapping for Stephen
+INSERT INTO professor_subjects (professor_id, subject_id) VALUES
+((SELECT professor_id FROM professors WHERE lecturer_key = 'stephen'), (SELECT subject_id FROM subjects WHERE subject_key = 'synoptic')),
+((SELECT professor_id FROM professors WHERE lecturer_key = 'stephen'), (SELECT subject_id FROM subjects WHERE subject_key = 'actsEpistles')),
+((SELECT professor_id FROM professors WHERE lecturer_key = 'stephen'), (SELECT subject_id FROM subjects WHERE subject_key = 'homiletics'))
+ON CONFLICT DO NOTHING;
 
--- Seed Subjects for Sampath
-INSERT INTO professor_subjects (professor_id, subject_key, subject_label, subject_telugu) VALUES
-((SELECT professor_id FROM professors WHERE lecturer_key = 'sampath'), 'loc', 'Life of Christ', NULL),
-((SELECT professor_id FROM professors WHERE lecturer_key = 'sampath'), 'locChronological', 'Life of Christ - Chronological Study', 'కాల్ క్రానికల్'),
-((SELECT professor_id FROM professors WHERE lecturer_key = 'sampath'), 'evangelism', 'Evangelism & Missions', NULL);
+-- Mapping for Rajshekar
+INSERT INTO professor_subjects (professor_id, subject_id) VALUES
+((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), (SELECT subject_id FROM subjects WHERE subject_key = 'law')),
+((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), (SELECT subject_id FROM subjects WHERE subject_key = 'history')),
+((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), (SELECT subject_id FROM subjects WHERE subject_key = 'poetic')),
+((SELECT professor_id FROM professors WHERE lecturer_key = 'rajshekar'), (SELECT subject_id FROM subjects WHERE subject_key = 'prophetic'))
+ON CONFLICT DO NOTHING;
+
+-- Mapping for Sampath
+INSERT INTO professor_subjects (professor_id, subject_id) VALUES
+((SELECT professor_id FROM professors WHERE lecturer_key = 'sampath'), (SELECT subject_id FROM subjects WHERE subject_key = 'loc')),
+((SELECT professor_id FROM professors WHERE lecturer_key = 'sampath'), (SELECT subject_id FROM subjects WHERE subject_key = 'locChronological')),
+((SELECT professor_id FROM professors WHERE lecturer_key = 'sampath'), (SELECT subject_id FROM subjects WHERE subject_key = 'evangelism'))
+ON CONFLICT DO NOTHING;

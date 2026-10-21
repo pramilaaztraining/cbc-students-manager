@@ -2,25 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import StudentSelectDropdown from './StudentSelectDropdown';
-import ProfessorSection from './ProfessorSection';
 import './AcademicEvaluationsScreen.css';
 
-export default function AcademicEvaluationsScreen({ 
-  formData, 
-  setFormData, 
-  handleSubmit, 
-  rows, 
-  handleEdit 
-}) {
+export default function AcademicEvaluationsScreen({ rows, handleEdit }) {
+  const [professorsList, setProfessorsList] = useState([]);
   const [professorSubjects, setProfessorSubjects] = useState([]);
-  const [studentEvaluationsMap, setStudentEvaluationsMap] = useState({});
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  
+  const [studentEvaluations, setStudentEvaluations] = useState({});
+  const [allStudentsEvalsMap, setAllStudentsEvalsMap] = useState({});
   const [gridSearchTerm, setGridSearchTerm] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/professor-subjects')
-      .then(res => res.json())
-      .then(data => setProfessorSubjects(data))
-      .catch(err => console.error('Error fetching professor subjects:', err));
+    Promise.all([
+      fetch('http://localhost:5000/api/professors').then(res => res.json()),
+      fetch('http://localhost:5000/api/professor-subjects').then(res => res.json())
+    ])
+      .then(([profData, subData]) => {
+        setProfessorsList(profData || []);
+        setProfessorSubjects(subData || []);
+      })
+      .catch(err => console.error('Error fetching configuration:', err));
   }, []);
 
   useEffect(() => {
@@ -30,8 +32,11 @@ export default function AcademicEvaluationsScreen({
           const res = await fetch(`http://localhost:5000/api/evaluations/${row.id}`);
           if (res.ok) {
             const data = await res.json();
-            delete data.stay_details;
-            setStudentEvaluationsMap(prev => ({ ...prev, [row.id]: data }));
+            const evalsMap = {};
+            if (Array.isArray(data)) {
+              data.forEach(item => { evalsMap[item.subject_id] = item; });
+            }
+            setAllStudentsEvalsMap(prev => ({ ...prev, [row.id]: evalsMap }));
           }
         } catch (err) {
           console.error(`Error fetching evaluation for student ID ${row.id}:`, err);
@@ -40,113 +45,134 @@ export default function AcademicEvaluationsScreen({
     }
   }, [rows]);
 
+  const getSubjectsForProf = (profId) => {
+    return professorSubjects.filter(sub => String(sub.professor_id) === String(profId));
+  };
+
   const handleStudentSelect = async (studentId) => {
     if (!studentId) {
-      setFormData(prev => ({ ...prev, id: null }));
+      setSelectedStudentId(null);
+      setStudentEvaluations({});
       return;
     }
+    setSelectedStudentId(studentId);
 
-    const selectedRow = rows.find(r => String(r.id) === studentId);
-    if (selectedRow) {
-      try {
-        const res = await fetch(`http://localhost:5000/api/evaluations/${selectedRow.id}`);
-        const evaluationData = res.ok ? await res.json() : {};
-        delete evaluationData.stay_details;
+    const initialMap = {};
+    professorSubjects.forEach(sub => {
+      initialMap[sub.subject_id] = {
+        subject_id: sub.subject_id,
+        professor_id: sub.professor_id,
+        exam: false,
+        notes: false,
+        classes: false,
+        permissions: '0',
+        video_file_name: ''
+      };
+    });
 
-        setFormData(prev => ({
-          ...prev,
-          ...selectedRow,
-          ...evaluationData
-        }));
-      } catch (err) {
-        console.error('Error fetching evaluations for student:', err);
+    try {
+      const res = await fetch(`http://localhost:5000/api/evaluations/${studentId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            initialMap[item.subject_id] = {
+              ...initialMap[item.subject_id],
+              ...item
+            };
+          });
+        }
       }
+    } catch (err) {
+      console.error('Error fetching student evaluations:', err);
+    }
+
+    setStudentEvaluations(initialMap);
+  };
+
+  const handleFieldChange = (subjectId, fieldName, value) => {
+    if (fieldName === 'permissions') {
+      let numVal = Number(value);
+      if (!isNaN(numVal)) {
+        if (numVal < 0) value = '0';
+        if (numVal > 20) value = '20';
+      }
+    }
+
+    setStudentEvaluations(prev => ({
+      ...prev,
+      [subjectId]: {
+        ...(prev[subjectId] || {}),
+        [fieldName]: value
+      }
+    }));
+  };
+
+  const handleFileUpload = (subjectId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handleFieldChange(subjectId, 'video_file_name', file.name);
     }
   };
 
-  const handleFieldChange = (e, lecturerKey, fieldName, type) => {
-    setFormData(prev => {
-      const lecturerObj = prev[lecturerKey] || {};
-      let newValue;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedStudentId) return;
 
-      if (type === 'checkbox') {
-        newValue = e.target.checked;
-      } else if (type === 'file') {
-        const file = e.target.files[0];
-        newValue = file ? file.name : '';
-      } else {
-        newValue = e.target.value;
-      }
+    const evaluationsArray = Object.values(studentEvaluations);
 
-      return {
-        ...prev,
-        [lecturerKey]: {
-          ...lecturerObj,
-          [fieldName]: newValue
+    try {
+      const res = await fetch(`http://localhost:5000/api/evaluations/${selectedStudentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evaluations: evaluationsArray })
+      });
+      if (res.ok) {
+        alert('Evaluations saved successfully!');
+        const refreshedRes = await fetch(`http://localhost:5000/api/evaluations/${selectedStudentId}`);
+        if (refreshedRes.ok) {
+          const freshData = await refreshedRes.json();
+          const evalsMap = {};
+          if (Array.isArray(freshData)) {
+            freshData.forEach(item => { evalsMap[item.subject_id] = item; });
+          }
+          setAllStudentsEvalsMap(prev => ({ ...prev, [selectedStudentId]: evalsMap }));
         }
-      };
-    });
+      }
+    } catch (err) {
+      console.error('Error saving evaluations:', err);
+    }
   };
-
-  const selectedStudent = rows.find(r => r.id === formData.id);
-  const studentFullName = selectedStudent ? `${selectedStudent.first_name || ''} ${selectedStudent.last_name || ''}`.trim() : '';
 
   const searchedGridRows = (rows || []).filter(row => {
     const query = gridSearchTerm.toLowerCase();
     const fullName = `${row.first_name || ''} ${row.last_name || ''}`.toLowerCase();
     const district = (row.district || '').toLowerCase();
-    const idStr = String(row.id || '');
-
-    return fullName.includes(query) || district.includes(query) || idStr.includes(query);
+    return fullName.includes(query) || district.includes(query) || String(row.id).includes(query);
   });
 
-  const getProfSubjectsList = (lecturerKey) => {
-    const prof = professorSubjects.find(p => p.lecturerKey === lecturerKey);
-    return prof ? prof.subjects : [];
-  };
+  const renderProfSummaryJSX = (studentId, profId) => {
+    const studentEvals = allStudentsEvalsMap[studentId] || {};
+    const subjects = getSubjectsForProf(profId);
 
-  // ✨ Helper returning formatted JSX with Green for Yes and Red for No using Subject Labels
-  const renderProfSummaryJSX = (studentId, lecturerKey, sub) => {
-    const studentEvals = studentEvaluationsMap[studentId] || {};
-    const lecturerObj = studentEvals[lecturerKey] || {};
+    if (subjects.length === 0) return <span style={{ color: '#94a3b8' }}>No subjects</span>;
 
-    const subjectKey = sub.key;
-    const subjectLabel = sub.label || sub.name || sub.key;
+    return subjects.map(sub => {
+      const ev = studentEvals[sub.subject_id] || {};
+      const ex = ev.exam ? 'Yes' : 'No';
+      const n = ev.notes ? 'Yes' : 'No';
+      const cl = ev.classes ? 'Yes' : 'No';
+      const p = ev.permissions || '0';
+      const vid = ev.video_file_name ? ev.video_file_name : 'None';
 
-    const ex = lecturerObj[`${subjectKey}Exam`] ? 'Yes' : 'No';
-    const n = lecturerObj[`${subjectKey}Notes`] ? 'Yes' : 'No';
-    const cl = lecturerObj[`${subjectKey}Classes`] ? 'Yes' : 'No';
-    const p = lecturerObj[`${subjectKey}Permissions`] || '0';
-
-    const renderValBadge = (val) => (
-      <span style={{ 
-        color: val === 'Yes' ? '#16a34a' : '#dc2626', 
-        fontWeight: 'bold' 
-      }}>
-        [{val}]
-      </span>
-    );
-
-    return (
-      <div key={subjectKey} style={{ marginBottom: '4px' }}>
-        <strong>{subjectLabel}:</strong> Ex:{renderValBadge(ex)} N:{renderValBadge(n)} Cl:{renderValBadge(cl)} P:{p}
-      </div>
-    );
-  };
-
-  const renderProfSummaryTextPlain = (studentId, lecturerKey, sub) => {
-    const studentEvals = studentEvaluationsMap[studentId] || {};
-    const lecturerObj = studentEvals[lecturerKey] || {};
-
-    const subjectKey = sub.key;
-    const subjectLabel = sub.label || sub.name || sub.key;
-
-    const ex = lecturerObj[`${subjectKey}Exam`] ? 'Yes' : 'No';
-    const n = lecturerObj[`${subjectKey}Notes`] ? 'Yes' : 'No';
-    const cl = lecturerObj[`${subjectKey}Classes`] ? 'Yes' : 'No';
-    const p = lecturerObj[`${subjectKey}Permissions`] || '0';
-
-    return `${subjectLabel}: Ex:[${ex}] N:[${n}] Cl:[${cl}] P:${p}`;
+      return (
+        <div key={sub.subject_id} style={{ marginBottom: '6px', fontSize: '0.78rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}>
+          <strong>{sub.subject_label}</strong><br/>
+          Ex:<span style={{ color: ex === 'Yes' ? '#16a34a' : '#dc2626', fontWeight: 'bold' }}>[{ex}]</span> N:<span style={{ color: n === 'Yes' ? '#16a34a' : '#dc2626', fontWeight: 'bold' }}>[{n}]</span> Cl:<span style={{ color: cl === 'Yes' ? '#16a34a' : '#dc2626', fontWeight: 'bold' }}>[{cl}]</span> P:{p}<br/>
+          <span style={{ color: ev.video_file_name ? '#16a34a' : '#94a3b8' }} title={vid}>Vid: {vid}</span>
+        </div>
+      );
+    });
   };
 
   const exportSectionToPDF = () => {
@@ -154,14 +180,29 @@ export default function AcademicEvaluationsScreen({
     doc.setFontSize(14);
     doc.text('CBC-BTC Manager - Academic Records Summary', 14, 12);
 
-    const tableColumns = ['ID', 'Student Name', 'District', 'Prof Stephen Evals', 'Prof Rajshekar Evals', 'Prof Sampath Evals'];
+    const tableColumns = ['ID', 'Student Name', 'District', ...professorsList.map(p => p.lecturer_name)];
+    
     const tableRows = searchedGridRows.map(row => [
       row.id,
       `${row.first_name || ''} ${row.last_name || ''}`,
       row.district || 'N/A',
-      getProfSubjectsList('stephen').map(sub => renderProfSummaryTextPlain(row.id, 'stephen', sub)).join('\n'),
-      getProfSubjectsList('rajshekar').map(sub => renderProfSummaryTextPlain(row.id, 'rajshekar', sub)).join('\n'),
-      getProfSubjectsList('sampath').map(sub => renderProfSummaryTextPlain(row.id, 'sampath', sub)).join('\n')
+      ...professorsList.map(prof => {
+        const studentEvals = allStudentsEvalsMap[row.id] || {};
+        const subjects = getSubjectsForProf(prof.professor_id);
+
+        if (subjects.length === 0) return 'No subjects';
+
+        return subjects.map(sub => {
+          const ev = studentEvals[sub.subject_id] || {};
+          const ex = ev.exam ? 'Yes' : 'No';
+          const n = ev.notes ? 'Yes' : 'No';
+          const cl = ev.classes ? 'Yes' : 'No';
+          const p = ev.permissions || '0';
+          const vid = ev.video_file_name || 'None';
+
+          return `${sub.subject_label}: Ex:[${ex}] N:[${n}] Cl:[${cl}] P:${p} Vid:${vid}`;
+        }).join('\n');
+      })
     ]);
 
     autoTable(doc, { 
@@ -172,69 +213,153 @@ export default function AcademicEvaluationsScreen({
       styles: { fontSize: 7, cellPadding: 3 },
       headStyles: { fillColor: [37, 99, 235] }
     });
+    
     doc.save('Academic_Records_Summary.pdf');
-  };
-
-  const [collapsedPanels, setCollapsedPanels] = useState({});
-  const togglePanel = (lecturerKey) => {
-    setCollapsedPanels(prev => ({ ...prev, [lecturerKey]: !prev[lecturerKey] }));
   };
 
   return (
     <div className="screen-section">
       <div className="section-intro">
         <h2>Section 2: Academic Evaluations</h2>
-        <p className="subtitle">Manage student exams, notes, classes, and coursework evaluations across all modules.</p>
+        <p className="subtitle">Manage student evaluations with column layouts, permissions limit (0-20), and video uploads.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="form-card">
         <div style={{ marginBottom: '15px' }}>
           <StudentSelectDropdown 
             rows={rows} 
-            selectedStudentId={formData.id ? String(formData.id) : ''} 
+            selectedStudentId={selectedStudentId || ''} 
             onStudentChange={handleStudentSelect} 
           />
         </div>
 
-        <div style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '20px' }}>
-          💡 Target Student: <strong style={{ color: formData.id ? '#2563eb' : '#64748b' }}>
-            {formData.id ? `ID #${formData.id} - ${studentFullName}` : 'None selected (Evaluation sections locked)'}
-          </strong>
-        </div>
-
-        {!formData.id ? (
-          <div style={{ padding: '30px', background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', textAlign: 'center', color: '#64748b' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#334155' }}>🔒 Academic Evaluations Locked</h4>
-            <p style={{ margin: 0, fontSize: '0.9rem' }}>Please select a student above to view or grade their academic progress.</p>
+        {!selectedStudentId ? (
+          <div style={{ padding: '30px', background: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '8px', textAlign: 'center' }}>
+            <h4>🔒 Academic Evaluations Locked</h4>
+            <p>Please select a student above to evaluate.</p>
           </div>
         ) : (
-          <>
-            {professorSubjects.map(prof => (
-              <ProfessorSection 
-                key={prof.lecturerKey} 
-                prof={prof} 
-                isCollapsed={!!collapsedPanels[prof.lecturerKey]}
-                onToggle={togglePanel}
-                formData={formData} 
-                onChange={handleFieldChange} 
-              />
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {professorsList.map(prof => {
+              const profSubs = professorSubjects.filter(sub => String(sub.professor_id) === String(prof.professor_id));
+              if (profSubs.length === 0) return null;
 
-            <button 
-              type="submit" 
-              className="save-btn" 
-              style={{ marginTop: '25px', backgroundColor: '#2563eb', padding: '12px 20px', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              Save Academic Evaluations [ID: {formData.id}]
+              return (
+                <div key={prof.professor_id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                  <h3 style={{ margin: '0 0 14px 0', fontSize: '1rem', color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px' }}>
+                    Lecturer: {prof.lecturer_name}
+                  </h3>
+
+                  {/* Subject Columns Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                    {profSubs.map(sub => {
+                      const ev = studentEvaluations[sub.subject_id] || {
+                        exam: false,
+                        notes: false,
+                        classes: false,
+                        permissions: '0',
+                        video_file_name: ''
+                      };
+
+                      return (
+                        <div key={sub.subject_id} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+                          
+                          {/* Subject Name (Key Hidden) */}
+                          <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.95rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+                            {sub.subject_label}
+                          </div>
+
+                          {/* Controls: Exam, Notes, Classes, Permissions */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!ev.exam}
+                                onChange={(e) => handleFieldChange(sub.subject_id, 'exam', e.target.checked)}
+                              /> Exam
+                            </label>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!ev.notes}
+                                onChange={(e) => handleFieldChange(sub.subject_id, 'notes', e.target.checked)}
+                              /> Notes
+                            </label>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!ev.classes}
+                                onChange={(e) => handleFieldChange(sub.subject_id, 'classes', e.target.checked)}
+                              /> Classes
+                            </label>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
+                              <span>Perm (0-20):</span>
+                              <input 
+                                type="number"
+                                min="0"
+                                max="20"
+                                value={ev.permissions}
+                                onChange={(e) => handleFieldChange(sub.subject_id, 'permissions', e.target.value)}
+                                style={{ width: '45px', textAlign: 'center', padding: '3px', border: '1px solid #cbd5e1', borderRadius: '4px', fontWeight: 'bold' }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Video Upload Button & Active File Preview */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', paddingTop: '6px', borderTop: '1px dashed #e2e8f0' }}>
+                            <label style={{ 
+                              background: '#2563eb', 
+                              color: '#fff', 
+                              padding: '5px 10px', 
+                              borderRadius: '4px', 
+                              fontSize: '0.78rem', 
+                              cursor: 'pointer',
+                              fontWeight: '500',
+                              display: 'inline-block',
+                              textAlign: 'center'
+                            }}>
+                              📁 Upload Video
+                              <input 
+                                type="file" 
+                                accept="video/*"
+                                style={{ display: 'none' }} 
+                                onChange={(e) => handleFileUpload(sub.subject_id, e)}
+                              />
+                            </label>
+
+                            {ev.video_file_name ? (
+                              <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '600', background: '#dcfce7', padding: '3px 6px', borderRadius: '4px', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={ev.video_file_name}>
+                                ✓ {ev.video_file_name}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                No video selected
+                              </span>
+                            )}
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            <button type="submit" style={{ marginTop: '10px', backgroundColor: '#2563eb', padding: '12px 20px', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+              Save Academic Evaluations [ID: {selectedStudentId}]
             </button>
-          </>
+          </div>
         )}
       </form>
 
-      {/* Summary Table */}
+      {/* Summary Table Grid & Search */}
       <div style={{ marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '15px' }}>
-          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic Records Summary </h3>
+          <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem' }}>Academic Records Summary Grid</h3>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <input 
@@ -274,99 +399,50 @@ export default function AcademicEvaluationsScreen({
                 boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
               }}
             >
-              📥 Export Table to PDF
+              📥 Download PDF
             </button>
           </div>
         </div>
 
-        <div style={{ 
-          background: '#ffffff', 
-          borderRadius: '12px', 
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', 
-          border: '1px solid #e2e8f0',
-          overflow: 'hidden'
-        }}>
+        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1', color: '#1e293b' }}>
-                  <th style={{ padding: '14px 16px', fontWeight: 'bold' }}>ID</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 'bold' }}>Name</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 'bold' }}>District</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 'bold' }}>Prof Stephen Suresh Babu</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 'bold' }}>Prof Rajshekar Sir</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 'bold' }}>Prof Sampath Kumar</th>
-                  <th style={{ padding: '14px 16px', fontWeight: 'bold', textAlign: 'center' }}>Action</th>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
+                  <th style={{ padding: '14px' }}>ID</th>
+                  <th style={{ padding: '14px' }}>Student Name</th>
+                  <th style={{ padding: '14px' }}>District</th>
+                  {professorsList.map(prof => (
+                    <th key={prof.professor_id} style={{ padding: '14px' }}>{prof.lecturer_name}</th>
+                  ))}
+                  <th style={{ padding: '14px', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {searchedGridRows && searchedGridRows.length > 0 ? (
-                  searchedGridRows.map((row, idx) => (
-                    <tr 
-                      key={row.id} 
-                      style={{ 
-                        borderBottom: '1px solid #f1f5f9',
-                        transition: 'background-color 0.2s ease',
-                        backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = idx % 2 === 0 ? '#ffffff' : '#fafafa'}
-                    >
-                      <td style={{ padding: '16px', color: '#64748b', fontWeight: 600, verticalAlign: 'top' }}>
-                        <span style={{ background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem' }}>#{row.id}</span>
-                      </td>
-                      <td style={{ padding: '16px', color: '#0f172a', fontWeight: 600, wordBreak: 'break-word', maxWidth: '160px', verticalAlign: 'top' }}>
-                        {row.first_name} {row.last_name}
-                      </td>
-                      <td style={{ padding: '16px', color: '#475569', textTransform: 'capitalize', verticalAlign: 'top' }}>
-                        {row.district || 'N/A'}
-                      </td>
-                      
-                      {/* Prof Stephen Evals */}
-                      <td style={{ padding: '16px', color: '#334155', verticalAlign: 'top', lineHeight: '1.5' }}>
-                        {getProfSubjectsList('stephen').map(sub => renderProfSummaryJSX(row.id, 'stephen', sub))}
-                      </td>
-
-                      {/* Prof Rajshekar Evals */}
-                      <td style={{ padding: '16px', color: '#334155', verticalAlign: 'top', lineHeight: '1.5' }}>
-                        {getProfSubjectsList('rajshekar').map(sub => renderProfSummaryJSX(row.id, 'rajshekar', sub))}
-                      </td>
-
-                      {/* Prof Sampath Evals */}
-                      <td style={{ padding: '16px', color: '#334155', verticalAlign: 'top', lineHeight: '1.5' }}>
-                        {getProfSubjectsList('sampath').map(sub => renderProfSummaryJSX(row.id, 'sampath', sub))}
-                      </td>
-
-                      <td style={{ padding: '16px', textAlign: 'center', verticalAlign: 'top' }}>
-                        <button 
-                          type="button"
-                          onClick={() => handleEdit(row, 'academics')} 
-                          style={{ 
-                            padding: '8px 16px', 
-                            background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
-                            color: '#fff', 
-                            border: 'none', 
-                            borderRadius: '6px', 
-                            cursor: 'pointer', 
-                            fontWeight: '600',
-                            fontSize: '0.82rem',
-                            boxShadow: '0 2px 4px rgba(217, 119, 6, 0.2)',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                        >
+                {searchedGridRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={professorsList.length + 4} style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                      No student records found matching your search.
+                    </td>
+                  </tr>
+                ) : (
+                  searchedGridRows.map(row => (
+                    <tr key={row.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '16px', verticalAlign: 'top' }}>#{row.id}</td>
+                      <td style={{ padding: '16px', verticalAlign: 'top', fontWeight: '600' }}>{row.first_name} {row.last_name}</td>
+                      <td style={{ padding: '16px', verticalAlign: 'top' }}>{row.district || 'N/A'}</td>
+                      {professorsList.map(prof => (
+                        <td key={prof.professor_id} style={{ padding: '16px', verticalAlign: 'top' }}>
+                          {renderProfSummaryJSX(row.id, prof.professor_id)}
+                        </td>
+                      ))}
+                      <td style={{ padding: '16px', verticalAlign: 'top', textAlign: 'center' }}>
+                        <button type="button" onClick={() => handleEdit(row, 'academics')} style={{ padding: '6px 12px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
                           Evaluate
                         </button>
                       </td>
                     </tr>
                   ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontStyle: 'italic' }}>
-                      No matching academic records found.
-                    </td>
-                  </tr>
                 )}
               </tbody>
             </table>
