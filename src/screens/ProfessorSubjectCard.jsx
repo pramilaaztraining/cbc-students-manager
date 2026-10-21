@@ -9,6 +9,13 @@ export default function ProfessorSubjectCard({
   isCollapsed, 
   onToggle 
 }) {
+  const handleFileUpload = (subjectId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      onChange(subjectId, 'video_file_name', file.name);
+    }
+  };
+
   return (
     <div className="prof-subject-card">
       {/* Card Header */}
@@ -31,84 +38,92 @@ export default function ProfessorSubjectCard({
           {subjects.length === 0 ? (
             <p className="no-subjects-text">No subjects assigned to this professor.</p>
           ) : (
-            subjects.map(sub => {
-              const ev = evaluationsMap[sub.subject_id] || {
-                exam: false,
-                notes: false,
-                classes: false,
-                permissions: '0',
-                video_file_name: ''
-              };
+            <div className="subjects-column-grid">
+              {subjects.map(sub => {
+                const ev = evaluationsMap[sub.subject_id] || {
+                  exam: false,
+                  notes: false,
+                  classes: false,
+                  permissions: '0',
+                  video_file_name: ''
+                };
 
-              return (
-                <div key={sub.subject_id} className="subject-evaluation-row">
-                  <div className="subject-header-bar">
-                    <span className="subject-title">{sub.subject_label}</span>
-                    <span className="subject-code-tag">{sub.subject_key}</span>
-                  </div>
+                return (
+                  <div key={sub.subject_id} className="subject-column-card">
+                    {/* Subject Name (Key Hidden) */}
+                    <div className="subject-column-title">
+                      {sub.subject_label}
+                    </div>
 
-                  <div className="evaluation-controls-grid">
-                    {/* Checkboxes Group */}
-                    <div className="checkbox-group-card">
-                      <label className="checkbox-label">
+                    {/* Controls: Exam, Notes, Classes, Permissions */}
+                    <div className="subject-controls-inline">
+                      <label className="control-label">
                         <input 
                           type="checkbox"
                           checked={!!ev.exam}
                           onChange={(e) => onChange(sub.subject_id, 'exam', e.target.checked)}
-                        />
-                        <span>Exam</span>
+                        /> 
+                        Exam
                       </label>
 
-                      <label className="checkbox-label">
+                      <label className="control-label">
                         <input 
                           type="checkbox"
                           checked={!!ev.notes}
                           onChange={(e) => onChange(sub.subject_id, 'notes', e.target.checked)}
-                        />
-                        <span>Notes</span>
+                        /> 
+                        Notes
                       </label>
 
-                      <label className="checkbox-label">
+                      <label className="control-label">
                         <input 
                           type="checkbox"
                           checked={!!ev.classes}
                           onChange={(e) => onChange(sub.subject_id, 'classes', e.target.checked)}
-                        />
-                        <span>Classes</span>
+                        /> 
+                        Classes
                       </label>
-                    </div>
 
-                    {/* Permissions Input (0-20) */}
-                    <div className="input-field-block">
-                      <label>Permissions <small>(0-20)</small></label>
-                      <input 
-                        type="number"
-                        min="0"
-                        max="20"
-                        value={ev.permissions !== undefined ? ev.permissions : '0'}
-                        onChange={(e) => onChange(sub.subject_id, 'permissions', e.target.value)}
-                        className="styled-number-input"
-                      />
-                    </div>
-
-                    {/* Video File Input */}
-                    <div className="input-field-block video-block">
-                      <label>Video File Reference</label>
-                      <div className="input-with-icon">
-                        <span className="input-icon">📹</span>
+                      <div className="permissions-wrapper">
+                        <span>Perm (0-20):</span>
                         <input 
-                          type="text"
-                          placeholder="e.g., session_01.mp4"
-                          value={ev.video_file_name || ''}
-                          onChange={(e) => onChange(sub.subject_id, 'video_file_name', e.target.value)}
-                          className="styled-text-input"
+                          type="number"
+                          min="0"
+                          max="20"
+                          value={ev.permissions}
+                          onChange={(e) => onChange(sub.subject_id, 'permissions', e.target.value)}
+                          className="styled-number-input"
                         />
                       </div>
                     </div>
+
+                    {/* Video Upload Button & Active File Preview */}
+                    <div className="video-upload-row">
+                      <label className="upload-file-btn">
+                        📁 Upload Video
+                        <input 
+                          type="file" 
+                          accept="video/*"
+                          style={{ display: 'none' }} 
+                          onChange={(e) => handleFileUpload(sub.subject_id, e)}
+                        />
+                      </label>
+
+                      {ev.video_file_name ? (
+                        <span className="file-selected-badge" title={ev.video_file_name}>
+                          ✓ {ev.video_file_name}
+                        </span>
+                      ) : (
+                        <span className="no-file-text">
+                          No video selected
+                        </span>
+                      )}
+                    </div>
+
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       )}
