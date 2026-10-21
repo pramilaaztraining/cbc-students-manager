@@ -30,7 +30,6 @@ export default function AcademicEvaluationsScreen({
           const res = await fetch(`http://localhost:5000/api/evaluations/${row.id}`);
           if (res.ok) {
             const data = await res.json();
-            // Filter out any accidental stay_details if present
             delete data.stay_details;
             setStudentEvaluationsMap(prev => ({ ...prev, [row.id]: data }));
           }
@@ -101,10 +100,18 @@ export default function AcademicEvaluationsScreen({
     return fullName.includes(query) || district.includes(query) || idStr.includes(query);
   });
 
-  // ✨ Helper returning formatted JSX with Green for Yes and Red for No
-  const renderProfSummaryJSX = (studentId, lecturerKey, subjectKey) => {
+  const getProfSubjectsList = (lecturerKey) => {
+    const prof = professorSubjects.find(p => p.lecturerKey === lecturerKey);
+    return prof ? prof.subjects : [];
+  };
+
+  // ✨ Helper returning formatted JSX with Green for Yes and Red for No using Subject Labels
+  const renderProfSummaryJSX = (studentId, lecturerKey, sub) => {
     const studentEvals = studentEvaluationsMap[studentId] || {};
     const lecturerObj = studentEvals[lecturerKey] || {};
+
+    const subjectKey = sub.key;
+    const subjectLabel = sub.label || sub.name || sub.key;
 
     const ex = lecturerObj[`${subjectKey}Exam`] ? 'Yes' : 'No';
     const n = lecturerObj[`${subjectKey}Notes`] ? 'Yes' : 'No';
@@ -122,26 +129,24 @@ export default function AcademicEvaluationsScreen({
 
     return (
       <div key={subjectKey} style={{ marginBottom: '4px' }}>
-        <strong>{subjectKey}:</strong> Ex:{renderValBadge(ex)} N:{renderValBadge(n)} Cl:{renderValBadge(cl)} P:{p}
+        <strong>{subjectLabel}:</strong> Ex:{renderValBadge(ex)} N:{renderValBadge(n)} Cl:{renderValBadge(cl)} P:{p}
       </div>
     );
   };
 
-  const renderProfSummaryTextPlain = (studentId, lecturerKey, subjectKey) => {
+  const renderProfSummaryTextPlain = (studentId, lecturerKey, sub) => {
     const studentEvals = studentEvaluationsMap[studentId] || {};
     const lecturerObj = studentEvals[lecturerKey] || {};
+
+    const subjectKey = sub.key;
+    const subjectLabel = sub.label || sub.name || sub.key;
 
     const ex = lecturerObj[`${subjectKey}Exam`] ? 'Yes' : 'No';
     const n = lecturerObj[`${subjectKey}Notes`] ? 'Yes' : 'No';
     const cl = lecturerObj[`${subjectKey}Classes`] ? 'Yes' : 'No';
     const p = lecturerObj[`${subjectKey}Permissions`] || '0';
 
-    return `${subjectKey}: Ex:[${ex}] N:[${n}] Cl:[${cl}] P:${p}`;
-  };
-
-  const getProfSubjectsList = (lecturerKey) => {
-    const prof = professorSubjects.find(p => p.lecturerKey === lecturerKey);
-    return prof ? prof.subjects : [];
+    return `${subjectLabel}: Ex:[${ex}] N:[${n}] Cl:[${cl}] P:${p}`;
   };
 
   const exportSectionToPDF = () => {
@@ -154,9 +159,9 @@ export default function AcademicEvaluationsScreen({
       row.id,
       `${row.first_name || ''} ${row.last_name || ''}`,
       row.district || 'N/A',
-      getProfSubjectsList('stephen').map(sub => renderProfSummaryTextPlain(row.id, 'stephen', sub.key)).join('\n'),
-      getProfSubjectsList('rajshekar').map(sub => renderProfSummaryTextPlain(row.id, 'rajshekar', sub.key)).join('\n'),
-      getProfSubjectsList('sampath').map(sub => renderProfSummaryTextPlain(row.id, 'sampath', sub.key)).join('\n')
+      getProfSubjectsList('stephen').map(sub => renderProfSummaryTextPlain(row.id, 'stephen', sub)).join('\n'),
+      getProfSubjectsList('rajshekar').map(sub => renderProfSummaryTextPlain(row.id, 'rajshekar', sub)).join('\n'),
+      getProfSubjectsList('sampath').map(sub => renderProfSummaryTextPlain(row.id, 'sampath', sub)).join('\n')
     ]);
 
     autoTable(doc, { 
@@ -184,7 +189,6 @@ export default function AcademicEvaluationsScreen({
 
       <form onSubmit={handleSubmit} className="form-card">
         <div style={{ marginBottom: '15px' }}>
-        
           <StudentSelectDropdown 
             rows={rows} 
             selectedStudentId={formData.id ? String(formData.id) : ''} 
@@ -320,17 +324,17 @@ export default function AcademicEvaluationsScreen({
                       
                       {/* Prof Stephen Evals */}
                       <td style={{ padding: '16px', color: '#334155', verticalAlign: 'top', lineHeight: '1.5' }}>
-                        {getProfSubjectsList('stephen').map(sub => renderProfSummaryJSX(row.id, 'stephen', sub.key))}
+                        {getProfSubjectsList('stephen').map(sub => renderProfSummaryJSX(row.id, 'stephen', sub))}
                       </td>
 
                       {/* Prof Rajshekar Evals */}
                       <td style={{ padding: '16px', color: '#334155', verticalAlign: 'top', lineHeight: '1.5' }}>
-                        {getProfSubjectsList('rajshekar').map(sub => renderProfSummaryJSX(row.id, 'rajshekar', sub.key))}
+                        {getProfSubjectsList('rajshekar').map(sub => renderProfSummaryJSX(row.id, 'rajshekar', sub))}
                       </td>
 
                       {/* Prof Sampath Evals */}
                       <td style={{ padding: '16px', color: '#334155', verticalAlign: 'top', lineHeight: '1.5' }}>
-                        {getProfSubjectsList('sampath').map(sub => renderProfSummaryJSX(row.id, 'sampath', sub.key))}
+                        {getProfSubjectsList('sampath').map(sub => renderProfSummaryJSX(row.id, 'sampath', sub))}
                       </td>
 
                       <td style={{ padding: '16px', textAlign: 'center', verticalAlign: 'top' }}>

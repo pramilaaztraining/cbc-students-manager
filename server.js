@@ -261,6 +261,23 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+
+    // GET: Fetch all professors
+if (url.pathname === '/api/professors' && req.method === 'GET') {
+  const result = await pool.query('SELECT professor_id, lecturer_key, lecturer_name FROM professors;');
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(result.rows));
+  return;
+}
+
+// GET: Fetch all professor subjects
+if (url.pathname === '/api/professor-subjects' && req.method === 'GET') {
+  const result = await pool.query('SELECT subject_id, professor_id, subject_key, subject_label FROM professor_subjects;');
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(result.rows));
+  return;
+}
+
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Endpoint not found' }));
 
