@@ -34,14 +34,6 @@
   margin-bottom: 12px;
 }
 
-.dropdown-label {
-  display: block;
-  font-weight: 600;
-  color: #1e293b;
-  font-size: 0.9rem;
-  margin-bottom: 6px;
-}
-
 .target-student-indicator {
   display: flex;
   align-items: center;
@@ -146,6 +138,12 @@
   border: 1px solid #cbd5e1;
   font-size: 0.85rem;
   box-sizing: border-box;
+  outline: none;
+}
+
+.text-input:focus,
+.textarea-input:focus {
+  border-color: #2563eb;
 }
 
 .checkbox-group {
@@ -171,6 +169,11 @@
   font-weight: bold;
   cursor: pointer;
   font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.save-btn:hover {
+  background-color: #1d4ed8;
 }
 
 .summary-container {
@@ -225,7 +228,7 @@
   background: #10b981;
   color: #fff;
   border: none;
-  borderRadius: 6px;
+  border-radius: 6px;
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
@@ -264,6 +267,43 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.student-name-cell {
+  font-weight: 600;
+}
+
+.notes-cell {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.total-badge {
+  color: #2563eb;
+  font-weight: bold;
+}
+
+.table-footer-row td {
+  background: #f8fafc;
+  font-weight: bold;
+  color: #1e293b;
+  border-top: 2px solid #cbd5e1;
+  text-align: right;
+  padding: 14px;
+}
+
+
+
+.no-data-cell {
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+}
+
+.action-cell {
+  text-align: center;
+}
+
 .evaluate-btn {
   padding: 6px 12px;
   background: #f59e0b;
@@ -272,4 +312,37 @@
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
+}
+
+/* Eye-catching Summary Footer Styles */
+.table-footer-row td {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  font-weight: 700;
+  color: #1e3a8a;
+  border-top: 2px solid #3b82f6;
+  text-align: right;
+  padding: 18px 20px;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+}
+
+.table-footer-total {
+  color: #ffffff !important;
+  font-size: 1.05rem !important;
+  text-align: left;
+  padding: 18px 20px;
+}
+
+.grand-total-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  padding: 6px 16px;
+  border-radius: 30px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.5px;
 }

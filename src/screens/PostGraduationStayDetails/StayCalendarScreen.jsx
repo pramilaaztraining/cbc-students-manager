@@ -140,7 +140,6 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
           setAllStaysMap(prev => ({ ...prev, [selectedStudentId]: freshData }));
         }
 
-        // RESET DROPDOWN AND LOCK SCREEN AFTER SAVE
         setSelectedStudentId(null);
         setStayData({
           stay_start_date_time: '',
@@ -168,15 +167,32 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
     return fullName.includes(query) || district.includes(query) || String(row.id).includes(query);
   });
 
+  const calculateRowTotal = (stay) => {
+    let parentCount = 0;
+    if (stay.family_parents) {
+      parentCount = stay.family_parents.split(',').filter(s => s.trim().length > 0).length;
+    }
+    const children = Number(stay.children_count) || 0;
+    const brothers = Number(stay.brothers_count) || 0;
+    const sisters = Number(stay.sisters_count) || 0;
+    return parentCount + children + brothers + sisters;
+  };
+
+  const grandTotalMembers = searchedGridRows.reduce((sum, row) => {
+    const stay = allStaysMap[row.id] || {};
+    return sum + calculateRowTotal(stay);
+  }, 0);
+
   const exportSectionToPDF = () => {
     const doc = new jsPDF('landscape');
     doc.setFontSize(14);
     doc.text('CBC-BTC Manager - Student Stays Summary', 14, 12);
 
-    const tableColumns = ['ID', 'Student Name', 'Start Time', 'End Time', 'Family / Parents', 'Children', 'Brothers', 'Sisters', 'Notes'];
+    const tableColumns = ['ID', 'Student Name', 'Start Time', 'End Time', 'Family / Parents', 'Children', 'Brothers', 'Sisters', 'Total Members', 'Notes'];
     
     const tableRows = searchedGridRows.map(row => {
       const stay = allStaysMap[row.id] || {};
+      const rowTotal = calculateRowTotal(stay);
       return [
         row.id,
         `${row.first_name || ''} ${row.last_name || ''}`,
@@ -186,6 +202,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
         stay.children_count ?? 0,
         stay.brothers_count ?? 0,
         stay.sisters_count ?? 0,
+        rowTotal,
         stay.stay_notes || 'N/A'
       ];
     });
@@ -205,7 +222,6 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
   return (
     <div className="screen-section">
       
-      {/* Section Header */}
       <div className="section-intro">
         <h2>Section 3: Post-Grad Stay & Calendar</h2>
         <p className="subtitle">Manage campus stay windows, accompanying family members, and calendar tracking.</p>
@@ -213,7 +229,6 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
 
       <form onSubmit={handleSubmit} className="form-card">
         
-        {/* Student Dropdown */}
         <div className="dropdown-container">
           <StudentSelectDropdown 
             rows={rows} 
@@ -222,7 +237,6 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
           />
         </div>
 
-        {/* Target Student Status Indicator */}
         <div className="target-student-indicator">
           {selectedStudentId && selectedStudentObj ? (
             <span className="target-student-active">
@@ -236,20 +250,13 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
         </div>
 
         {!selectedStudentId ? (
-          /* Lock Screen Card */
           <div className="lock-screen-card">
-            <h4 className="lock-screen-title">
-              🔓 Stay Configuration Locked
-            </h4>
-            <p className="lock-screen-desc">
-              Please select a student above to configure stay window, family details, and unlock editing.
-            </p>
+            <h4 className="lock-screen-title">🔓 Stay Configuration Locked</h4>
+            <p className="lock-screen-desc">Please select a student above to configure stay window, family details, and unlock editing.</p>
           </div>
         ) : (
-          /* Unlocked Form Fields */
           <div className="unlocked-form-content">
             
-            {/* Stay & Time Window Card */}
             <div className="form-sub-card">
               <h3 className="form-sub-title">
                 Post-Graduation Campus Stay & Time Window <span className="telugu-subtext">(గ్రాడ్యుయేషన్ వసతి & సమయ నియంత్రణ)</span>
@@ -257,9 +264,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
 
               <div className="grid-2-cols">
                 <div>
-                  <label className="field-label">
-                    From Date & Time <span className="required-star">*</span>
-                  </label>
+                  <label className="field-label">From Date & Time <span className="required-star">*</span></label>
                   <input 
                     type="datetime-local"
                     value={stayData.stay_start_date_time}
@@ -270,9 +275,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                 </div>
 
                 <div>
-                  <label className="field-label">
-                    To Date & Time <span className="required-star">*</span>
-                  </label>
+                  <label className="field-label">To Date & Time <span className="required-star">*</span></label>
                   <input 
                     type="datetime-local"
                     value={stayData.stay_end_date_time}
@@ -284,18 +287,14 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
               </div>
             </div>
 
-            {/* Accompanying Family Members Staying Card */}
             <div className="form-sub-card">
               <h3 className="form-sub-title">
                 Accompanying Family Members Staying <span className="telugu-subtext">(వసతిలో ఉండే కుటుంబ సభ్యులు)</span>
               </h3>
 
               <div className="grid-4-cols">
-                
                 <div>
-                  <label className="field-label">
-                    Parents / Guardian:
-                  </label>
+                  <label className="field-label">Parents / Guardian:</label>
                   <div className="checkbox-group">
                     <label className="checkbox-label">
                       <input 
@@ -324,9 +323,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                 </div>
 
                 <div>
-                  <label className="field-label">
-                    Children:
-                  </label>
+                  <label className="field-label">Children:</label>
                   <input 
                     type="number"
                     min="0"
@@ -337,9 +334,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                 </div>
 
                 <div>
-                  <label className="field-label">
-                    Brothers:
-                  </label>
+                  <label className="field-label">Brothers:</label>
                   <input 
                     type="number"
                     min="0"
@@ -350,9 +345,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                 </div>
 
                 <div>
-                  <label className="field-label">
-                    Sisters:
-                  </label>
+                  <label className="field-label">Sisters:</label>
                   <input 
                     type="number"
                     min="0"
@@ -361,15 +354,11 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                     className="text-input"
                   />
                 </div>
-
               </div>
             </div>
 
-            {/* Stay Notes */}
             <div className="form-sub-card">
-              <label className="field-label">
-                Stay Notes & Special Requirements
-              </label>
+              <label className="field-label">Stay Notes & Special Requirements</label>
               <textarea 
                 rows="3"
                 value={stayData.stay_notes}
@@ -404,15 +393,9 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
               className="grid-search-input"
             />
 
-            <span className="records-badge">
-              Records: {searchedGridRows.length}
-            </span>
+            <span className="records-badge">Records: {searchedGridRows.length}</span>
 
-            <button 
-              type="button"
-              onClick={exportSectionToPDF}
-              className="pdf-btn"
-            >
+            <button type="button" onClick={exportSectionToPDF} className="pdf-btn">
               📥 Download PDF
             </button>
           </div>
@@ -430,6 +413,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                   <th>Family / Parents</th>
                   <th>Children</th>
                   <th>Siblings (B/S)</th>
+                  <th>Total Members</th>
                   <th>Notes</th>
                   <th style={{ textAlign: 'center' }}>Action</th>
                 </tr>
@@ -437,31 +421,29 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
               <tbody>
                 {searchedGridRows.length === 0 ? (
                   <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                    <td colSpan="10" className="no-data-cell">
                       No student records found matching your search.
                     </td>
                   </tr>
                 ) : (
                   searchedGridRows.map(row => {
                     const stay = allStaysMap[row.id] || {};
+                    const rowTotal = calculateRowTotal(stay);
                     return (
                       <tr key={row.id}>
                         <td>#{row.id}</td>
-                        <td style={{ fontWeight: '600' }}>{row.first_name} {row.last_name}</td>
+                        <td className="student-name-cell">{row.first_name} {row.last_name}</td>
                         <td>{stay.stay_start_date_time ? new Date(stay.stay_start_date_time).toLocaleString() : 'N/A'}</td>
                         <td>{stay.stay_end_date_time ? new Date(stay.stay_end_date_time).toLocaleString() : 'N/A'}</td>
                         <td>{stay.family_parents || 'N/A'}</td>
                         <td>{stay.children_count ?? 0}</td>
                         <td>B: {stay.brothers_count ?? 0} / S: {stay.sisters_count ?? 0}</td>
-                        <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={stay.stay_notes}>
+                        <td><span className="total-badge">{rowTotal}</span></td>
+                        <td className="notes-cell" title={stay.stay_notes}>
                           {stay.stay_notes || 'N/A'}
                         </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <button 
-                            type="button" 
-                            onClick={() => handleEvaluateClick(row)} 
-                            className="evaluate-btn"
-                          >
+                        <td className="action-cell">
+                          <button type="button" onClick={() => handleEvaluateClick(row)} className="evaluate-btn">
                             Evaluate
                           </button>
                         </td>
@@ -470,6 +452,18 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                   })
                 )}
               </tbody>
+              {searchedGridRows.length > 0 && (
+                <tfoot>
+                  <tr className="table-footer-row">
+                    <td colSpan="7">👥 Grand Total Accompanying Members:</td>
+                    <td colSpan="3" className="table-footer-total">
+                      <span className="grand-total-pill">
+                        ✨ {grandTotalMembers} Members
+                      </span>
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </div>
