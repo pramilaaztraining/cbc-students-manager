@@ -64,6 +64,31 @@ export default function LeadershipScreen() {
         </div>
       </div>
 
+      {/* Leader 1: Prof. N. SAMPATH KUMAR */}
+      <div className="leader-profile-card">
+        <div className="leader-card-header">
+          <div className="leader-avatar">SB</div>
+          <div className="leader-title-area">
+            <span className="leader-badge">FACULTY</span>
+            <h2 className="leader-name">Lecture by: Prof. N. Sampath Kumar</h2>
+            <p className="leader-short-bio">M.Th; M.Tech; M.Div</p>
+            <p className="leader-short-bio">Contact Phone: +91 8074852725</p>
+          </div>
+        </div>
+
+        <div className="leader-quote-box">
+          <p>
+            <em>"Prof. N. Sampath Kumar brings extensive experience in biblical studies and instruction, guiding students through rigorous curriculum studies and spiritual formation."</em>
+          </p>
+        </div>
+
+        <div className="leader-bio-content">
+          <p>
+            Dedicated to faithful mentoring, providing students with a deep foundation in scripture, sound theology, and practical ministry training.
+          </p>
+        </div>
+      </div>
+
     </div>
   );
 }

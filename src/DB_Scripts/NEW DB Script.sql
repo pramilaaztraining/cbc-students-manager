@@ -76,6 +76,17 @@ CREATE TABLE student_evaluations (
     CONSTRAINT unique_student_subject UNIQUE (student_id, subject_id)
 );
 
+-- store the new Practical (Student Academic Evaluations)- Morning Devotion data (preaching, hosting, singing, and attendance_score).
+CREATE TABLE IF NOT EXISTS student_devotions (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER UNIQUE REFERENCES students(id) ON DELETE CASCADE,
+    preaching BOOLEAN DEFAULT FALSE,
+    hosting BOOLEAN DEFAULT FALSE,
+    singing BOOLEAN DEFAULT FALSE,
+    attendance_score INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Student Stays & Accommodation Table (Cascades if student is deleted)
 CREATE TABLE student_stays (
     id SERIAL PRIMARY KEY,

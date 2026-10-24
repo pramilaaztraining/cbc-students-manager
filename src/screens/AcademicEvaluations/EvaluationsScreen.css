@@ -1,0 +1,94 @@
+/* Evaluations Screen & Practical Sub-Section Styles */
+.evaluations-container {
+  padding: 10px;
+  font-family: sans-serif;
+}
+
+.devotion-practical-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 30px;
+  margin-bottom: 25px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.devotion-practical-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 5px 0;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 10px;
+}
+
+.devotion-practical-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.devotion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 25px;
+  align-items: start;
+}
+
+.devotion-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.devotion-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.devotion-attendance-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.devotion-attendance-box label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.devotion-attendance-input {
+  width: 100%;
+  max-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+  background: #fff;
+}
+
+.devotion-attendance-input:focus {
+  border-color: #2563eb;
+}
+
+.save-eval-btn {
+  background-color: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-eval-btn:hover {
+  background-color: #1d4ed8;
+}

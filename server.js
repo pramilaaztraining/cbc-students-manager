@@ -293,6 +293,103 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+
+    const XLSX = require('xlsx');
+
+// ----------------------------------------------------
+// 11. POST: Bulk upload students from Excel
+// ----------------------------------------------------
+if (url.pathname === '/api/students/upload' && req.method === 'POST') {
+  // For raw file uploads using multipart/form-data, 
+  // you can parse the buffer or use a lightweight parser like 'formidable' or 'multer'.
+  
+  // Example logic once you parse the uploaded file buffer into JSON:
+  // (Assuming 'parsedStudents' is an array of student objects extracted from the Excel sheet)
+  
+  const parsedStudents = []; // Extracted from Excel rows
+
+  for (const student of parsedStudents) {
+    const { first_name, last_name, district, phone, email, course, batch } = student;
+    
+    const insertQuery = `
+      INSERT INTO students (first_name, last_name, district, phone, email, course, batch)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT DO NOTHING;
+    `;
+    
+    await pool.query(insertQuery, [
+      first_name, 
+      last_name, 
+      district || null, 
+      phone || null, 
+      email || null, 
+      course || null, 
+      batch || null
+    ]);
+  }
+
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ success: true, message: 'Students imported successfully from Excel!' }));
+  return;
+}
+
+
+// ----------------------------------------------------
+// GET: Fetch student devotion details by student ID
+// ----------------------------------------------------
+if (url.pathname.startsWith('/api/student-devotions/') && req.method === 'GET') {
+  const studentId = url.pathname.split('/')[3];
+  try {
+    const result = await pool.query('SELECT * FROM student_devotions WHERE student_id = $1', [studentId]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result.rows[0] || { preaching: false, hosting: false, singing: false, attendance_score: 0 }));
+  } catch (err) {
+    console.error('Error fetching student devotion:', err);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Internal server error' }));
+  }
+  return;
+}
+
+// ----------------------------------------------------
+// PUT/POST: Save or update student devotion details
+// ----------------------------------------------------
+if (url.pathname.startsWith('/api/student-devotions/') && (req.method === 'PUT' || req.method === 'POST')) {
+  const studentId = url.pathname.split('/')[3];
+  let body = '';
+  
+  req.on('data', chunk => { body += chunk; });
+  req.on('end', async () => {
+    try {
+      const data = JSON.parse(body);
+      const { preaching, hosting, singing, attendance_score } = data;
+
+      const upsertQuery = `
+        INSERT INTO student_devotions (student_id, preaching, hosting, singing, attendance_score, updated_at)
+        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+        ON CONFLICT (student_id) 
+        DO UPDATE SET 
+          preaching = EXCLUDED.preaching,
+          hosting = EXCLUDED.hosting,
+          singing = EXCLUDED.singing,
+          attendance_score = EXCLUDED.attendance_score,
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING *;
+      `;
+
+      const result = await pool.query(upsertQuery, [studentId, preaching, hosting, singing, attendance_score]);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, data: result.rows[0] }));
+    } catch (err) {
+      console.error('Error saving student devotion:', err);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Failed to save student devotion details' }));
+    }
+  });
+  return;
+}
+
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Endpoint not found' }));
 

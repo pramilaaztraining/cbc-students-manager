@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { apiFetch } from '../../utils/api';
 import './StudentFormScreen.css';
 
 // 🌟 Reusable Searchable Dropdown Component
@@ -83,9 +85,12 @@ export default function StudentFormScreen({
   rows,
   handleEdit,
   handleDelete,
-  setIsEditing
+  setIsEditing,
+  onRefreshRows // Optional callback function to refresh table data after bulk upload
 }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [bulkFile, setBulkFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const courseOptions = ['BTC', 'M.TH', 'D.TH'];
   const batchOptions = Array.from({ length: 100 }, (_, i) => `Batch ${i + 1}`);
@@ -101,6 +106,58 @@ export default function StudentFormScreen({
       return;
     }
     handleSubmit(e);
+  };
+
+  // 📂 Handle Bulk File Upload & Excel Parsing
+  const handleBulkFileChange = (e) => {
+    setBulkFile(e.target.files[0]);
+  };
+
+  const handleBulkSubmit = async (e) => {
+    e.preventDefault();
+    if (!bulkFile) {
+      alert('Please select an Excel or CSV file first.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        setIsUploading(true);
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        if (!data || data.length === 0) {
+          alert('The uploaded file contains no data rows.');
+          setIsUploading(false);
+          return;
+        }
+
+        const res = await apiFetch('/api/students/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ students: data })
+        });
+
+        if (res.ok) {
+          alert('Successfully imported student records from file!');
+          setBulkFile(null);
+          if (onRefreshRows) onRefreshRows();
+          window.location.reload(); // Refresh to reflect new records
+        } else {
+          alert('Failed to upload students to the database.');
+        }
+      } catch (err) {
+        console.error('Error parsing or uploading file:', err);
+        alert('An error occurred while processing the file.');
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    reader.readAsBinaryString(bulkFile);
   };
 
   const searchedRows = (rows || []).filter(row => {
@@ -147,6 +204,29 @@ export default function StudentFormScreen({
       <div className="section-intro">
         <h2>Section 1: Initial Student Detail Creation</h2>
         <p className="subtitle">Add or edit student demographics, courses, batch details, and profile photos.</p>
+      </div>
+
+      {/* 📁 Bulk Upload Section */}
+      <div className="bulk-upload-section">
+        <div className="bulk-upload-header">
+          <h3>📁 Bulk Upload Students via Excel / CSV</h3>
+          <p>Upload a spreadsheet containing columns: <code>first_name</code>, <code>last_name</code>, <code>district</code>, <code>phone</code>, <code>email</code>, <code>course</code>, <code>batch</code>.</p>
+        </div>
+        <form onSubmit={handleBulkSubmit} className="bulk-upload-controls">
+          <input 
+            type="file" 
+            accept=".xlsx, .xls, .csv" 
+            onChange={handleBulkFileChange} 
+            className="file-input"
+          />
+          <button 
+            type="submit" 
+            className="upload-submit-btn" 
+            disabled={!bulkFile || isUploading}
+          >
+            {isUploading ? 'Uploading...' : 'Upload & Save Students'}
+          </button>
+        </form>
       </div>
 
       <form onSubmit={handleFormSubmit} className="form-card">
@@ -298,7 +378,7 @@ export default function StudentFormScreen({
 
       <div className="directory-section">
         <div className="directory-header">
-          <h3 className="directory-title">Registered Students Directory </h3>
+          <h3 className="directory-title">Registered Students Directory</h3>
           
           <div className="directory-controls">
             <input 
@@ -397,5 +477,5 @@ export default function StudentFormScreen({
         </div>
       </div>
     </div>
-  );
+  ); 
 }
