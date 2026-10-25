@@ -1,0 +1,77 @@
+/* Morning Devotion Section Styles */
+.devotion-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.devotion-title {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  color: #1e293b;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 8px;
+}
+
+.devotion-telugu-text {
+  color: #64748b;
+  font-weight: normal;
+  font-size: 0.8rem;
+}
+
+.devotion-subtitle {
+  margin: 0 0 15px 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.devotion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  align-items: center;
+}
+
+.devotion-checkboxes-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.devotion-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #334155;
+}
+
+.devotion-score-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.devotion-score-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.devotion-score-input {
+  width: 120px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-weight: bold;
+  outline: none;
+}
+
+.devotion-score-input:focus {
+  border-color: #2563eb;
+}
