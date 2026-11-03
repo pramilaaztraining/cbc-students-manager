@@ -55,6 +55,22 @@ INSERT INTO subjects (subject_key, subject_label) VALUES
 ('evangelism', 'Evangelism & Missions')
 ON CONFLICT (subject_key) DO NOTHING;
 
+-- 3. Insert or update any other missing subjects if they don't exist yet
+INSERT INTO subjects (subject_key, subject_label) 
+VALUES 
+  ('pentateuch', 'PENTATEUCH'),
+ ('synoptic', 'Synoptic Gospels'),
+  ('historical_books', 'HISTORICAL BOOKS'),
+('loc', 'LIFFE OF CHRIST' ),  
+  ('acts_letters', 'ACTS & letters'),
+ ( 'poetic','POETIC BOOKS' ),  
+  ('general_epistles', 'GENERAL EPISTLES & REVELATION'),  
+  ('evangelism','EVANGELISM MINISTRY AND MISSIOON' ),
+  ('homiletics', 'HOMELETICS'),
+  ('major_prophets', 'MAJOR PROPHETS')   
+ON CONFLICT (subject_key) 
+DO UPDATE SET subject_label = EXCLUDED.subject_label;
+
 -- 7. Map Professors to their respective Subjects in the Junction Table
 -- Mapping for Stephen
 INSERT INTO professor_subjects (professor_id, subject_id) VALUES

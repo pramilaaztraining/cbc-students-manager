@@ -20,7 +20,7 @@ export default function Header({ activeScreen, setActiveScreen }) {
           onClick={() => setActiveScreen('creation')}
           className={`cbc-tab-btn ${activeScreen === 'creation' ? 'active' : ''}`}
         >
-          1. Student Details Creation
+          1. Student Details Creation------
         </button>
 
         <button 
@@ -37,7 +37,15 @@ export default function Header({ activeScreen, setActiveScreen }) {
           className={`cbc-tab-btn ${activeScreen === 'stayCalendar' ? 'active' : ''}`}
         >
           3. Post-Grad Stay & Calendar
-        </button>        
+        </button>     
+
+         <button 
+          type="button"
+          onClick={() => setActiveScreen('examinationScore')}
+          className={`cbc-tab-btn ${activeScreen === 'examinationScore' ? 'active' : ''}`}
+        >
+          4. Examination Score
+        </button>    
       </div>
 
     </div>

@@ -1,0 +1,278 @@
+.exam-score-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: inherit;
+  background-color: transparent;
+}
+
+.section-intro h2 {
+  margin-bottom: 5px;
+  color: #1e293b;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: #64748b;
+  margin-bottom: 25px;
+  font-size: 0.95rem;
+}
+
+.summary-section {
+  margin-top: 10px;
+}
+
+.summary-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.summary-section-title {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.summary-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.grid-search-input {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.85rem;
+  width: 240px;
+  outline: none;
+  background: #fff;
+}
+
+.grid-search-input:focus {
+  border-color: #2563eb;
+}
+
+.records-count-badge {
+  font-size: 0.85rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.pdf-download-btn {
+  padding: 7px 14px;
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.pdf-download-btn:hover {
+  background: #059669;
+}
+
+.summary-table-container {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.summary-table th {
+  padding: 14px 12px;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 2px solid #cbd5e1;
+  text-align: center;
+}
+
+.summary-table th:nth-child(1),
+.summary-table th:nth-child(2),
+.summary-table th:nth-child(3),
+.summary-table th:nth-child(4) {
+  text-align: left;
+}
+
+.summary-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.summary-table tr:hover {
+  background: #f8fafc;
+}
+
+.subject-th {
+  min-width: 110px;
+  max-width: 130px;
+  white-space: normal;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.spreadsheet-input {
+  width: 55px;
+  padding: 5px;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  outline: none;
+  background: #fff;
+}
+
+.spreadsheet-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.absent-text {
+  color: #dc2626;
+  font-weight: bold;
+}
+
+.evaluate-action-btn {
+  padding: 6px 14px;
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.evaluate-action-btn:hover {
+  background: #b45309;
+}
+
+.no-data {
+  text-align: center;
+  color: #64748b;
+  padding: 30px;
+  font-style: italic;
+}
+
+/* Bottom summary banner matching Section 3 layout */
+.summary-footer-banner {
+  background: #eff6ff;
+  border-top: 1px solid #dbeafe;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-banner-label {
+  font-weight: 600;
+  color: #1e40af;
+  font-size: 0.95rem;
+}
+
+.footer-banner-badge {
+  background: #2563eb;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.summary-table .yellow-header {
+  background-color: #fef08a !important;
+  color: #1e293b !important;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.table-responsive {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow-x: hidden; /* Removes the horizontal scroll bar */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: 100%;
+}
+
+.summary-table.spreadsheet-layout {
+  width: 100%;
+  table-layout: fixed; /* Forces columns to distribute evenly across 100% width */
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.summary-table th, 
+.summary-table td {
+  padding: 12px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* Specific column width allocations */
+.summary-table th:nth-child(1), 
+.summary-table td:nth-child(1) {
+  width: 50px; /* Sno */
+}
+
+.summary-table th:nth-child(2), 
+.summary-table td:nth-child(2) {
+  width: 180px; /* Name / District */
+}
+
+.summary-table th:last-child, 
+.summary-table td:last-child {
+  width: 80px; /* Action */
+}
+
+/* Subject columns evenly share remaining space */
+.subject-th {
+  width: auto !important;
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  padding: 10px 4px;
+}
+
+.spreadsheet-input {
+  width: 100%;
+  max-width: 45px;
+  padding: 4px;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  outline: none;
+  background: #fff;
+  margin: 0 auto;
+  display: block;
+}

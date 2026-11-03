@@ -257,3 +257,44 @@ INSERT INTO topical_division_items (division_id, title, reference_details, displ
 (3, 'Pauline Missionary Journeys', 'Acts 13-28', 3),
 (3, 'Theological Foundations for Witness', 'Romans 10; 2 Corinthians 5', 4)
 ON CONFLICT DO NOTHING;
+
+CREATE TABLE exam_scores (
+    id SERIAL PRIMARY KEY,
+    student_id INT REFERENCES students(id) ON DELETE CASCADE,
+    professor_name VARCHAR(100) NOT NULL,
+    subject_name VARCHAR(100) NOT NULL,
+    exam_completed BOOLEAN DEFAULT FALSE,
+    notes_submitted BOOLEAN DEFAULT FALSE,
+    classes_perm INT CHECK (classes_perm BETWEEN 0 AND 20) DEFAULT 0,
+    video_filename VARCHAR(255),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for fast exam-wise filtering
+CREATE INDEX idx_subject_exam ON exam_scores(subject_name);
+
+
+CREATE TABLE Students_ExamScore (
+    id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL,
+    student_name VARCHAR(100) NOT NULL,
+    subject VARCHAR(100) NOT NULL,
+    exam_status VARCHAR(50) DEFAULT 'Pending',
+    notes_status VARCHAR(255) DEFAULT '',
+    classes_perm INT DEFAULT 0 CHECK (classes_perm BETWEEN 0 AND 20),
+    video_submission BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Ensures a student only has one score record per subject
+    CONSTRAINT unique_student_subjects UNIQUE (student_id, subject)
+);
+
+ALTER TABLE Students_ExamScore DROP CONSTRAINT IF EXISTS unique_student_subjects;
+
+CREATE TABLE IF NOT EXISTS student_exam_submissions (
+    id SERIAL PRIMARY KEY,
+    student_id INT,
+    subject_id VARCHAR(100),
+    score_or_status VARCHAR(50),
+    submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

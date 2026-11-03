@@ -22,7 +22,7 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 
-  // Root status check to prevent "Endpoint not found" when visiting localhost:5000/
+  // Root status check
   if (url.pathname === '/' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'API server is running successfully!' }));
@@ -130,7 +130,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ----------------------------------------------------
-    // 6. GET: Fetch normalized professor subjects (joining subjects & mapping tables)
+    // 6. GET: Fetch normalized professor subjects
     // ----------------------------------------------------
     if (url.pathname === '/api/professor-subjects' && req.method === 'GET') {
       const query = `
@@ -151,7 +151,17 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ----------------------------------------------------
-    // 7. GET: Fetch academic evaluations for a student ID (Normalized by IDs)
+    // 6.1 GET: Fetch all subjects list
+    // ----------------------------------------------------
+    if (url.pathname === '/api/subjects' && req.method === 'GET') {
+      const result = await pool.query('SELECT subject_id AS id, subject_key, subject_label AS name FROM subjects ORDER BY subject_id ASC;');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows));
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 7. GET: Fetch academic evaluations for a student ID
     // ----------------------------------------------------
     if (url.pathname.startsWith('/api/evaluations/') && req.method === 'GET') {
       const studentId = url.pathname.split('/')[3];
@@ -163,7 +173,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ----------------------------------------------------
-    // 8. PUT: Save or Update academic evaluations (Upsert via subject_id & professor_id)
+    // 8. PUT: Save or Update academic evaluations
     // ----------------------------------------------------
     if (url.pathname.startsWith('/api/evaluations/') && req.method === 'PUT') {
       const studentId = Number(url.pathname.split('/')[3]);
@@ -180,7 +190,6 @@ const server = http.createServer(async (req, res) => {
         const { professor_id, subject_id, exam, notes, classes, permissions, video_file_name } = ev;
         if (!subject_id || !professor_id) continue;
 
-        // Validate and clamp permissions safely between 0 and 20
         let parsedPermissions = Number(permissions);
         if (isNaN(parsedPermissions) || parsedPermissions < 0) {
           parsedPermissions = 0;
@@ -213,7 +222,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, message: 'Evaluations saved successfully with validation' }));
+      res.end(JSON.stringify({ success: true, message: 'Evaluations saved successfully' }));
       return;
     }
 
@@ -224,18 +233,13 @@ const server = http.createServer(async (req, res) => {
       const studentId = url.pathname.split('/')[3];
       const result = await pool.query('SELECT * FROM student_stays WHERE student_id = $1', [Number(studentId)]);
       
-      if (result.rows.length > 0) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(result.rows[0]));
-      } else {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(null));
-      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows[0] || null));
       return;
     }
 
     // ----------------------------------------------------
-    // 10. PUT: Save or Update student stay details (Upsert)
+    // 10. PUT: Save or Update student stay details
     // ----------------------------------------------------
     if (url.pathname.startsWith('/api/student-stays/') && req.method === 'PUT') {
       const studentId = Number(url.pathname.split('/')[3]);
@@ -256,14 +260,7 @@ const server = http.createServer(async (req, res) => {
 
       const upsertQuery = `
         INSERT INTO student_stays (
-          student_id, 
-          stay_start_date_time, 
-          stay_end_date_time,           
-          family_parents,
-          children_count, 
-          brothers_count, 
-          sisters_count, 
-          stay_notes
+          student_id, stay_start_date_time, stay_end_date_time, family_parents, children_count, brothers_count, sisters_count, stay_notes
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (student_id) 
@@ -293,75 +290,122 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ----------------------------------------------------
+    // 11. GET: Fetch Student Exam Scores filtered by subject
+    // ----------------------------------------------------
+    if (url.pathname === '/api/exam-scores' && req.method === 'GET') {
+      const subject = url.searchParams.get('subject');
+      const query = `
+        SELECT 
+          s.id, 
+          CONCAT(s.first_name, ' ', s.last_name) AS name,
+          COALESCE(e.exam_status, 'Pending') AS "examStatus",
+          COALESCE(e.notes_status, '') AS "notesStatus",
+          COALESCE(e.classes_perm, 0) AS "classesPerm",
+          COALESCE(e.video_submission, false) AS "videoSubmission"
+        FROM students s
+        LEFT JOIN examscores e ON s.id = e.student_id AND e.subject = $1
+        ORDER BY s.id ASC;
+      `;
+      const result = await pool.query(query, [subject || 'History']);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows));
+      return;
+    }
 
-    const XLSX = require('xlsx');
+    // ----------------------------------------------------
+    // 11.1 GET: Fetch ALL exam scores across all students and subjects
+    // ----------------------------------------------------
+    if (url.pathname === '/api/exam-scores/all' && req.method === 'GET') {
+      const query = `
+        SELECT student_id, subject AS subject_id, exam_status AS score 
+        FROM examscores;
+      `;
+      const result = await pool.query(query);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows));
+      return;
+    }
 
-// ----------------------------------------------------
-// 11. POST: Bulk upload students from Excel
-// ----------------------------------------------------
-if (url.pathname === '/api/students/upload' && req.method === 'POST') {
-  // For raw file uploads using multipart/form-data, 
-  // you can parse the buffer or use a lightweight parser like 'formidable' or 'multer'.
-  
-  // Example logic once you parse the uploaded file buffer into JSON:
-  // (Assuming 'parsedStudents' is an array of student objects extracted from the Excel sheet)
-  
-  const parsedStudents = []; // Extracted from Excel rows
+    // ----------------------------------------------------
+    // 12. POST/PUT: Save or Update individual student Exam Score
+    // ----------------------------------------------------
+    if (url.pathname === '/api/exam-scores' && (req.method === 'POST' || req.method === 'PUT')) {
+      const data = await parseBody(req);
+      const { subject, studentId, examStatus, notesStatus, classesPerm, videoSubmission } = data;
 
-  for (const student of parsedStudents) {
-    const { first_name, last_name, district, phone, email, course, batch } = student;
-    
-    const insertQuery = `
-      INSERT INTO students (first_name, last_name, district, phone, email, course, batch)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT DO NOTHING;
-    `;
-    
-    await pool.query(insertQuery, [
-      first_name, 
-      last_name, 
-      district || null, 
-      phone || null, 
-      email || null, 
-      course || null, 
-      batch || null
-    ]);
-  }
+      const upsertQuery = `
+        INSERT INTO examscores (student_id, subject, exam_status, notes_status, classes_perm, video_submission, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+        ON CONFLICT (student_id, subject) 
+        DO UPDATE SET 
+          exam_status = EXCLUDED.exam_status,
+          notes_status = EXCLUDED.notes_status,
+          classes_perm = EXCLUDED.classes_perm,
+          video_submission = EXCLUDED.video_submission,
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING *;
+      `;
 
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ success: true, message: 'Students imported successfully from Excel!' }));
-  return;
-}
+      const result = await pool.query(upsertQuery, [
+        studentId, 
+        subject, 
+        examStatus || 'Pending', 
+        notesStatus || '', 
+        Number(classesPerm) || 0, 
+        !!videoSubmission
+      ]);
 
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, data: result.rows[0] }));
+      return;
+    }
 
-// ----------------------------------------------------
-// GET: Fetch student devotion details by student ID
-// ----------------------------------------------------
-if (url.pathname.startsWith('/api/student-devotions/') && req.method === 'GET') {
-  const studentId = url.pathname.split('/')[3];
-  try {
-    const result = await pool.query('SELECT * FROM student_devotions WHERE student_id = $1', [studentId]);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(result.rows[0] || { preaching: false, hosting: false, singing: false, attendance_score: 0 }));
-  } catch (err) {
-    console.error('Error fetching student devotion:', err);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Internal server error' }));
-  }
-  return;
-}
+    // ----------------------------------------------------
+    // 12.1 PUT: Save student exam scores in bulk (Master Sheet)
+    // ----------------------------------------------------
+    if (url.pathname.startsWith('/api/exam-scores/') && req.method === 'PUT') {
+      const studentId = Number(url.pathname.split('/')[3]);
+      const data = await parseBody(req);
+      const evaluations = data.evaluations || [];
 
-// ----------------------------------------------------
-// PUT/POST: Save or update student devotion details
-// ----------------------------------------------------
-if (url.pathname.startsWith('/api/student-devotions/') && (req.method === 'PUT' || req.method === 'POST')) {
-  const studentId = url.pathname.split('/')[3];
-  let body = '';
-  
-  req.on('data', chunk => { body += chunk; });
-  req.on('end', async () => {
-    try {
-      const data = JSON.parse(body);
+      for (const ev of evaluations) {
+        const { subject_id, score } = ev;
+        if (!subject_id) continue;
+
+        const upsertQuery = `
+          INSERT INTO examscores (student_id, subject, exam_status, updated_at)
+          VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+          ON CONFLICT (student_id, subject) 
+          DO UPDATE SET 
+            exam_status = EXCLUDED.exam_status,
+            updated_at = CURRENT_TIMESTAMP;
+        `;
+        await pool.query(upsertQuery, [studentId, subject_id, String(score ?? '')]);
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 13. GET: Fetch student devotion details by student ID
+    // ----------------------------------------------------
+    if (url.pathname.startsWith('/api/student-devotions/') && req.method === 'GET') {
+      const studentId = url.pathname.split('/')[3];
+      const result = await pool.query('SELECT * FROM student_devotions WHERE student_id = $1', [studentId]);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.rows[0] || { preaching: false, hosting: false, singing: false, attendance_score: 0 }));
+      return;
+    }
+
+    // ----------------------------------------------------
+    // 14. PUT/POST: Save or update student devotion details
+    // ----------------------------------------------------
+    if (url.pathname.startsWith('/api/student-devotions/') && (req.method === 'PUT' || req.method === 'POST')) {
+      const studentId = url.pathname.split('/')[3];
+      const data = await parseBody(req);
       const { preaching, hosting, singing, attendance_score } = data;
 
       const upsertQuery = `
@@ -381,15 +425,10 @@ if (url.pathname.startsWith('/api/student-devotions/') && (req.method === 'PUT' 
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true, data: result.rows[0] }));
-    } catch (err) {
-      console.error('Error saving student devotion:', err);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Failed to save student devotion details' }));
+      return;
     }
-  });
-  return;
-}
 
+    // Default 404
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Endpoint not found' }));
 

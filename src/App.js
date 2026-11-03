@@ -7,6 +7,8 @@ import Navbar from './components/Navbar';
 import HomeScreen from './screens/Home/HomeScreen';
 import StudentFormScreen from './screens/StudentDetail/StudentFormScreen';
 import AcademicEvaluationsScreen from './screens/AcademicEvaluations/AcademicEvaluationsScreen';
+import ExaminationScoreScreen from './screens/ExaminationScoreScreen/ExaminationScoreScreen'; // New import for Examination Score Screen  
+
 import CoursesScreen from './screens/Courses/CoursesScreen';
 import ContactScreen from './screens/Contact/ContactScreen';
 import LeadershipScreen from './screens/Leadership/LeadershipScreen';
@@ -341,6 +343,16 @@ function App() {
               />
             )}
 
+             {activeScreen === 'examinationScore' && (
+              <ExaminationScoreScreen 
+                formData={formData} 
+                setFormData={setFormData}
+                handleSubmit={handleSubmit} 
+                rows={rows} 
+                handleEdit={(row) => handleEdit(row, 'examinationScore')}
+              />
+            )}
+
             {activeScreen === 'stayCalendar' && (
               <StayCalendarScreen 
                 rows={rows} 
@@ -350,7 +362,9 @@ function App() {
                 setCalendarFilterDate={setCalendarFilterDate} 
                 filteredCalendarRows={filteredCalendarRows} 
               />
-            )}
+            )}          
+
+           
           </>
         )}
       </main>
