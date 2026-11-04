@@ -249,10 +249,10 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
       styles: { fontSize: 7, cellPadding: 4 },
       headStyles: { fillColor: [37, 99, 235] },
       showFoot: 'lastPage',
-      footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
+      footStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontStyle: 'bold' },
       foot: [[
-        { content: 'Grand Total Accompanying Members:', colSpan: 9, styles: { halign: 'right', textColor: [0, 0, 0] } },
-        { content: `${grandTotalMembers} Members`, colSpan: 2, styles: { halign: 'center', textColor: [0, 0, 0] } }
+        { content: 'Grand Total Accompanying Members:', colSpan: 9, styles: { halign: 'right', textColor: [255, 255, 255] } },
+        { content: `${grandTotalMembers} Members`, colSpan: 2, styles: { halign: 'center', textColor: [255, 255, 255] } }
       ]]
     });
     
@@ -499,74 +499,72 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
         </div>
 
         <div className="table-container-card">
-          <div className="table-scroll-wrapper">
-            <table className="styled-table">
-              <thead>
+          <table className="styled-table">
+            <thead>
+              <tr>
+                <th style={{ width: '5%' }}>ID</th>
+                <th style={{ width: '13%' }}>Student Name</th>
+                <th style={{ width: '11%' }}>Start Time</th>
+                <th style={{ width: '11%' }}>End Time</th>
+                <th style={{ width: '12%' }}>Parents / Guard. / Spouse</th>
+                <th style={{ width: '5%' }}>Sons</th>
+                <th style={{ width: '5%' }}>Daughters</th>
+                <th style={{ width: '5%' }}>Brothers</th>
+                <th style={{ width: '5%' }}>Sisters</th>
+                <th style={{ width: '6%' }}>Total</th>
+                <th style={{ width: '11%' }}>Notes</th>
+                <th style={{ width: '11%', textAlign: 'center' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {searchedGridRows.length === 0 ? (
                 <tr>
-                  <th>ID</th>
-                  <th>Student Name</th>
-                  <th>Start Time</th>
-                  <th>End Time</th>
-                  <th>Parents / Guard. / Spouse</th>
-                  <th>Sons</th>
-                  <th>Daughters</th>
-                  <th>Brothers</th>
-                  <th>Sisters</th>
-                  <th>Total Members</th>
-                  <th>Notes</th>
-                  <th style={{ textAlign: 'center' }}>Action</th>
+                  <td colSpan="12" className="no-data-cell">
+                    No student records found matching your search.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {searchedGridRows.length === 0 ? (
-                  <tr>
-                    <td colSpan="12" className="no-data-cell">
-                      No student records found matching your search.
-                    </td>
-                  </tr>
-                ) : (
-                  searchedGridRows.map(row => {
-                    const stay = allStaysMap[row.id] || {};
-                    const rowTotal = calculateRowTotal(stay);
-                    return (
-                      <tr key={row.id}>
-                        <td>#{row.id}</td>
-                        <td className="student-name-cell">{row.first_name} {row.last_name}</td>
-                        <td>{formatToDisplay(stay.stay_start_date_time)}</td>
-                        <td>{formatToDisplay(stay.stay_end_date_time)}</td>
-                        <td>{stay.family_parents || 'N/A'}</td>
-                        <td style={{ textAlign: 'center' }}>{stay.sons_count ?? stay.children_count ?? 0}</td>
-                        <td style={{ textAlign: 'center' }}>{stay.daughters_count ?? 0}</td>
-                        <td style={{ textAlign: 'center' }}>{stay.brothers_count ?? 0}</td>
-                        <td style={{ textAlign: 'center' }}>{stay.sisters_count ?? 0}</td>
-                        <td style={{ textAlign: 'center' }}><span className="total-badge">{rowTotal}</span></td>
-                        <td className="notes-cell" title={stay.stay_notes}>
-                          {stay.stay_notes || 'N/A'}
-                        </td>
-                        <td className="action-cell">
-                          <button type="button" onClick={() => handleEvaluateClick(row)} className="evaluate-btn">
-                            Evaluate
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-              {searchedGridRows.length > 0 && (
-                <tfoot>
-                  <tr className="table-footer-row">
-                    <td colSpan="9" style={{ textAlign: 'right', fontWeight: 'bold' }}>👥 Grand Total Accompanying Members:</td>
-                    <td colSpan="3" className="table-footer-total">
-                      <span className="grand-total-pill">
-                        ✨ {grandTotalMembers} Members
-                      </span>
-                    </td>
-                  </tr>
-                </tfoot>
+              ) : (
+                searchedGridRows.map(row => {
+                  const stay = allStaysMap[row.id] || {};
+                  const rowTotal = calculateRowTotal(stay);
+                  return (
+                    <tr key={row.id}>
+                      <td>#{row.id}</td>
+                      <td className="student-name-cell">{row.first_name} {row.last_name}</td>
+                      <td>{formatToDisplay(stay.stay_start_date_time)}</td>
+                      <td>{formatToDisplay(stay.stay_end_date_time)}</td>
+                      <td>{stay.family_parents || 'N/A'}</td>
+                      <td style={{ textAlign: 'center' }}>{stay.sons_count ?? stay.children_count ?? 0}</td>
+                      <td style={{ textAlign: 'center' }}>{stay.daughters_count ?? 0}</td>
+                      <td style={{ textAlign: 'center' }}>{stay.brothers_count ?? 0}</td>
+                      <td style={{ textAlign: 'center' }}>{stay.sisters_count ?? 0}</td>
+                      <td style={{ textAlign: 'center' }}><span className="total-badge">{rowTotal}</span></td>
+                      <td className="notes-cell" title={stay.stay_notes}>
+                        {stay.stay_notes || 'N/A'}
+                      </td>
+                      <td className="action-cell" style={{ textAlign: 'center' }}>
+                        <button type="button" onClick={() => handleEvaluateClick(row)} className="evaluate-btn">
+                          Evaluate
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-            </table>
-          </div>
+            </tbody>
+            {searchedGridRows.length > 0 && (
+              <tfoot>
+                <tr className="table-footer-row">
+                  <td colSpan="9" style={{ textAlign: 'right', fontWeight: 'bold' }}>👥 Grand Total Accompanying Members:</td>
+                  <td colSpan="3" className="table-footer-total">
+                    <span className="grand-total-pill">
+                      ✨ {grandTotalMembers} Members
+                    </span>
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
         </div>
       </div>
     </div>
