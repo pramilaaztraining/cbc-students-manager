@@ -249,7 +249,8 @@ const server = http.createServer(async (req, res) => {
         stay_start_date_time,
         stay_end_date_time,
         family_parents,
-        children_count,
+        sons_count,
+        daughters_count,
         brothers_count,
         sisters_count,
         stay_notes
@@ -260,18 +261,19 @@ const server = http.createServer(async (req, res) => {
 
       const upsertQuery = `
         INSERT INTO student_stays (
-          student_id, stay_start_date_time, stay_end_date_time, family_parents, children_count, brothers_count, sisters_count, stay_notes
+          student_id, stay_start_date_time, stay_end_date_time, family_parents, sons_count, daughters_count, brothers_count, sisters_count, stay_notes
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (student_id) 
         DO UPDATE SET           
           stay_start_date_time = $2, 
           stay_end_date_time = $3, 
           family_parents = $4,
-          children_count = $5,
-          brothers_count = $6,
-          sisters_count = $7,
-          stay_notes = $8;
+          sons_count = $5,
+          daughters_count = $6,
+          brothers_count = $7,
+          sisters_count = $8,
+          stay_notes = $9;
       `;
       
       await pool.query(upsertQuery, [
@@ -279,7 +281,8 @@ const server = http.createServer(async (req, res) => {
         startDate, 
         endDate,
         family_parents || null,
-        Number(children_count) || 0,
+        Number(sons_count) || 0,
+        Number(daughters_count) || 0,
         Number(brothers_count) || 0,
         Number(sisters_count) || 0,
         stay_notes || null

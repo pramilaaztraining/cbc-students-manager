@@ -298,3 +298,16 @@ CREATE TABLE IF NOT EXISTS student_exam_submissions (
     score_or_status VARCHAR(50),
     submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 1. Add the new columns
+ALTER TABLE student_stays 
+ADD COLUMN sons_count INTEGER DEFAULT 0,
+ADD COLUMN daughters_count INTEGER DEFAULT 0;
+
+-- 2. Migrate existing children_count data into sons_count (or handle as needed)
+UPDATE student_stays 
+SET sons_count = COALESCE(children_count, 0);
+
+-- 3. Drop the old children_count column
+ALTER TABLE student_stays 
+DROP COLUMN children_count;

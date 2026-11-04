@@ -14,11 +14,34 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
     stay_start_date_time: '',
     stay_end_date_time: '',
     family_parents: [],
-    children_count: 0,
+    sons_count: 0,
+    daughters_count: 0,
     brothers_count: 0,
     sisters_count: 0,
     stay_notes: ''
   });
+
+  const [activeInput, setActiveInput] = useState(null);
+
+  // Convert ISO (YYYY-MM-DDTHH:mm) to display format (MM/DD/YYYY, hh:mm AM/PM)
+  const formatToDisplay = (isoString) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const formattedHours = String(hours).padStart(2, '0');
+
+    return `${month}/${day}/${year}, ${formattedHours}:${minutes} ${ampm}`;
+  };
 
   useEffect(() => {
     if (rows && rows.length > 0) {
@@ -45,7 +68,8 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
         stay_start_date_time: '',
         stay_end_date_time: '',
         family_parents: [],
-        children_count: 0,
+        sons_count: 0,
+        daughters_count: 0,
         brothers_count: 0,
         sisters_count: 0,
         stay_notes: ''
@@ -69,7 +93,8 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
             stay_start_date_time: data.stay_start_date_time ? data.stay_start_date_time.slice(0, 16) : '',
             stay_end_date_time: data.stay_end_date_time ? data.stay_end_date_time.slice(0, 16) : '',
             family_parents: parentsArr,
-            children_count: data.children_count || 0,
+            sons_count: data.sons_count ?? data.children_count ?? 0,
+            daughters_count: data.daughters_count ?? 0,
             brothers_count: data.brothers_count || 0,
             sisters_count: data.sisters_count || 0,
             stay_notes: data.stay_notes || ''
@@ -79,7 +104,8 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
             stay_start_date_time: '',
             stay_end_date_time: '',
             family_parents: [],
-            children_count: 0,
+            sons_count: 0,
+            daughters_count: 0,
             brothers_count: 0,
             sisters_count: 0,
             stay_notes: ''
@@ -145,7 +171,8 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
           stay_start_date_time: '',
           stay_end_date_time: '',
           family_parents: [],
-          children_count: 0,
+          sons_count: 0,
+          daughters_count: 0,
           brothers_count: 0,
           sisters_count: 0,
           stay_notes: ''
@@ -172,10 +199,11 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
     if (stay.family_parents) {
       parentCount = stay.family_parents.split(',').filter(s => s.trim().length > 0).length;
     }
-    const children = Number(stay.children_count) || 0;
+    const sons = Number(stay.sons_count ?? stay.children_count) || 0;
+    const daughters = Number(stay.daughters_count) || 0;
     const brothers = Number(stay.brothers_count) || 0;
     const sisters = Number(stay.sisters_count) || 0;
-    return parentCount + children + brothers + sisters;
+    return parentCount + sons + daughters + brothers + sisters;
   };
 
   const grandTotalMembers = searchedGridRows.reduce((sum, row) => {
@@ -188,18 +216,24 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
     doc.setFontSize(14);
     doc.text('CBC-BTC Manager - Student Stays Summary', 14, 12);
 
-    const tableColumns = ['ID', 'Student Name', 'Start Time', 'End Time', 'Family / Parents', 'Children', 'Brothers', 'Sisters', 'Total Members', 'Notes'];
+    const tableColumns = ['ID', 'Student Name', 'Start Time', 'End Time', 'Parents / Guard. / Spouse', 'Sons', 'Daughters', 'Brothers', 'Sisters', 'Total', 'Notes'];
     
     const tableRows = searchedGridRows.map(row => {
       const stay = allStaysMap[row.id] || {};
       const rowTotal = calculateRowTotal(stay);
+
+      const cleanedParents = stay.family_parents
+        ? stay.family_parents.split(',').map(p => p.split('/')[0].trim()).join(', ')
+        : 'N/A';
+
       return [
         row.id,
         `${row.first_name || ''} ${row.last_name || ''}`,
-        stay.stay_start_date_time ? new Date(stay.stay_start_date_time).toLocaleString() : 'N/A',
-        stay.stay_end_date_time ? new Date(stay.stay_end_date_time).toLocaleString() : 'N/A',
-        stay.family_parents || 'N/A',
-        stay.children_count ?? 0,
+        formatToDisplay(stay.stay_start_date_time),
+        formatToDisplay(stay.stay_end_date_time),
+        cleanedParents,
+        stay.sons_count ?? stay.children_count ?? 0,
+        stay.daughters_count ?? 0,
         stay.brothers_count ?? 0,
         stay.sisters_count ?? 0,
         rowTotal,
@@ -213,7 +247,13 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
       startY: 18, 
       theme: 'grid',
       styles: { fontSize: 7, cellPadding: 4 },
-      headStyles: { fillColor: [37, 99, 235] }
+      headStyles: { fillColor: [37, 99, 235] },
+      showFoot: 'lastPage',
+      footStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
+      foot: [[
+        { content: 'Grand Total Accompanying Members:', colSpan: 9, styles: { halign: 'right', textColor: [0, 0, 0] } },
+        { content: `${grandTotalMembers} Members`, colSpan: 2, styles: { halign: 'center', textColor: [0, 0, 0] } }
+      ]]
     });
     
     doc.save('Student_Stays_Summary.pdf');
@@ -263,26 +303,64 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
               </h3>
 
               <div className="grid-2-cols">
+                {/* From Date & Time */}
                 <div>
-                  <label className="field-label">From Date & Time <span className="required-star">*</span></label>
-                  <input 
-                    type="datetime-local"
-                    value={stayData.stay_start_date_time}
-                    onChange={(e) => handleInputChange('stay_start_date_time', e.target.value)}
-                    className="text-input"
-                    required
-                  />
+                  <label className="field-label">From Date & Time (MM/DD/YYYY) <span className="required-star">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    {activeInput === 'start' ? (
+                      <input 
+                        type="datetime-local"
+                        autoFocus
+                        value={stayData.stay_start_date_time}
+                        onChange={(e) => handleInputChange('stay_start_date_time', e.target.value)}
+                        onBlur={() => setActiveInput(null)}
+                        className="text-input"
+                        style={{ width: '100%' }}
+                        required
+                      />
+                    ) : (
+                      <input 
+                        type="text"
+                        readOnly
+                        value={formatToDisplay(stayData.stay_start_date_time)}
+                        placeholder="MM/DD/YYYY, --:-- --"
+                        onClick={() => setActiveInput('start')}
+                        className="text-input"
+                        style={{ width: '100%', background: '#fff', cursor: 'pointer' }}
+                        required
+                      />
+                    )}
+                  </div>
                 </div>
 
+                {/* To Date & Time */}
                 <div>
-                  <label className="field-label">To Date & Time <span className="required-star">*</span></label>
-                  <input 
-                    type="datetime-local"
-                    value={stayData.stay_end_date_time}
-                    onChange={(e) => handleInputChange('stay_end_date_time', e.target.value)}
-                    className="text-input"
-                    required
-                  />
+                  <label className="field-label">To Date & Time (MM/DD/YYYY) <span className="required-star">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    {activeInput === 'end' ? (
+                      <input 
+                        type="datetime-local"
+                        autoFocus
+                        value={stayData.stay_end_date_time}
+                        onChange={(e) => handleInputChange('stay_end_date_time', e.target.value)}
+                        onBlur={() => setActiveInput(null)}
+                        className="text-input"
+                        style={{ width: '100%' }}
+                        required
+                      />
+                    ) : (
+                      <input 
+                        type="text"
+                        readOnly
+                        value={formatToDisplay(stayData.stay_end_date_time)}
+                        placeholder="MM/DD/YYYY, --:-- --"
+                        onClick={() => setActiveInput('end')}
+                        className="text-input"
+                        style={{ width: '100%', background: '#fff', cursor: 'pointer' }}
+                        required
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -292,9 +370,9 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                 Accompanying Family Members Staying <span className="telugu-subtext">(వసతిలో ఉండే కుటుంబ సభ్యులు)</span>
               </h3>
 
-              <div className="grid-4-cols">
+              <div className="grid-5-cols" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '15px' }}>
                 <div>
-                  <label className="field-label">Parents / Guardian:</label>
+                  <label className="field-label">Parents / Guardian / Spouse:</label>
                   <div className="checkbox-group">
                     <label className="checkbox-label">
                       <input 
@@ -315,6 +393,14 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                     <label className="checkbox-label">
                       <input 
                         type="checkbox"
+                        checked={stayData.family_parents.includes('Husband / భర్త')}
+                        onChange={(e) => handleParentCheckboxChange('Husband / భర్త', e.target.checked)}
+                      /> Husband / భర్త
+                    </label>
+
+                    <label className="checkbox-label">
+                      <input 
+                        type="checkbox"
                         checked={stayData.family_parents.includes('Guardian / సంరక్షకులు')}
                         onChange={(e) => handleParentCheckboxChange('Guardian / సంరక్షకులు', e.target.checked)}
                       /> Guardian / సంరక్షకులు
@@ -323,12 +409,23 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                 </div>
 
                 <div>
-                  <label className="field-label">Children:</label>
+                  <label className="field-label">Sons:</label>
                   <input 
                     type="number"
                     min="0"
-                    value={stayData.children_count}
-                    onChange={(e) => handleInputChange('children_count', Number(e.target.value))}
+                    value={stayData.sons_count}
+                    onChange={(e) => handleInputChange('sons_count', Number(e.target.value))}
+                    className="text-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="field-label">Daughters:</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    value={stayData.daughters_count}
+                    onChange={(e) => handleInputChange('daughters_count', Number(e.target.value))}
                     className="text-input"
                   />
                 </div>
@@ -410,9 +507,11 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                   <th>Student Name</th>
                   <th>Start Time</th>
                   <th>End Time</th>
-                  <th>Family / Parents</th>
-                  <th>Children</th>
-                  <th>Siblings (B/S)</th>
+                  <th>Parents / Guard. / Spouse</th>
+                  <th>Sons</th>
+                  <th>Daughters</th>
+                  <th>Brothers</th>
+                  <th>Sisters</th>
                   <th>Total Members</th>
                   <th>Notes</th>
                   <th style={{ textAlign: 'center' }}>Action</th>
@@ -421,7 +520,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
               <tbody>
                 {searchedGridRows.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="no-data-cell">
+                    <td colSpan="12" className="no-data-cell">
                       No student records found matching your search.
                     </td>
                   </tr>
@@ -433,12 +532,14 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
                       <tr key={row.id}>
                         <td>#{row.id}</td>
                         <td className="student-name-cell">{row.first_name} {row.last_name}</td>
-                        <td>{stay.stay_start_date_time ? new Date(stay.stay_start_date_time).toLocaleString() : 'N/A'}</td>
-                        <td>{stay.stay_end_date_time ? new Date(stay.stay_end_date_time).toLocaleString() : 'N/A'}</td>
+                        <td>{formatToDisplay(stay.stay_start_date_time)}</td>
+                        <td>{formatToDisplay(stay.stay_end_date_time)}</td>
                         <td>{stay.family_parents || 'N/A'}</td>
-                        <td>{stay.children_count ?? 0}</td>
-                        <td>B: {stay.brothers_count ?? 0} / S: {stay.sisters_count ?? 0}</td>
-                        <td><span className="total-badge">{rowTotal}</span></td>
+                        <td style={{ textAlign: 'center' }}>{stay.sons_count ?? stay.children_count ?? 0}</td>
+                        <td style={{ textAlign: 'center' }}>{stay.daughters_count ?? 0}</td>
+                        <td style={{ textAlign: 'center' }}>{stay.brothers_count ?? 0}</td>
+                        <td style={{ textAlign: 'center' }}>{stay.sisters_count ?? 0}</td>
+                        <td style={{ textAlign: 'center' }}><span className="total-badge">{rowTotal}</span></td>
                         <td className="notes-cell" title={stay.stay_notes}>
                           {stay.stay_notes || 'N/A'}
                         </td>
@@ -455,7 +556,7 @@ export default function StayCalendarScreen({ rows, handleEdit }) {
               {searchedGridRows.length > 0 && (
                 <tfoot>
                   <tr className="table-footer-row">
-                    <td colSpan="7">👥 Grand Total Accompanying Members:</td>
+                    <td colSpan="9" style={{ textAlign: 'right', fontWeight: 'bold' }}>👥 Grand Total Accompanying Members:</td>
                     <td colSpan="3" className="table-footer-total">
                       <span className="grand-total-pill">
                         ✨ {grandTotalMembers} Members
