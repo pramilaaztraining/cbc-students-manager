@@ -311,3 +311,61 @@ SET sons_count = COALESCE(children_count, 0);
 -- 3. Drop the old children_count column
 ALTER TABLE student_stays 
 DROP COLUMN children_count;
+
+-----------------------------
+
+-- Table to store student examination scores per subject
+CREATE TABLE student_exam_scores (
+    id SERIAL PRIMARY KEY,
+    student_id VARCHAR(50) NOT NULL, -- Matches your student records ID
+    subject_id INT NOT NULL REFERENCES public.subjects(subject_id) ON DELETE CASCADE,
+    score NUMERIC(5, 2) NOT NULL DEFAULT 0.00,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_student_subject_score UNIQUE (student_id, subject_id)
+);
+
+------------------------------------------
+
+	-- Ensure the table structure supports student_id and subject (as integer subject_id)
+CREATE TABLE IF NOT EXISTS examscores (
+    id SERIAL PRIMARY KEY,
+    student_id INT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    subject INT NOT NULL REFERENCES subjects(subject_id) ON DELETE CASCADE,
+    exam_status VARCHAR(100) DEFAULT 'Pending',
+    notes_status VARCHAR(100),
+    classes_perm INT DEFAULT 0,
+    video_submission BOOLEAN DEFAULT false,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_student_subjectscore UNIQUE (student_id, subject)
+);
+
+
+-- 1. Create Roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL -- e.g., 'admin', 'faculty', 'student'
+);
+
+-- Insert default roles
+INSERT INTO roles (name) VALUES ('admin'), ('faculty'), ('student') 
+ON CONFLICT (name) DO NOTHING;
+
+-- 2. Add role_id to users or link students/professors to login credentials
+CREATE TABLE IF NOT EXISTS app_users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role_id INTEGER REFERENCES roles(id) DEFAULT 3,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Create OTP table for code validation
+CREATE TABLE IF NOT EXISTS auth_otps (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    otp_code VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE students ADD COLUMN IF NOT EXISTS interest VARCHAR(100);

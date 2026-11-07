@@ -86,7 +86,7 @@ export default function StudentFormScreen({
   handleEdit,
   handleDelete,
   setIsEditing,
-  onRefreshRows // Optional callback function to refresh table data after bulk upload
+  onRefreshRows
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [bulkFile, setBulkFile] = useState(null);
@@ -94,6 +94,34 @@ export default function StudentFormScreen({
 
   const courseOptions = ['BTC', 'M.TH', 'D.TH'];
   const batchOptions = Array.from({ length: 100 }, (_, i) => `Batch ${i + 1}`);
+  const availableInterests = ['Singing', 'Preaching', 'Testimony Sharing'];
+
+  // 🌟 Safe array normalizer for multi-select checkboxes
+  const getInterestsArray = (val) => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string' && val.trim() !== '') {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        return val.split(',').map(item => item.trim()).filter(Boolean);
+      }
+    }
+    return [];
+  };
+
+  const currentInterests = getInterestsArray(formData.interest);
+
+  const handleCheckboxChange = (e) => {
+    const { value, checked } = e.target;
+    let updatedInterests = [...currentInterests];
+    if (checked) {
+      if (!updatedInterests.includes(value)) updatedInterests.push(value);
+    } else {
+      updatedInterests = updatedInterests.filter(i => i !== value);
+    }
+    setFormData(prev => ({ ...prev, interest: updatedInterests }));
+  };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -108,7 +136,6 @@ export default function StudentFormScreen({
     handleSubmit(e);
   };
 
-  // 📂 Handle Bulk File Upload & Excel Parsing
   const handleBulkFileChange = (e) => {
     setBulkFile(e.target.files[0]);
   };
@@ -146,7 +173,7 @@ export default function StudentFormScreen({
           alert('Successfully imported student records from file!');
           setBulkFile(null);
           if (onRefreshRows) onRefreshRows();
-          window.location.reload(); // Refresh to reflect new records
+          window.location.reload();
         } else {
           alert('Failed to upload students to the database.');
         }
@@ -166,9 +193,11 @@ export default function StudentFormScreen({
     const district = (row.district || '').toLowerCase();
     const course = (row.course || '').toLowerCase();
     const batch = (row.batch || '').toLowerCase();
+    const rowInterests = getInterestsArray(row.interest);
+    const interestStr = rowInterests.join(', ').toLowerCase();
     const idStr = String(row.id || '');
 
-    return fullName.includes(query) || district.includes(query) || course.includes(query) || batch.includes(query) || idStr.includes(query);
+    return fullName.includes(query) || district.includes(query) || course.includes(query) || batch.includes(query) || interestStr.includes(query) || idStr.includes(query);
   });
 
   const exportStudentsToPDF = () => {
@@ -176,7 +205,7 @@ export default function StudentFormScreen({
     doc.setFontSize(14);
     doc.text('CBC-BTC Manager - Registered Students Directory', 14, 12);
 
-    const tableColumns = ['ID', 'First Name', 'Last Name', 'District', 'Email', 'Phone', 'Course', 'Batch'];
+    const tableColumns = ['ID', 'First Name', 'Last Name', 'District', 'Email', 'Phone', 'Course', 'Batch', 'Interests'];
     const tableRows = searchedRows.map(row => [
       row.id,
       row.first_name || '',
@@ -185,7 +214,8 @@ export default function StudentFormScreen({
       row.email || 'N/A',
       row.phone || 'N/A',
       row.course || 'N/A',
-      row.batch || 'N/A'
+      row.batch || 'N/A',
+      getInterestsArray(row.interest).join(', ') || 'N/A'
     ]);
 
     autoTable(doc, { 
@@ -203,14 +233,13 @@ export default function StudentFormScreen({
     <div className="screen-section">
       <div className="section-intro">
         <h2>Section 1: Initial Student Detail Creation</h2>
-        <p className="subtitle">Add or edit student demographics, courses, batch details, and profile photos.</p>
+        <p className="subtitle">Add or edit student demographics, courses, batch details, interests, and profile photos.</p>
       </div>
 
-      {/* 📁 Bulk Upload Section */}
       <div className="bulk-upload-section">
         <div className="bulk-upload-header">
           <h3>📁 Bulk Upload Students via Excel / CSV</h3>
-          <p>Upload a spreadsheet containing columns: <code>first_name</code>, <code>last_name</code>, <code>district</code>, <code>phone</code>, <code>email</code>, <code>course</code>, <code>batch</code>.</p>
+          <p>Upload a spreadsheet containing columns: <code>first_name</code>, <code>last_name</code>, <code>district</code>, <code>phone</code>, <code>email</code>, <code>course</code>, <code>batch</code>, <code>interest</code>.</p>
         </div>
         <form onSubmit={handleBulkSubmit} className="bulk-upload-controls">
           <input 
@@ -334,7 +363,28 @@ export default function StudentFormScreen({
             />
           </div>
 
-          <div className="form-group">
+          {/* 🌟 Checkbox Group for Areas of Interest */}
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <label className="form-label">
+              Areas of Interest <span className="label-telugu">ఆసక్తి (పాటలు, ప్రసంగం, సాక్ష్యం)</span>
+            </label>
+            <div style={{ display: 'flex', gap: '15px', marginTop: '10px', flexWrap: 'wrap' }}>
+              {availableInterests.map((interestOption) => (
+                <label key={interestOption} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+                  <input 
+                    type="checkbox"
+                    value={interestOption}
+                    checked={currentInterests.includes(interestOption)}
+                    onChange={handleCheckboxChange}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  {interestOption}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
             <label className="form-label">
               Upload Photo * <span className="label-telugu">ఫోటో</span>
             </label>
@@ -365,7 +415,7 @@ export default function StudentFormScreen({
               onClick={() => {
                 setIsEditing(false);
                 setFormData({
-                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: ''
+                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: ''
                 });
               }}
               className="cancel-btn"
@@ -383,7 +433,7 @@ export default function StudentFormScreen({
           <div className="directory-controls">
             <input 
               type="text"
-              placeholder="Search by name, batch, course, ID..."
+              placeholder="Search by name, batch, course, interest, ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="directory-search-input"
@@ -416,6 +466,7 @@ export default function StudentFormScreen({
                   <th>Phone</th>
                   <th>Course</th>
                   <th>Batch</th>
+                  <th>Interests</th>
                   <th>Photo</th>
                   <th className="text-center">Actions</th>
                 </tr>
@@ -437,6 +488,7 @@ export default function StudentFormScreen({
                       <td>{row.phone || 'N/A'}</td>
                       <td className="font-medium">{row.course || 'N/A'}</td>
                       <td>{row.batch || 'N/A'}</td>
+                      <td>{getInterestsArray(row.interest).join(', ') || 'N/A'}</td>
                       <td>
                         {row.photo_url ? (
                           <img src={row.photo_url} alt="Student" className="table-student-photo" />
@@ -466,7 +518,7 @@ export default function StudentFormScreen({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="empty-table-row">
+                    <td colSpan="11" className="empty-table-row">
                       No registered students found.
                     </td>
                   </tr>

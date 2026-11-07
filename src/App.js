@@ -3,38 +3,31 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 import Navbar from './components/Navbar';
-// Update these import statements in your src/App.js file:
 import HomeScreen from './screens/Home/HomeScreen';
 import StudentFormScreen from './screens/StudentDetail/StudentFormScreen';
 import AcademicEvaluationsScreen from './screens/AcademicEvaluations/AcademicEvaluationsScreen';
-import ExaminationScoreScreen from './screens/ExaminationScoreScreen/ExaminationScoreScreen'; // New import for Examination Score Screen  
+import ExaminationScoreScreen from './screens/ExaminationScoreScreen/ExaminationScoreScreen';
 
 import CoursesScreen from './screens/Courses/CoursesScreen';
 import ContactScreen from './screens/Contact/ContactScreen';
 import LeadershipScreen from './screens/Leadership/LeadershipScreen';
-import StayCalendarScreen from './screens/PostGraduationStayDetails/StayCalendarScreen'; // Match your exact subfolder name
+import StayCalendarScreen from './screens/PostGraduationStayDetails/StayCalendarScreen';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
 import FloatingSocialBar from './components/FloatingSocialBar';
 import FlashAnnouncement from './components/FlashAnnouncement';
+import LoginView from './screens/Login/LoginView';
 
-import { apiFetch } from './utils/api'; // ✅ Correct path from src/App.js
+import { apiFetch } from './utils/api';
 
 function App() {
-  const createDetailedSubsections = (keys) => {
-    const obj = {};
-    keys.forEach(k => {
-      obj[`${k}Exam`] = false;
-      obj[`${k}Notes`] = false;
-      obj[`${k}Classes`] = false;
-      obj[`${k}Permissions`] = '';
-      obj[`${k}VideoFileName`] = '';
-    });
-    return obj;
-  };
-  const [rows, setRows] = useState([]);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('cbc_user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
+  const [rows, setRows] = useState([]);
   const [formData, setFormData] = useState({
     id: null,
     first_name: '',
@@ -44,6 +37,7 @@ function App() {
     batch: '',
     district: '',
     phone: '',
+    interest: [], // 🌟 Initialized as an empty array for multi-select checkboxes
     photoLink: '',
     photoUrl: '',
   });
@@ -64,8 +58,25 @@ function App() {
   };
 
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    if (currentUser) {
+      fetchStudents();
+    }
+  }, [currentUser]);
+
+  const handleScreenChange = (screenName) => {
+    const publicScreens = ['home', 'courses', 'contact', 'leadership', 'login'];
+    if (!publicScreens.includes(screenName) && !currentUser) {
+      setActiveScreen('login');
+      return;
+    }
+    setActiveScreen(screenName);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('cbc_user');
+    setCurrentUser(null);
+    setActiveScreen('home');
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -96,10 +107,7 @@ function App() {
         return;
       }
       try {
-        const cleanEvaluationPayload = {
-          id: formData.id,
-        };
-
+        const cleanEvaluationPayload = { id: formData.id };
         const response = await apiFetch(`/api/evaluations/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -108,12 +116,7 @@ function App() {
         if (!response.ok) throw new Error('Failed to save academic evaluations');
         
         alert('Academic evaluations saved successfully to database!');
-
-        // ✨ Deselect student and reset academic evaluation form fields
-        setFormData({
-          id: null,
-        });
-
+        setFormData({ id: null });
         setActiveScreen('academics');
         return;
       } catch (err) {
@@ -138,6 +141,7 @@ function App() {
       email: formData.email || '',
       course: formData.course || '',
       batch: formData.batch || '',
+      interest: formData.interest || [], // 🌟 Explicitly passed as array/JSON object
       photo_url: activePhoto
     };
 
@@ -183,6 +187,7 @@ function App() {
       batch: '',
       district: '',
       phone: '',
+      interest: [],
       photoLink: '',
       photoUrl: '',
     });
@@ -204,8 +209,21 @@ function App() {
       }
     }
 
+    // Safely parse interest if it comes as a string or array from DB
+    let parsedInterest = [];
+    if (Array.isArray(row.interest)) {
+      parsedInterest = row.interest;
+    } else if (typeof row.interest === 'string' && row.interest.trim() !== '') {
+      try {
+        parsedInterest = JSON.parse(row.interest);
+      } catch (e) {
+        parsedInterest = row.interest.split(',').map(i => i.trim()).filter(Boolean);
+      }
+    }
+
     setFormData({ 
       ...row,
+      interest: parsedInterest,
       ...evaluationData,
     });
     
@@ -225,8 +243,7 @@ function App() {
         if (formData.id === id) {
           setIsEditing(false);
           setFormData({
-            id: null,
-            first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', photoLink: '', photoUrl: '',
+            id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: '',
           });
         }
       } catch (err) {
@@ -289,19 +306,27 @@ function App() {
     return filterDateOnly >= startDateOnly && filterDateOnly <= endDateOnly;
   });
 
-  const isManagerScreen = !['home', 'courses', 'contact', 'leadership'].includes(activeScreen);
+  const isManagerScreen = !['home', 'courses', 'contact', 'leadership', 'login'].includes(activeScreen);
 
   return (
     <div className="app-layout">
       <FloatingSocialBar />
       
       <div className="sticky-top-all-container">
-        <Navbar activeScreen={activeScreen} setCurrentScreen={setActiveScreen} />
+        <Navbar activeScreen={activeScreen} setCurrentScreen={handleScreenChange} />
         <FlashAnnouncement />
-        {isManagerScreen && (
+        
+        {currentUser && (
+          <div style={{ background: '#1e3a8a', color: '#fff', padding: '6px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+            <span>👤 Logged in as: <b>{currentUser.email}</b> ({currentUser.role.toUpperCase()})</span>
+            <button onClick={handleLogout} style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>Logout</button>
+          </div>
+        )}
+
+        {isManagerScreen && currentUser && (
           <Header 
             activeScreen={activeScreen} 
-            setActiveScreen={setActiveScreen} 
+            setActiveScreen={handleScreenChange} 
             exportToPDF={exportToPDF} 
           />
         )}
@@ -309,63 +334,73 @@ function App() {
 
       <main className="container">
         {activeScreen === 'home' ? (
-          <HomeScreen setActiveScreen={setActiveScreen} />
+          <HomeScreen setActiveScreen={handleScreenChange} />
         ) : activeScreen === 'courses' ? (
           <CoursesScreen />
         ) : activeScreen === 'contact' ? (
           <ContactScreen />
         ) : activeScreen === 'leadership' ? (
           <LeadershipScreen />
+        ) : activeScreen === 'login' ? (
+          <LoginView onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            setActiveScreen('creation');
+          }} />
         ) : (
-          <>
-            {activeScreen === 'creation' && (
-              <StudentFormScreen 
-                formData={formData} 
-                setFormData={setFormData} 
-                isEditing={isEditing} 
-                handleSubmit={handleSubmit} 
-                handleFileChange={handleFileChange} 
-                handleChange={handleChange} 
-                rows={rows} 
-                handleEdit={(row) => handleEdit(row, 'creation')} 
-                handleDelete={handleDelete} 
-                setIsEditing={setIsEditing} 
-              />
-            )}
+          currentUser ? (
+            <>
+              {activeScreen === 'creation' && (
+                <StudentFormScreen 
+                  formData={formData} 
+                  setFormData={setFormData} 
+                  isEditing={isEditing} 
+                  handleSubmit={handleSubmit} 
+                  handleFileChange={handleFileChange} 
+                  handleChange={handleChange} 
+                  rows={rows} 
+                  handleEdit={(row) => handleEdit(row, 'creation')} 
+                  handleDelete={handleDelete} 
+                  setIsEditing={setIsEditing} 
+                />
+              )}
 
-            {activeScreen === 'academics' && (
-              <AcademicEvaluationsScreen 
-                formData={formData} 
-                setFormData={setFormData}
-                handleSubmit={handleSubmit} 
-                rows={rows} 
-                handleEdit={(row) => handleEdit(row, 'academics')}
-              />
-            )}
+              {activeScreen === 'academics' && (
+                <AcademicEvaluationsScreen 
+                  formData={formData} 
+                  setFormData={setFormData}
+                  handleSubmit={handleSubmit} 
+                  rows={rows} 
+                  handleEdit={(row) => handleEdit(row, 'academics')}
+                />
+              )}
 
-             {activeScreen === 'examinationScore' && (
-              <ExaminationScoreScreen 
-                formData={formData} 
-                setFormData={setFormData}
-                handleSubmit={handleSubmit} 
-                rows={rows} 
-                handleEdit={(row) => handleEdit(row, 'examinationScore')}
-              />
-            )}
+              {activeScreen === 'examinationScore' && (
+                <ExaminationScoreScreen 
+                  formData={formData} 
+                  setFormData={setFormData}
+                  handleSubmit={handleSubmit} 
+                  rows={rows} 
+                  handleEdit={(row) => handleEdit(row, 'examinationScore')}
+                />
+              )}
 
-            {activeScreen === 'stayCalendar' && (
-              <StayCalendarScreen 
-                rows={rows} 
-                refreshStudents={fetchStudents}
-                handleEdit={handleEdit}
-                calendarFilterDate={calendarFilterDate} 
-                setCalendarFilterDate={setCalendarFilterDate} 
-                filteredCalendarRows={filteredCalendarRows} 
-              />
-            )}          
-
-           
-          </>
+              {activeScreen === 'stayCalendar' && (
+                <StayCalendarScreen 
+                  rows={rows} 
+                  refreshStudents={fetchStudents}
+                  handleEdit={handleEdit}
+                  calendarFilterDate={calendarFilterDate} 
+                  setCalendarFilterDate={setCalendarFilterDate} 
+                  filteredCalendarRows={filteredCalendarRows} 
+                />
+              )}          
+            </>
+          ) : (
+            <LoginView onLoginSuccess={(user) => {
+              setCurrentUser(user);
+              setActiveScreen('creation');
+            }} />
+          )
         )}
       </main>
 
