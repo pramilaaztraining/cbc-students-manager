@@ -37,9 +37,10 @@ function App() {
     batch: '',
     district: '',
     phone: '',
-    interest: [], // 🌟 Initialized as an empty array for multi-select checkboxes
+    interest: [],
     photoLink: '',
     photoUrl: '',
+    evaluations: [] // 🌟 Added evaluations array support
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -101,13 +102,14 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // 🌟 FIX: Properly handle Academic Evaluations submission with full evaluation list payload
     if (activeScreen === 'academics') {
       if (!formData.id) {
         alert('Please select a student from the directory first.');
         return;
       }
       try {
-        const cleanEvaluationPayload = { id: formData.id };
+        const cleanEvaluationPayload = { evaluations: formData.evaluations || [] };
         const response = await apiFetch(`/api/evaluations/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -116,7 +118,7 @@ function App() {
         if (!response.ok) throw new Error('Failed to save academic evaluations');
         
         alert('Academic evaluations saved successfully to database!');
-        setFormData({ id: null });
+        setFormData({ id: null, evaluations: [] });
         setActiveScreen('academics');
         return;
       } catch (err) {
@@ -141,7 +143,7 @@ function App() {
       email: formData.email || '',
       course: formData.course || '',
       batch: formData.batch || '',
-      interest: formData.interest || [], // 🌟 Explicitly passed as array/JSON object
+      interest: formData.interest || [],
       photo_url: activePhoto
     };
 
@@ -190,6 +192,7 @@ function App() {
       interest: [],
       photoLink: '',
       photoUrl: '',
+      evaluations: []
     });
   };
 
@@ -201,15 +204,14 @@ function App() {
       try {
         const res = await apiFetch(`/api/evaluations/${row.id}`);
         if (res.ok) {
-          evaluationData = await res.json();
-          delete evaluationData.stay_details;
+          const evalRows = await res.json();
+          evaluationData = { evaluations: evalRows };
         }
       } catch (err) {
         console.error('Error fetching evaluations on edit:', err);
       }
     }
 
-    // Safely parse interest if it comes as a string or array from DB
     let parsedInterest = [];
     if (Array.isArray(row.interest)) {
       parsedInterest = row.interest;
@@ -243,7 +245,7 @@ function App() {
         if (formData.id === id) {
           setIsEditing(false);
           setFormData({
-            id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: '',
+            id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: '', evaluations: []
           });
         }
       } catch (err) {

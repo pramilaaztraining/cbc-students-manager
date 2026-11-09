@@ -369,3 +369,25 @@ CREATE TABLE IF NOT EXISTS auth_otps (
 );
 
 ALTER TABLE students ADD COLUMN IF NOT EXISTS interest VARCHAR(100);
+
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone VARCHAR(30);
+ALTER TABLE app_users ALTER COLUMN email DROP NOT NULL;
+
+
+
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS name VARCHAR(150);
+
+	-- Add an authorized student/faculty phone number
+INSERT INTO app_users (name, phone, role_id) 
+VALUES ('Pramila Devacharana', '+919676657444', 3); 
+-- (role_id 3 = student, 2 = faculty, 1 = admin)
+
+
+-- Ensure the email column exists
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email VARCHAR(150);
+
+-- Example: Add or update a whitelisted user with their email address
+INSERT INTO app_users (name, email, phone, role_id, is_active) 
+VALUES ('John Doe', 'user@example.com', '+919676657444', 3, TRUE)
+ON CONFLICT (phone) 
+DO UPDATE SET email = 'user@example.com', is_active = TRUE;

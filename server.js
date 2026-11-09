@@ -190,7 +190,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 2. POST: Create new student
+   // 2. POST: Create new student
     if (url.pathname === '/api/students' && req.method === 'POST') {
       const data = await parseBody(req);
       const { first_name, last_name, district, phone, email, course, batch, interest, photo_url, photoUrl } = data;
