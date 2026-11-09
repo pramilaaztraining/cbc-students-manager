@@ -1,79 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import { apiFetch } from '../../utils/api';
+import React, { useState, useRef } from 'react';
 import './StudentFormScreen.css';
-
-// 🌟 Reusable Searchable Dropdown Component
-function SearchableDropdown({ options, value, onChange, placeholder, name }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [filterQuery, setFilterQuery] = useState('');
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const filteredOptions = options.filter(opt => 
-    opt.toLowerCase().includes(filterQuery.toLowerCase())
-  );
-
-  return (
-    <div className="searchable-dropdown-container" ref={dropdownRef}>
-      <div 
-        className={`dropdown-select-trigger ${value ? 'selected' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span>{value || placeholder}</span>
-        <span className="dropdown-arrow">▼</span>
-      </div>
-
-      {isOpen && (
-        <div className="dropdown-menu">
-          <div className="dropdown-search-box">
-            <input 
-              type="text"
-              placeholder="🔍 Type to filter list..."
-              value={filterQuery}
-              onChange={(e) => setFilterQuery(e.target.value)}
-              autoFocus
-              className="dropdown-search-input"
-            />
-          </div>
-
-          <div className="dropdown-options-list">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
-                <div 
-                  key={opt}
-                  onClick={() => {
-                    onChange({ target: { name, value: opt } });
-                    setIsOpen(false);
-                    setFilterQuery('');
-                  }}
-                  className={`dropdown-option-item ${value === opt ? 'active' : ''}`}
-                >
-                  {opt}
-                </div>
-              ))
-            ) : (
-              <div className="dropdown-no-options">
-                No options found
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function StudentFormScreen({
   formData,
@@ -85,18 +11,15 @@ export default function StudentFormScreen({
   rows,
   handleEdit,
   handleDelete,
-  setIsEditing,
-  onRefreshRows
+  setIsEditing
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [bulkFile, setBulkFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const courseOptions = ['BTC', 'M.TH', 'D.TH'];
   const batchOptions = Array.from({ length: 100 }, (_, i) => `Batch ${i + 1}`);
   const availableInterests = ['Singing', 'Preaching', 'Testimony Sharing'];
 
-  // 🌟 Safe array normalizer for multi-select checkboxes
   const getInterestsArray = (val) => {
     if (Array.isArray(val)) return val;
     if (typeof val === 'string' && val.trim() !== '') {
@@ -123,68 +46,14 @@ export default function StudentFormScreen({
     setFormData(prev => ({ ...prev, interest: updatedInterests }));
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!courseOptions.includes(formData.course)) {
-      alert('Please select a valid course from the list.');
-      return;
+    await handleSubmit(e);
+    
+    // Clear photo field reference after successful save
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-    if (!batchOptions.includes(formData.batch)) {
-      alert('Please select a valid batch from the list (Batch 1 to 100).');
-      return;
-    }
-    handleSubmit(e);
-  };
-
-  const handleBulkFileChange = (e) => {
-    setBulkFile(e.target.files[0]);
-  };
-
-  const handleBulkSubmit = async (e) => {
-    e.preventDefault();
-    if (!bulkFile) {
-      alert('Please select an Excel or CSV file first.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        setIsUploading(true);
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
-
-        if (!data || data.length === 0) {
-          alert('The uploaded file contains no data rows.');
-          setIsUploading(false);
-          return;
-        }
-
-        const res = await apiFetch('/api/students/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ students: data })
-        });
-
-        if (res.ok) {
-          alert('Successfully imported student records from file!');
-          setBulkFile(null);
-          if (onRefreshRows) onRefreshRows();
-          window.location.reload();
-        } else {
-          alert('Failed to upload students to the database.');
-        }
-      } catch (err) {
-        console.error('Error parsing or uploading file:', err);
-        alert('An error occurred while processing the file.');
-      } finally {
-        setIsUploading(false);
-      }
-    };
-    reader.readAsBinaryString(bulkFile);
   };
 
   const searchedRows = (rows || []).filter(row => {
@@ -193,41 +62,9 @@ export default function StudentFormScreen({
     const district = (row.district || '').toLowerCase();
     const course = (row.course || '').toLowerCase();
     const batch = (row.batch || '').toLowerCase();
-    const rowInterests = getInterestsArray(row.interest);
-    const interestStr = rowInterests.join(', ').toLowerCase();
     const idStr = String(row.id || '');
-
-    return fullName.includes(query) || district.includes(query) || course.includes(query) || batch.includes(query) || interestStr.includes(query) || idStr.includes(query);
+    return fullName.includes(query) || district.includes(query) || course.includes(query) || batch.includes(query) || idStr.includes(query);
   });
-
-  const exportStudentsToPDF = () => {
-    const doc = new jsPDF('landscape');
-    doc.setFontSize(14);
-    doc.text('CBC-BTC Manager - Registered Students Directory', 14, 12);
-
-    const tableColumns = ['ID', 'First Name', 'Last Name', 'District', 'Email', 'Phone', 'Course', 'Batch', 'Interests'];
-    const tableRows = searchedRows.map(row => [
-      row.id,
-      row.first_name || '',
-      row.last_name || '',
-      row.district || 'N/A',
-      row.email || 'N/A',
-      row.phone || 'N/A',
-      row.course || 'N/A',
-      row.batch || 'N/A',
-      getInterestsArray(row.interest).join(', ') || 'N/A'
-    ]);
-
-    autoTable(doc, { 
-      head: [tableColumns], 
-      body: tableRows, 
-      startY: 18, 
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 4 },
-      headStyles: { fillColor: [37, 99, 235] }
-    });
-    doc.save('Registered_Students_Directory.pdf');
-  };
 
   return (
     <div className="screen-section">
@@ -236,39 +73,14 @@ export default function StudentFormScreen({
         <p className="subtitle">Add or edit student demographics, courses, batch details, interests, and profile photos.</p>
       </div>
 
-      <div className="bulk-upload-section">
-        <div className="bulk-upload-header">
-          <h3>📁 Bulk Upload Students via Excel / CSV</h3>
-          <p>Upload a spreadsheet containing columns: <code>first_name</code>, <code>last_name</code>, <code>district</code>, <code>phone</code>, <code>email</code>, <code>course</code>, <code>batch</code>, <code>interest</code>.</p>
-        </div>
-        <form onSubmit={handleBulkSubmit} className="bulk-upload-controls">
-          <input 
-            type="file" 
-            accept=".xlsx, .xls, .csv" 
-            onChange={handleBulkFileChange} 
-            className="file-input"
-          />
-          <button 
-            type="submit" 
-            className="upload-submit-btn" 
-            disabled={!bulkFile || isUploading}
-          >
-            {isUploading ? 'Uploading...' : 'Upload & Save Students'}
-          </button>
-        </form>
-      </div>
-
       <form onSubmit={handleFormSubmit} className="form-card">
         <h3 className="form-card-title">
           {isEditing ? `Edit Student Profile [ID: ${formData.id}]` : 'Create New Student Profile'}
         </h3>
         
         <div className="form-grid-4col">
-          
           <div className="form-group">
-            <label className="form-label">
-              First Name * <span className="label-telugu">మొదటి పేరు</span>
-            </label>
+            <label className="form-label">First Name *</label>
             <input 
               type="text" 
               name="first_name" 
@@ -281,9 +93,7 @@ export default function StudentFormScreen({
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              Last Name <span className="label-telugu">ఇంటి పేరు / చివరి పేరు</span>
-            </label>
+            <label className="form-label">Last Name</label>
             <input 
               type="text" 
               name="last_name" 
@@ -295,9 +105,7 @@ export default function StudentFormScreen({
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              Email <span className="label-telugu">ఈమెయిల్</span>
-            </label>
+            <label className="form-label">Email</label>
             <input 
               type="email" 
               name="email" 
@@ -309,35 +117,35 @@ export default function StudentFormScreen({
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              Course * <span className="label-telugu">కోర్సు</span>
-            </label>
-            <SearchableDropdown 
-              options={courseOptions}
-              value={formData.course}
-              onChange={handleChange}
-              placeholder="Click to select course..."
-              name="course"
-            />
+            <label className="form-label">Course *</label>
+            <select 
+              name="course" 
+              value={formData.course} 
+              onChange={handleChange} 
+              className="form-input" 
+              required
+            >
+              <option value="">Select course...</option>
+              {courseOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              Batch * <span className="label-telugu">బ్యాచ్</span>
-            </label>
-            <SearchableDropdown 
-              options={batchOptions}
-              value={formData.batch}
-              onChange={handleChange}
-              placeholder="Click to select batch..."
-              name="batch"
-            />
+            <label className="form-label">Batch *</label>
+            <select 
+              name="batch" 
+              value={formData.batch} 
+              onChange={handleChange} 
+              className="form-input" 
+              required
+            >
+              <option value="">Select batch...</option>
+              {batchOptions.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              District * <span className="label-telugu">జిల్లా</span>
-            </label>
+            <label className="form-label">District *</label>
             <input 
               type="text" 
               name="district" 
@@ -350,9 +158,7 @@ export default function StudentFormScreen({
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              Phone Number <span className="label-telugu">ఫోన్ నంబర్</span>
-            </label>
+            <label className="form-label">Phone Number</label>
             <input 
               type="text" 
               name="phone" 
@@ -363,11 +169,8 @@ export default function StudentFormScreen({
             />
           </div>
 
-          {/* 🌟 Checkbox Group for Areas of Interest */}
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">
-              Areas of Interest <span className="label-telugu">ఆసక్తి (పాటలు, ప్రసంగం, సాక్ష్యం)</span>
-            </label>
+            <label className="form-label">Areas of Interest</label>
             <div style={{ display: 'flex', gap: '15px', marginTop: '10px', flexWrap: 'wrap' }}>
               {availableInterests.map((interestOption) => (
                 <label key={interestOption} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
@@ -376,7 +179,6 @@ export default function StudentFormScreen({
                     value={interestOption}
                     checked={currentInterests.includes(interestOption)}
                     onChange={handleCheckboxChange}
-                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                   />
                   {interestOption}
                 </label>
@@ -385,11 +187,14 @@ export default function StudentFormScreen({
           </div>
 
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label className="form-label">
-              Upload Photo * <span className="label-telugu">ఫోటో</span>
-            </label>
+            <label className="form-label">Upload Photo *</label>
             <div>
-              <input type="file" accept="image/*" onChange={handleFileChange} />
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                ref={fileInputRef} 
+              />
             </div>
             {formData.photo_url && (
               <div className="photo-preview-container">
@@ -397,7 +202,6 @@ export default function StudentFormScreen({
               </div>
             )}
           </div>
-
         </div>
 
         <div className="form-actions">
@@ -415,8 +219,9 @@ export default function StudentFormScreen({
               onClick={() => {
                 setIsEditing(false);
                 setFormData({
-                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: ''
+                  id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: '', photo_url: ''
                 });
+                if (fileInputRef.current) fileInputRef.current.value = '';
               }}
               className="cancel-btn"
             >
@@ -429,27 +234,15 @@ export default function StudentFormScreen({
       <div className="directory-section">
         <div className="directory-header">
           <h3 className="directory-title">Registered Students Directory</h3>
-          
           <div className="directory-controls">
             <input 
               type="text"
-              placeholder="Search by name, batch, course, interest, ID..."
+              placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="directory-search-input"
             />
-
-            <span className="records-badge">
-              Records: {searchedRows.length}
-            </span>
-
-            <button 
-              type="button"
-              onClick={exportStudentsToPDF}
-              className="pdf-export-btn"
-            >
-              📥 Download PDF
-            </button>
+            <span className="records-badge">Records: {searchedRows.length}</span>
           </div>
         </div>
 
@@ -462,67 +255,32 @@ export default function StudentFormScreen({
                   <th>First Name</th>
                   <th>Last Name</th>
                   <th>District</th>
-                  <th>Email</th>
-                  <th>Phone</th>
                   <th>Course</th>
                   <th>Batch</th>
-                  <th>Interests</th>
                   <th>Photo</th>
                   <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {searchedRows && searchedRows.length > 0 ? (
-                  searchedRows.map((row, idx) => (
-                    <tr 
-                      key={row.id} 
-                      className={idx % 2 === 0 ? 'row-even' : 'row-odd'}
-                    >
-                      <td>
-                        <span className="row-id-badge">#{row.id}</span>
-                      </td>
-                      <td className="font-semibold text-dark">{row.first_name}</td>
-                      <td>{row.last_name || 'N/A'}</td>
-                      <td className="capitalize">{row.district || 'N/A'}</td>
-                      <td>{row.email || 'N/A'}</td>
-                      <td>{row.phone || 'N/A'}</td>
-                      <td className="font-medium">{row.course || 'N/A'}</td>
-                      <td>{row.batch || 'N/A'}</td>
-                      <td>{getInterestsArray(row.interest).join(', ') || 'N/A'}</td>
-                      <td>
-                        {row.photo_url ? (
-                          <img src={row.photo_url} alt="Student" className="table-student-photo" />
-                        ) : (
-                          <span className="no-photo-text">No Photo</span>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        <div className="action-buttons-group">
-                          <button 
-                            type="button"
-                            onClick={() => handleEdit(row, 'creation')} 
-                            className="edit-action-btn"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => handleDelete(row.id)} 
-                            className="delete-action-btn"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="11" className="empty-table-row">
-                      No registered students found.
+                {searchedRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>#{row.id}</td>
+                    <td>{row.first_name}</td>
+                    <td>{row.last_name || 'N/A'}</td>
+                    <td>{row.district}</td>
+                    <td>{row.course}</td>
+                    <td>{row.batch}</td>
+                    <td>
+                      {row.photo_url ? (
+                        <img src={row.photo_url} alt="Student" className="table-student-photo" />
+                      ) : 'No Photo'}
+                    </td>
+                    <td className="text-center">
+                      <button onClick={() => handleEdit(row, 'creation')} className="edit-action-btn">Edit</button>
+                      <button onClick={() => handleDelete(row.id)} className="delete-action-btn">Delete</button>
                     </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>

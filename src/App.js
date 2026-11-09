@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 import Navbar from './components/Navbar';
 import HomeScreen from './screens/Home/HomeScreen';
 import StudentFormScreen from './screens/StudentDetail/StudentFormScreen';
 import AcademicEvaluationsScreen from './screens/AcademicEvaluations/AcademicEvaluationsScreen';
 import ExaminationScoreScreen from './screens/ExaminationScoreScreen/ExaminationScoreScreen';
-
 import CoursesScreen from './screens/Courses/CoursesScreen';
 import ContactScreen from './screens/Contact/ContactScreen';
 import LeadershipScreen from './screens/Leadership/LeadershipScreen';
@@ -40,7 +36,8 @@ function App() {
     interest: [],
     photoLink: '',
     photoUrl: '',
-    evaluations: [] // 🌟 Added evaluations array support
+    photo_url: '',
+    evaluations: []
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -50,11 +47,11 @@ function App() {
   const fetchStudents = async () => {
     try {
       const res = await apiFetch('/api/students');
-      if (!res.ok) throw new Error('Failed to fetch from backend server');
+      if (!res.ok) throw new Error('Failed to fetch students');
       const data = await res.json();
       setRows([...data]);
     } catch (err) {
-      console.error('Error fetching students from PostgreSQL backend:', err);
+      console.error('Error fetching students:', err);
     }
   };
 
@@ -92,7 +89,8 @@ function App() {
         setFormData(prev => ({
           ...prev,
           photoLink: file.name,
-          photoUrl: reader.result
+          photoUrl: reader.result,
+          photo_url: reader.result
         }));
       };
       reader.readAsDataURL(file);
@@ -102,32 +100,6 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 🌟 FIX: Properly handle Academic Evaluations submission with full evaluation list payload
-    if (activeScreen === 'academics') {
-      if (!formData.id) {
-        alert('Please select a student from the directory first.');
-        return;
-      }
-      try {
-        const cleanEvaluationPayload = { evaluations: formData.evaluations || [] };
-        const response = await apiFetch(`/api/evaluations/${formData.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cleanEvaluationPayload)
-        });
-        if (!response.ok) throw new Error('Failed to save academic evaluations');
-        
-        alert('Academic evaluations saved successfully to database!');
-        setFormData({ id: null, evaluations: [] });
-        setActiveScreen('academics');
-        return;
-      } catch (err) {
-        console.error('Error saving evaluations:', err);
-        alert('Error saving academic evaluations.');
-        return;
-      }
-    }
-
     if (!formData.first_name || !formData.batch || !formData.course || !formData.district || (!formData.photoUrl && !formData.photo_url)) {
       alert('Please fill in all mandatory fields: First Name, Course, Batch, District, and Upload Photo.');
       return;
@@ -160,7 +132,7 @@ function App() {
         setIsEditing(false);
         alert('Student record updated successfully!');
       } catch (err) {
-        console.error('Error updating student in database:', err);
+        console.error('Error updating student:', err);
         alert('Error updating student.');
       }
     } else {
@@ -175,11 +147,12 @@ function App() {
         await fetchStudents();
         alert('Student created successfully!');
       } catch (err) {
-        console.error('Error creating student in database:', err);
+        console.error('Error creating student:', err);
         alert('Error saving student.');
       }
     }
 
+    // Reset form data and photo states after saving
     setFormData({
       id: null,
       first_name: '',
@@ -192,26 +165,13 @@ function App() {
       interest: [],
       photoLink: '',
       photoUrl: '',
+      photo_url: '',
       evaluations: []
     });
   };
 
   const handleEdit = async (row, targetScreen = 'creation') => {
     setIsEditing(true);
-    let evaluationData = {};
-    
-    if (targetScreen === 'academics') {
-      try {
-        const res = await apiFetch(`/api/evaluations/${row.id}`);
-        if (res.ok) {
-          const evalRows = await res.json();
-          evaluationData = { evaluations: evalRows };
-        }
-      } catch (err) {
-        console.error('Error fetching evaluations on edit:', err);
-      }
-    }
-
     let parsedInterest = [];
     if (Array.isArray(row.interest)) {
       parsedInterest = row.interest;
@@ -226,7 +186,6 @@ function App() {
     setFormData({ 
       ...row,
       interest: parsedInterest,
-      ...evaluationData,
     });
     
     setActiveScreen(targetScreen);
@@ -236,77 +195,22 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm(`Are you sure you want to delete student ID: ${id}?`)) {
       try {
-        const response = await apiFetch(`/api/students/${id}`, {
-          method: 'DELETE'
-        });
+        const response = await apiFetch(`/api/students/${id}`, { method: 'DELETE' });
         if (!response.ok) throw new Error('Failed to delete student');
 
         await fetchStudents();
         if (formData.id === id) {
           setIsEditing(false);
           setFormData({
-            id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: '', evaluations: []
+            id: null, first_name: '', last_name: '', email: '', course: '', batch: '', district: '', phone: '', interest: [], photoLink: '', photoUrl: '', photo_url: '', evaluations: []
           });
         }
       } catch (err) {
-        console.error('Error deleting student from database:', err);
+        console.error('Error deleting student:', err);
         alert('Error deleting student.');
       }
     }
   };
-
-  const formatFamilySummaryForPDF = (stayDetails) => {
-    if (!stayDetails || typeof stayDetails !== 'object') return 'None';
-    const parents = [];
-    if (stayDetails.mother) parents.push('Mother');
-    if (stayDetails.father) parents.push('Father');
-    if (stayDetails.guardian) parents.push('Guardian');
-
-    const parts = [];
-    if (parents.length > 0) parts.push(`Parents: ${parents.join(', ')}`);
-    if (Number(stayDetails.childrenCount) > 0) parts.push(`Children: ${stayDetails.childrenCount}`);
-    if (Number(stayDetails.brothersCount) > 0) parts.push(`Brothers: ${stayDetails.brothersCount}`);
-    if (Number(stayDetails.sistersCount) > 0) parts.push(`Sisters: ${stayDetails.sistersCount}`);
-
-    return parts.length > 0 ? parts.join(' | ') : 'None';
-  };
-
-  const exportToPDF = () => {
-    const doc = new jsPDF('landscape');
-    doc.setFontSize(14);
-    doc.text('CBC-BTC Manager - Campus Stay & Schedule Records', 14, 12);
-
-    const tableColumns = ['ID', 'Student Name', 'District', 'Stay Window', 'Family Members', 'Stay Notes'];
-    const tableRows = rows.map(row => [
-      row.id,
-      `${row.first_name || ''} ${row.last_name || ''}`,
-      row.district || 'N/A',
-      row.stay_start_date_time && row.stay_end_date_time 
-        ? `From: ${new Date(row.stay_start_date_time).toLocaleString()}\nTo: ${new Date(row.stay_end_date_time).toLocaleString()}` 
-        : 'Window not set',
-      formatFamilySummaryForPDF(row.stay_details),
-      row.stay_details?.stayNotes || 'No notes'
-    ]);
-
-    autoTable(doc, { 
-      head: [tableColumns], 
-      body: tableRows, 
-      startY: 18, 
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 4 },
-      headStyles: { fillColor: [37, 99, 235] }
-    });
-    doc.save('CBC_BTC_Campus_Stay_Records.pdf');
-  };
-
-  const filteredCalendarRows = rows.filter(row => {
-    if (!calendarFilterDate) return true;
-    if (!row.stay_start_date_time || !row.stay_end_date_time) return false;
-    const filterDateOnly = calendarFilterDate;
-    const startDateOnly = row.stay_start_date_time.split('T')[0];
-    const endDateOnly = row.stay_end_date_time.split('T')[0];
-    return filterDateOnly >= startDateOnly && filterDateOnly <= endDateOnly;
-  });
 
   const isManagerScreen = !['home', 'courses', 'contact', 'leadership', 'login'].includes(activeScreen);
 
@@ -326,11 +230,7 @@ function App() {
         )}
 
         {isManagerScreen && currentUser && (
-          <Header 
-            activeScreen={activeScreen} 
-            setActiveScreen={handleScreenChange} 
-            exportToPDF={exportToPDF} 
-          />
+          <Header activeScreen={activeScreen} setActiveScreen={handleScreenChange} />
         )}
       </div>
 
@@ -365,36 +265,14 @@ function App() {
                   setIsEditing={setIsEditing} 
                 />
               )}
-
               {activeScreen === 'academics' && (
-                <AcademicEvaluationsScreen 
-                  formData={formData} 
-                  setFormData={setFormData}
-                  handleSubmit={handleSubmit} 
-                  rows={rows} 
-                  handleEdit={(row) => handleEdit(row, 'academics')}
-                />
+                <AcademicEvaluationsScreen formData={formData} setFormData={setFormData} handleSubmit={handleSubmit} rows={rows} handleEdit={(row) => handleEdit(row, 'academics')} />
               )}
-
               {activeScreen === 'examinationScore' && (
-                <ExaminationScoreScreen 
-                  formData={formData} 
-                  setFormData={setFormData}
-                  handleSubmit={handleSubmit} 
-                  rows={rows} 
-                  handleEdit={(row) => handleEdit(row, 'examinationScore')}
-                />
+                <ExaminationScoreScreen formData={formData} setFormData={setFormData} handleSubmit={handleSubmit} rows={rows} handleEdit={(row) => handleEdit(row, 'examinationScore')} />
               )}
-
               {activeScreen === 'stayCalendar' && (
-                <StayCalendarScreen 
-                  rows={rows} 
-                  refreshStudents={fetchStudents}
-                  handleEdit={handleEdit}
-                  calendarFilterDate={calendarFilterDate} 
-                  setCalendarFilterDate={setCalendarFilterDate} 
-                  filteredCalendarRows={filteredCalendarRows} 
-                />
+                <StayCalendarScreen rows={rows} refreshStudents={fetchStudents} handleEdit={handleEdit} calendarFilterDate={calendarFilterDate} setCalendarFilterDate={setCalendarFilterDate} />
               )}          
             </>
           ) : (
